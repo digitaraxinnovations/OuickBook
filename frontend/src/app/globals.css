@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* Brand colors - change them here and the whole app follows. */
+@theme {
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-500: #10b981;
+  --color-brand-600: #059669;
+  --color-brand-700: #047857;
+  --color-sidebar: #0f2e2b;
+  --color-sidebar-hover: #1a4540;
+  --color-page: #f4f5f8;
+}
+
+body {
+  background: var(--color-page);
+  color: #1f2937;
+}
+
+/* Hide the menus when printing an invoice. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}
