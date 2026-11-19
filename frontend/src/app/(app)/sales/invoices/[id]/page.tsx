@@ -1,20 +1,30 @@
 "use client";
 
-import { Printer } from "lucide-react";
+import { FileDown, Link2, Mail } from "lucide-react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { ReceivePaymentForm } from "@/components/forms/ReceivePaymentForm";
-import { Button } from "@/components/ui/Button";
+import { EmailDialog } from "@/components/sales/EmailDialog";
+import { Button, LinkButton } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DataTable } from "@/components/ui/DataTable";
-import { ErrorMessage, Loading, StatusBadge } from "@/components/ui/Feedback";
-import { Modal } from "@/components/ui/Modal";
+import { ErrorMessage, Loading, StatusBadge, SuccessMessage } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
+import { openBlobInNewTab } from "@/lib/files";
 import { formatDate, formatLabel, formatMoney, toNumber } from "@/lib/format";
-import { accountService, invoiceService } from "@/services";
-import { PaymentInput } from "@/types/inputs";
+import { invoiceService } from "@/services";
+import { EmailInput } from "@/types/inputs";
+
+function TotalRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+  return (
+    <div className={"flex justify-between " + (bold ? "border-t border-gray-200 pt-2 text-base font-semibold" : "")}>
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}
 
 export default function InvoiceDetailPage() {
   const params = useParams<{ id: string }>();
@@ -24,9 +34,9 @@ export default function InvoiceDetailPage() {
 
   const invoice = useLoad(() => invoiceService.get(invoiceId), [invoiceId]);
   const payments = useLoad(() => invoiceService.listPayments(invoiceId), [invoiceId]);
-  const accounts = useLoad(() => accountService.list({ active_only: true }));
-  const [paymentOpen, setPaymentOpen] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   if (invoice.loading) {
     return <Loading />;
@@ -37,50 +47,79 @@ export default function InvoiceDetailPage() {
   const data = invoice.data;
   const canTakePayment = data.status === "OPEN" || data.status === "PARTIALLY_PAID";
 
-  // Money can be deposited into any asset account except Accounts Receivable.
-  const depositAccounts = (accounts.data || []).filter(
-    (account) => account.account_type === "ASSET" && account.system_key !== "accounts_receivable",
-  );
-
-  async function savePayment(input: PaymentInput) {
-    await invoiceService.receivePayment(input);
-    setPaymentOpen(false);
-    invoice.reload();
-    payments.reload();
+  async function run(action: () => Promise<void>) {
+    setError(null);
+    setMessage(null);
+    try {
+      await action();
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "Something went wrong.");
+    }
   }
 
-  async function voidInvoice() {
+  function showPdf() {
+    run(async () => openBlobInNewTab(await invoiceService.downloadPdf(data.id)));
+  }
+
+  function copyShareLink() {
+    run(async () => {
+      const result = await invoiceService.shareLink(data.id);
+      try {
+        await navigator.clipboard.writeText(result.url);
+        setMessage("Customer link copied: " + result.url);
+      } catch {
+        setMessage("Customer link: " + result.url);
+      }
+    });
+  }
+
+  async function sendEmail(input: EmailInput) {
+    const result = await invoiceService.email(data.id, input);
+    setMessage(result.message + " (see Settings → Email log)");
+    invoice.reload();
+  }
+
+  function voidInvoice() {
     if (!window.confirm("Void invoice " + data.invoice_number + "? This reverses it in your books.")) {
       return;
     }
-    setActionError(null);
-    try {
+    run(async () => {
       await invoiceService.void(data.id);
       invoice.reload();
-    } catch (problem) {
-      setActionError(problem instanceof Error ? problem.message : "Could not void the invoice.");
-    }
+    });
   }
 
   return (
     <div>
       <PageHeader
         title={"Invoice " + data.invoice_number}
+        subtitle={data.last_emailed_at ? "Last emailed " + new Date(data.last_emailed_at).toLocaleString() : undefined}
         actions={
           <>
-            <Button variant="secondary" onClick={() => window.print()}>
-              <Printer size={16} /> Print
+            <Button variant="secondary" onClick={showPdf}>
+              <FileDown size={16} /> PDF
             </Button>
-            {data.status === "OPEN" && (
+            <Button variant="secondary" onClick={() => setEmailOpen(true)}>
+              <Mail size={16} /> Email
+            </Button>
+            {data.status !== "VOID" && (
+              <Button variant="secondary" onClick={copyShareLink}>
+                <Link2 size={16} /> Share link
+              </Button>
+            )}
+            {data.status === "OPEN" && toNumber(data.amount_paid) === 0 && (
               <Button variant="danger" onClick={voidInvoice}>
                 Void
               </Button>
             )}
-            {canTakePayment && <Button onClick={() => setPaymentOpen(true)}>Receive payment</Button>}
+            {canTakePayment && (
+              <LinkButton href={"/sales/payments/new?customer=" + data.customer.id + "&invoice=" + data.id}>Receive payment</LinkButton>
+            )}
           </>
         }
       />
-      <ErrorMessage message={actionError} />
+      <ErrorMessage message={error} />
+      <SuccessMessage message={message} />
 
       <Card>
         <div className="flex flex-wrap justify-between gap-6">
@@ -97,10 +136,12 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
 
-        <div className="mt-8 grid gap-6 text-sm md:grid-cols-3">
+        <div className="mt-8 grid gap-6 text-sm md:grid-cols-4">
           <div>
             <div className="text-xs font-semibold uppercase text-gray-500">Bill to</div>
-            <div className="mt-1 font-medium">{data.customer.display_name}</div>
+            <Link href={"/sales/customers/" + data.customer.id} className="mt-1 block font-medium text-brand-700 hover:underline">
+              {data.customer.display_name}
+            </Link>
             {data.customer.email && <div className="text-gray-600">{data.customer.email}</div>}
           </div>
           <div>
@@ -111,6 +152,14 @@ export default function InvoiceDetailPage() {
             <div className="text-xs font-semibold uppercase text-gray-500">Due date</div>
             <div className="mt-1">{formatDate(data.due_date)}</div>
           </div>
+          {data.estimate_id && (
+            <div>
+              <div className="text-xs font-semibold uppercase text-gray-500">From estimate</div>
+              <Link href={"/sales/forms/estimates/" + data.estimate_id} className="mt-1 block text-brand-700 hover:underline">
+                View estimate
+              </Link>
+            </div>
+          )}
         </div>
 
         <table className="mt-8 w-full text-sm">
@@ -124,7 +173,7 @@ export default function InvoiceDetailPage() {
           </thead>
           <tbody>
             {data.lines.map((line) => (
-              <tr key={line.id} className="border-b border-gray-100">
+              <tr key={line.id} className={"border-b border-gray-100 " + (line.is_late_fee ? "text-red-700" : "")}>
                 <td className="py-3">{line.description}</td>
                 <td className="py-3 text-right">{toNumber(line.quantity)}</td>
                 <td className="py-3 text-right">{formatMoney(line.rate, currency)}</td>
@@ -134,44 +183,50 @@ export default function InvoiceDetailPage() {
           </tbody>
         </table>
 
-        <div className="mt-6 flex justify-between gap-6">
+        <div className="mt-6 flex flex-wrap justify-between gap-6">
           <div className="max-w-md whitespace-pre-line text-sm text-gray-600">{data.memo}</div>
-          <div className="w-64 space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span>Total</span>
-              <span className="font-medium">{formatMoney(data.total, currency)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Amount paid</span>
-              <span>{formatMoney(data.amount_paid, currency)}</span>
-            </div>
-            <div className="flex justify-between border-t border-gray-200 pt-2 text-base font-semibold">
-              <span>Balance due</span>
-              <span>{formatMoney(data.balance_due, currency)}</span>
-            </div>
+          <div className="w-72 space-y-1 text-sm">
+            {(toNumber(data.discount_amount) > 0 || toNumber(data.shipping_amount) > 0) && (
+              <TotalRow label="Subtotal" value={formatMoney(data.subtotal, currency)} />
+            )}
+            {toNumber(data.discount_amount) > 0 && (
+              <TotalRow
+                label={data.discount_type === "PERCENT" ? "Discount (" + toNumber(data.discount_value) + "%)" : "Discount"}
+                value={"-" + formatMoney(data.discount_amount, currency)}
+              />
+            )}
+            {toNumber(data.shipping_amount) > 0 && <TotalRow label="Shipping" value={formatMoney(data.shipping_amount, currency)} />}
+            <TotalRow label="Total" value={formatMoney(data.total, currency)} />
+            <TotalRow label="Amount paid" value={formatMoney(data.amount_paid, currency)} />
+            <TotalRow label="Balance due" value={formatMoney(data.balance_due, currency)} bold />
           </div>
         </div>
       </Card>
 
-      <div className="no-print mt-8">
+      <div className="mt-8">
         <h2 className="mb-3 text-lg font-semibold">Payments</h2>
         <DataTable
           rows={payments.data || []}
-          rowKey={(row) => row.id}
+          rowKey={(row) => row.payment_id}
           emptyText="No payments yet."
           columns={[
             { header: "Date", render: (row) => formatDate(row.payment_date) },
             { header: "Method", render: (row) => formatLabel(row.payment_method) },
             { header: "Reference", render: (row) => row.reference_no },
             { header: "Deposited to", render: (row) => row.deposit_account.name },
-            { header: "Amount", align: "right", render: (row) => formatMoney(row.amount, currency) },
+            { header: "Applied", align: "right", render: (row) => formatMoney(row.amount, currency) },
           ]}
         />
       </div>
 
-      <Modal title={"Receive payment - invoice " + data.invoice_number} open={paymentOpen} onClose={() => setPaymentOpen(false)}>
-        <ReceivePaymentForm invoice={data} depositAccounts={depositAccounts} onSave={savePayment} onCancel={() => setPaymentOpen(false)} />
-      </Modal>
+      <EmailDialog
+        key={emailOpen ? "open" : "closed"}
+        title={"Email invoice " + data.invoice_number}
+        open={emailOpen}
+        defaultTo={data.customer.email}
+        onClose={() => setEmailOpen(false)}
+        onSend={sendEmail}
+      />
     </div>
   );
 }

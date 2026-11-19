@@ -3,9 +3,9 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { newMenu } from "@/config/navigation";
+import { newMenuGroups } from "@/config/navigation";
 
-/** The "+ New" button at the top of the sidebar. */
+/** The "+ New" button at the top of the sidebar. Opens a menu grouped in columns. */
 export function NewMenuButton() {
   const [open, setOpen] = useState(false);
 
@@ -18,18 +18,27 @@ export function NewMenuButton() {
         <Plus size={18} /> New
       </button>
       {open && (
-        <div className="absolute left-1 right-1 z-20 mt-2 rounded-md bg-white py-1 shadow-lg">
-          {newMenu.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
+        <>
+          {/* Clicking anywhere outside closes the menu */}
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute left-1 z-20 mt-2 flex w-[520px] gap-6 rounded-md bg-white p-4 shadow-xl">
+            {newMenuGroups.map((group) => (
+              <div key={group.title} className="min-w-0 flex-1">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{group.title}</div>
+                {group.links.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="block rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-brand-50"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

@@ -3,21 +3,21 @@
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { ErrorMessage } from "@/components/ui/Feedback";
+import { ErrorMessage, SuccessMessage } from "@/components/ui/Feedback";
 import { Field, TextArea, TextInput } from "@/components/ui/FormFields";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useFormState } from "@/hooks/useFormState";
-import { authService } from "@/services";
+import { companySettingsService } from "@/services";
 import { CompanyInput } from "@/types/inputs";
 
-export default function SettingsPage() {
+export default function CompanySettingsPage() {
   const { company, refresh } = useAuth();
   const form = useFormState<CompanyInput>({
     name: company?.name || "",
     email: company?.email || "",
     phone: company?.phone || "",
     address: company?.address || "",
+    website: company?.website || "",
     payment_terms_days: company?.payment_terms_days || 30,
   });
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +30,7 @@ export default function SettingsPage() {
     setError(null);
     setMessage(null);
     try {
-      await authService.updateCompany(form.values);
+      await companySettingsService.updateCompany(form.values);
       await refresh();
       setMessage("Company settings saved.");
     } catch (problem) {
@@ -42,10 +42,9 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl">
-      <PageHeader title="Company settings" subtitle="Shown on your invoices and reports." />
       <ErrorMessage message={error} />
-      {message && <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{message}</div>}
-      <Card>
+      <SuccessMessage message={message} />
+      <Card title="Company">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Field label="Company name" required>
             <TextInput required value={form.values.name} onChange={(e) => form.setField("name", e.target.value)} />
@@ -58,11 +57,14 @@ export default function SettingsPage() {
               <TextInput value={form.values.phone} onChange={(e) => form.setField("phone", e.target.value)} />
             </Field>
           </div>
+          <Field label="Website">
+            <TextInput value={form.values.website} onChange={(e) => form.setField("website", e.target.value)} />
+          </Field>
           <Field label="Address">
             <TextArea value={form.values.address} onChange={(e) => form.setField("address", e.target.value)} />
           </Field>
-          <div className="w-48">
-            <Field label="Invoice terms (days)">
+          <div className="w-64">
+            <Field label="Default invoice terms (days)">
               <TextInput
                 type="number"
                 min="0"

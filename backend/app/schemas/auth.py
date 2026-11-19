@@ -35,7 +35,10 @@ class CompanyRead(ORMModel):
     email: str | None
     phone: str | None
     address: str | None
+    website: str | None
     payment_terms_days: int
+    invoice_template: str
+    invoice_accent_color: str
 
 
 class CompanyUpdate(CleanStringsModel):
@@ -43,6 +46,7 @@ class CompanyUpdate(CleanStringsModel):
     email: EmailStr | None = None
     phone: str | None = Field(default=None, max_length=50)
     address: str | None = Field(default=None, max_length=500)
+    website: str | None = Field(default=None, max_length=255)
     payment_terms_days: int = Field(ge=0, le=365)
 
 

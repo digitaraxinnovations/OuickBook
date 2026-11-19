@@ -28,7 +28,14 @@ class ContactRead(ORMModel):
     is_active: bool
 
 
+class CustomerWrite(ContactWrite):
+    # Default payment terms for this customer's invoices.
+    terms_id: int | None = None
+
+
 class CustomerRead(ContactRead):
+    terms_id: int | None
+    # Unpaid invoices minus unused credits.
     open_balance: Decimal = Decimal("0.00")
 
 

@@ -1,11 +1,22 @@
+import base64
+
 from app.core.config import Settings
-from app.core.exceptions import NotFoundError
-from app.models import Account, Company
+from app.core.exceptions import BusinessRuleError, NotFoundError
+from app.models import Account, Company, PaymentTerm
 from app.repositories.account_repository import AccountRepository
 from app.repositories.company_repository import CompanyRepository
 from app.schemas.auth import CompanyUpdate
-from app.seed.default_accounts import DEFAULT_ACCOUNTS
+from app.schemas.sales_extras import LogoUpload, SalesSettingsUpdate
+from app.seed.default_accounts import DEFAULT_ACCOUNTS, DEFAULT_PAYMENT_TERMS
 from app.services.base import BaseService
+
+
+def logo_data_url(company: Company) -> str | None:
+    """The logo as a data: URL that can go straight into an <img> tag."""
+    if company.logo is None:
+        return None
+    encoded = base64.b64encode(company.logo).decode("ascii")
+    return f"data:{company.logo_mime_type};base64,{encoded}"
 
 
 class CompanyService(BaseService):
@@ -22,7 +33,7 @@ class CompanyService(BaseService):
         return company
 
     def create_with_default_accounts(self, name: str) -> Company:
-        """Create a new company and its starting Chart of Accounts. Does not commit."""
+        """Create a new company with its starting Chart of Accounts and payment terms. Does not commit."""
         company = Company(
             name=name,
             currency=self.settings.default_currency,
@@ -42,6 +53,9 @@ class CompanyService(BaseService):
             )
             self.account_repository.add(account)
 
+        for template in DEFAULT_PAYMENT_TERMS:
+            self.session.add(PaymentTerm(company_id=company.id, name=template["name"], due_days=template["due_days"]))
+
         return company
 
     def update(self, company_id: int, data: CompanyUpdate) -> Company:
@@ -50,6 +64,43 @@ class CompanyService(BaseService):
         company.email = data.email
         company.phone = data.phone
         company.address = data.address
+        company.website = data.website
         company.payment_terms_days = data.payment_terms_days
+        self.commit()
+        return company
+
+    def update_sales_settings(self, company_id: int, data: SalesSettingsUpdate) -> Company:
+        company = self.get(company_id)
+        company.invoice_template = data.invoice_template
+        company.invoice_accent_color = data.invoice_accent_color
+        company.invoice_footer = data.invoice_footer
+        company.late_fee_enabled = data.late_fee_enabled
+        company.late_fee_type = data.late_fee_type
+        company.late_fee_amount = data.late_fee_amount
+        company.late_fee_grace_days = data.late_fee_grace_days
+        company.reminders_enabled = data.reminders_enabled
+        company.reminder_days_after_due = data.reminder_days_after_due
+        self.commit()
+        return company
+
+    def set_logo(self, company_id: int, data: LogoUpload) -> Company:
+        try:
+            image_bytes = base64.b64decode(data.data_base64, validate=True)
+        except ValueError:
+            raise BusinessRuleError("The logo file could not be read.")
+        if len(image_bytes) > self.settings.max_logo_bytes:
+            limit_kb = self.settings.max_logo_bytes // 1000
+            raise BusinessRuleError(f"The logo is too large. The limit is {limit_kb} KB.")
+
+        company = self.get(company_id)
+        company.logo = image_bytes
+        company.logo_mime_type = data.mime_type
+        self.commit()
+        return company
+
+    def remove_logo(self, company_id: int) -> Company:
+        company = self.get(company_id)
+        company.logo = None
+        company.logo_mime_type = None
         self.commit()
         return company

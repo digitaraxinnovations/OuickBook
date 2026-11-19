@@ -1,7 +1,12 @@
+from decimal import Decimal
+
+from app.core.exceptions import BusinessRuleError
 from app.core.money import ZERO
 from app.models import Customer, Vendor
 from app.repositories.contact_repository import CustomerRepository, VendorRepository
 from app.repositories.invoice_repository import InvoiceRepository
+from app.repositories.sales_repositories import PaymentRepository, PaymentTermRepository, SalesDocumentRepository
+from app.schemas.contact import CustomerWrite
 from app.services.base import CrudService
 
 
@@ -9,13 +14,42 @@ class CustomerService(CrudService):
     model = Customer
     item_name = "Customer"
 
-    def __init__(self, session, repository: CustomerRepository, invoice_repository: InvoiceRepository):
+    def __init__(
+        self,
+        session,
+        repository: CustomerRepository,
+        invoice_repository: InvoiceRepository,
+        sales_document_repository: SalesDocumentRepository,
+        payment_repository: PaymentRepository,
+        terms_repository: PaymentTermRepository,
+    ):
         super().__init__(session, repository)
         self.invoice_repository = invoice_repository
+        self.sales_document_repository = sales_document_repository
+        self.payment_repository = payment_repository
+        self.terms_repository = terms_repository
+
+    def validate(self, company_id: int, data: CustomerWrite) -> None:
+        if data.terms_id is not None and self.terms_repository.get(company_id, data.terms_id) is None:
+            raise BusinessRuleError("Those payment terms do not exist.")
+
+    def open_balances(self, company_id: int) -> dict[int, Decimal]:
+        """What each customer owes: unpaid invoices minus credit memos and overpayments not used yet."""
+        balances = self.invoice_repository.open_balance_by_customer(company_id)
+        credits = self.sales_document_repository.open_credit_by_customer(company_id)
+        unapplied = self.payment_repository.unapplied_by_customer(company_id)
+
+        result = {}
+        for customer_id, amount in balances.items():
+            result[customer_id] = amount
+        for source in (credits, unapplied):
+            for customer_id, amount in source.items():
+                result[customer_id] = result.get(customer_id, ZERO) - amount
+        return result
 
     def list_with_balances(self, company_id: int, active_only: bool = False) -> list[Customer]:
         customers = self.list(company_id, active_only)
-        balances = self.invoice_repository.open_balance_by_customer(company_id)
+        balances = self.open_balances(company_id)
         for customer in customers:
             # `open_balance` is not a database column - it is added for the response.
             customer.open_balance = balances.get(customer.id, ZERO)
@@ -23,8 +57,7 @@ class CustomerService(CrudService):
 
     def get_with_balance(self, company_id: int, customer_id: int) -> Customer:
         customer = self.get(company_id, customer_id)
-        balances = self.invoice_repository.open_balance_by_customer(company_id)
-        customer.open_balance = balances.get(customer.id, ZERO)
+        customer.open_balance = self.open_balances(company_id).get(customer.id, ZERO)
         return customer
 
 

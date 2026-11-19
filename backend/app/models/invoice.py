@@ -1,12 +1,12 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, Numeric, String, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
 from app.models.contact import Customer
-from app.models.enums import InvoiceStatus
+from app.models.enums import DiscountType, InvoiceStatus
 from app.models.product import Product
 
 
@@ -19,11 +19,29 @@ class Invoice(CompanyOwnedMixin, TimestampMixin, Base):
     customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"), index=True)
     invoice_date: Mapped[date] = mapped_column(Date)
     due_date: Mapped[date] = mapped_column(Date)
+    terms_id: Mapped[int | None] = mapped_column(ForeignKey("payment_terms.id"))
     status: Mapped[InvoiceStatus] = mapped_column(Enum(InvoiceStatus, native_enum=False, length=20))
     memo: Mapped[str | None] = mapped_column(Text)
+
+    # total = subtotal - discount_amount + shipping_amount (+ late fees added later)
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default=text("0"))
+    discount_type: Mapped[DiscountType | None] = mapped_column(Enum(DiscountType, native_enum=False, length=10))
+    discount_value: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default=text("0"))
+    discount_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default=text("0"))
+    shipping_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default=text("0"))
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     amount_paid: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     journal_entry_id: Mapped[int | None] = mapped_column(ForeignKey("journal_entries.id"))
+
+    # Progress invoicing: the estimate this invoice was made from.
+    estimate_id: Mapped[int | None] = mapped_column(
+        ForeignKey("sales_documents.id", use_alter=True, name="fk_invoices_estimate_id")
+    )
+    late_fee_applied_on: Mapped[date | None] = mapped_column(Date)
+    # Secret part of the customer's "view and pay" link. Empty until shared.
+    public_token: Mapped[str | None] = mapped_column(String(64), unique=True)
+    last_emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_reminder_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     customer: Mapped[Customer] = relationship()
     lines: Mapped[list["InvoiceLine"]] = relationship(
@@ -54,6 +72,8 @@ class InvoiceLine(Base):
     quantity: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     rate: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    # Late-fee lines are added after the invoice was created.
+    is_late_fee: Mapped[bool] = mapped_column(server_default=text("false"))
 
     invoice: Mapped[Invoice] = relationship(back_populates="lines")
     product: Mapped[Product | None] = relationship()

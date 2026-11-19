@@ -29,6 +29,14 @@ class JournalRepository(BaseRepository):
     def order_by_columns(self) -> list:
         return [JournalEntry.entry_date.desc(), JournalEntry.id.desc()]
 
+    def list_for_source(self, company_id: int, source_type, source_id: int) -> list[JournalEntry]:
+        query = select(JournalEntry).where(
+            JournalEntry.company_id == company_id,
+            JournalEntry.source_type == source_type,
+            JournalEntry.source_id == source_id,
+        )
+        return list(self.session.scalars(query))
+
     def totals_by_account(self, company_id: int, start_date: date | None, end_date: date) -> list[AccountTotals]:
         """
         Add up every journal line per account between two dates.

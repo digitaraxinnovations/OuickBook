@@ -1,26 +1,42 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import Field
 
-from app.models.enums import InvoiceStatus
-from app.schemas.common import CleanStringsModel, ContactSummary, ORMModel
+from app.models.enums import DiscountType, InvoiceStatus
+from app.schemas.common import AccountSummary, CleanStringsModel, ContactSummary, ORMModel
 
 
 class InvoiceLineCreate(CleanStringsModel):
+    """One product/service line. Used by invoices and every other sales form."""
+
     product_id: int | None = None
     description: str | None = Field(default=None, max_length=500)
     quantity: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
     rate: Decimal = Field(max_digits=12, decimal_places=2)
 
 
-class InvoiceCreate(CleanStringsModel):
+class SalesAmountsInput(CleanStringsModel):
+    """Discount and shipping - shared by invoices and other sales forms."""
+
+    discount_type: DiscountType | None = None
+    discount_value: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
+    shipping_amount: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
+
+
+class InvoiceCreate(SalesAmountsInput):
     customer_id: int
     invoice_date: date
-    # When empty, the company's payment terms are used (e.g. 30 days).
+    # When empty, the due date comes from the terms (or the company default).
     due_date: date | None = None
+    terms_id: int | None = None
     memo: str | None = None
-    lines: list[InvoiceLineCreate] = Field(min_length=1)
+    lines: list[InvoiceLineCreate] = Field(default_factory=list)
+    # Delayed charges/credits to add to this invoice.
+    delayed_document_ids: list[int] = Field(default_factory=list)
+    # Money the customer pays up front when the invoice is created.
+    deposit_amount: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
+    deposit_account_id: int | None = None
 
 
 class InvoiceLineRead(ORMModel):
@@ -31,6 +47,7 @@ class InvoiceLineRead(ORMModel):
     quantity: Decimal
     rate: Decimal
     amount: Decimal
+    is_late_fee: bool = False
 
 
 class InvoiceSummary(ORMModel):
@@ -50,4 +67,28 @@ class InvoiceSummary(ORMModel):
 
 class InvoiceRead(InvoiceSummary):
     memo: str | None
+    terms_id: int | None
+    subtotal: Decimal
+    discount_type: DiscountType | None
+    discount_value: Decimal
+    discount_amount: Decimal
+    shipping_amount: Decimal
+    estimate_id: int | None
+    late_fee_applied_on: date | None
+    last_emailed_at: datetime | None
     lines: list[InvoiceLineRead]
+
+
+class InvoicePaymentRead(ORMModel):
+    """One payment as seen from an invoice: how much of it went to this invoice."""
+
+    payment_id: int
+    payment_date: date
+    payment_method: str
+    reference_no: str | None
+    deposit_account: AccountSummary
+    amount: Decimal
+
+
+class ShareLinkResponse(ORMModel):
+    url: str

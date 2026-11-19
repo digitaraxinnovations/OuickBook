@@ -61,9 +61,16 @@ def test_payment_moves_money_from_receivable_to_bank(auth_client):
     invoice = create_invoice(auth_client, create_customer(auth_client))
     checking_id = find_account_id(auth_client, "Checking")
 
+    customer_id = invoice["customer"]["id"]
     response = auth_client.post(
         f"{API}/payments",
-        json={"invoice_id": invoice["id"], "payment_date": "2026-11-10", "amount": "600", "deposit_account_id": checking_id},
+        json={
+            "customer_id": customer_id,
+            "payment_date": "2026-11-10",
+            "amount": "600",
+            "deposit_account_id": checking_id,
+            "applications": [{"invoice_id": invoice["id"], "amount": "600"}],
+        },
     )
     assert response.status_code == 201, response.text
 
@@ -73,7 +80,12 @@ def test_payment_moves_money_from_receivable_to_bank(auth_client):
 
     too_much = auth_client.post(
         f"{API}/payments",
-        json={"invoice_id": invoice["id"], "payment_date": "2026-11-11", "amount": "900"},
+        json={
+            "customer_id": customer_id,
+            "payment_date": "2026-11-11",
+            "amount": "900",
+            "applications": [{"invoice_id": invoice["id"], "amount": "900"}],
+        },
     )
     assert too_much.status_code == 422
 

@@ -22,6 +22,11 @@ class InvoiceRepository(BaseRepository):
         query = query.order_by(*self.order_by_columns())
         return list(self.session.scalars(query))
 
+    def get_by_public_token(self, token: str) -> Invoice | None:
+        """Used by the customer link - deliberately not limited to one company."""
+        query = select(Invoice).where(Invoice.public_token == token)
+        return self.session.scalar(query)
+
     def list_unpaid(self, company_id: int) -> list[Invoice]:
         query = select(Invoice).where(
             Invoice.company_id == company_id,

@@ -18,6 +18,9 @@ class SystemAccount:
     OWNERS_EQUITY = "owners_equity"
     RETAINED_EARNINGS = "retained_earnings"
     SALES = "sales"
+    DISCOUNTS_GIVEN = "discounts_given"
+    SHIPPING_INCOME = "shipping_income"
+    LATE_FEE_INCOME = "late_fee_income"
     UNCATEGORIZED_EXPENSE = "uncategorized_expense"
 
 
@@ -26,6 +29,14 @@ class DetailType:
 
     BANK = "Bank"
     CREDIT_CARD = "Credit Card"
+
+
+DEFAULT_PAYMENT_TERMS = [
+    {"name": "Due on receipt", "due_days": 0},
+    {"name": "Net 15", "due_days": 15},
+    {"name": "Net 30", "due_days": 30},
+    {"name": "Net 60", "due_days": 60},
+]
 
 
 DEFAULT_ACCOUNTS = [
@@ -47,6 +58,10 @@ DEFAULT_ACCOUNTS = [
     # ---------- Income ----------
     {"code": "4000", "name": "Sales", "type": AccountType.INCOME, "detail": "Sales of Product Income", "key": SystemAccount.SALES},
     {"code": "4100", "name": "Services", "type": AccountType.INCOME, "detail": "Service/Fee Income", "key": None},
+    {"code": "4500", "name": "Shipping Income", "type": AccountType.INCOME, "detail": "Other Primary Income", "key": SystemAccount.SHIPPING_INCOME},
+    {"code": "4600", "name": "Late Fee Income", "type": AccountType.INCOME, "detail": "Other Primary Income", "key": SystemAccount.LATE_FEE_INCOME},
+    # A "contra" income account: discounts reduce income, so it normally has a debit balance.
+    {"code": "4800", "name": "Discounts Given", "type": AccountType.INCOME, "detail": "Discounts/Refunds Given", "key": SystemAccount.DISCOUNTS_GIVEN},
     {"code": "4900", "name": "Other Income", "type": AccountType.INCOME, "detail": "Other Income", "key": None},
     # ---------- Expenses ----------
     {"code": "5000", "name": "Cost of Goods Sold", "type": AccountType.EXPENSE, "detail": "Cost of Goods Sold", "key": None},

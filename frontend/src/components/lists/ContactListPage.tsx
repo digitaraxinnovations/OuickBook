@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ContactForm } from "@/components/forms/ContactForm";
 import { Button } from "@/components/ui/Button";
@@ -12,7 +13,7 @@ import { useLoad } from "@/hooks/useLoad";
 import { useQueryFlag } from "@/hooks/useQueryFlag";
 import { ResourceService } from "@/services/resource.service";
 import { ContactInput } from "@/types/inputs";
-import { Contact } from "@/types/models";
+import { Contact, PaymentTerm } from "@/types/models";
 
 interface ContactListPageProps<T extends Contact> {
   title: string;
@@ -20,10 +21,23 @@ interface ContactListPageProps<T extends Contact> {
   itemName: string;
   service: ResourceService<T, ContactInput>;
   extraColumns?: Column<T>[];
+  /** Customers: show the payment terms field on the form. */
+  terms?: PaymentTerm[];
+  /** When set, clicking a row opens this page instead of the edit form. */
+  detailHref?: (row: T) => string;
 }
 
 /** Shared page for Customers and Vendors: a table plus a create/edit form. */
-export function ContactListPage<T extends Contact>({ title, subtitle, itemName, service, extraColumns = [] }: ContactListPageProps<T>) {
+export function ContactListPage<T extends Contact>({
+  title,
+  subtitle,
+  itemName,
+  service,
+  extraColumns = [],
+  terms,
+  detailHref,
+}: ContactListPageProps<T>) {
+  const router = useRouter();
   const contacts = useLoad(() => service.list());
   const [editing, setEditing] = useState<T | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -41,6 +55,10 @@ export function ContactListPage<T extends Contact>({ title, subtitle, itemName, 
   }
 
   function openEdit(contact: T) {
+    if (detailHref) {
+      router.push(detailHref(contact));
+      return;
+    }
     setEditing(contact);
     setFormOpen(true);
   }
@@ -89,7 +107,7 @@ export function ContactListPage<T extends Contact>({ title, subtitle, itemName, 
         <DataTable rows={contacts.data || []} rowKey={(row) => row.id} columns={columns} onRowClick={openEdit} />
       )}
       <Modal title={editing ? "Edit " + itemName.toLowerCase() : "New " + itemName.toLowerCase()} open={formOpen} onClose={() => setFormOpen(false)}>
-        <ContactForm key={editing ? editing.id : "new"} initial={editing} onSave={save} onCancel={() => setFormOpen(false)} />
+        <ContactForm key={editing ? editing.id : "new"} initial={editing} terms={terms} onSave={save} onCancel={() => setFormOpen(false)} />
       </Modal>
     </div>
   );

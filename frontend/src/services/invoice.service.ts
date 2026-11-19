@@ -1,5 +1,5 @@
-import { InvoiceInput, PaymentInput } from "@/types/inputs";
-import { Invoice, InvoiceSummary, Payment } from "@/types/models";
+import { EmailInput, InvoiceInput } from "@/types/inputs";
+import { BatchResult, Invoice, InvoicePayment, InvoiceSummary } from "@/types/models";
 import { ResourceService } from "./resource.service";
 
 /** Invoices have extra actions on top of the standard ones. */
@@ -12,11 +12,27 @@ export class InvoiceService extends ResourceService<Invoice, InvoiceInput> {
     return this.api.post<Invoice>(this.path + "/" + id + "/void");
   }
 
-  listPayments(id: number): Promise<Payment[]> {
-    return this.api.get<Payment[]>(this.path + "/" + id + "/payments");
+  listPayments(id: number): Promise<InvoicePayment[]> {
+    return this.api.get<InvoicePayment[]>(this.path + "/" + id + "/payments");
   }
 
-  receivePayment(input: PaymentInput): Promise<Payment> {
-    return this.api.post<Payment>("/payments", input);
+  downloadPdf(id: number): Promise<Blob> {
+    return this.api.getBlob(this.path + "/" + id + "/pdf");
+  }
+
+  email(id: number, input: EmailInput): Promise<{ message: string }> {
+    return this.api.post(this.path + "/" + id + "/email", input);
+  }
+
+  shareLink(id: number): Promise<{ url: string }> {
+    return this.api.post(this.path + "/" + id + "/share-link");
+  }
+
+  applyLateFees(): Promise<BatchResult> {
+    return this.api.post<BatchResult>(this.path + "/apply-late-fees");
+  }
+
+  sendReminders(): Promise<BatchResult> {
+    return this.api.post<BatchResult>(this.path + "/send-reminders");
   }
 }

@@ -13,17 +13,18 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [x] Reports: Profit & Loss, Balance Sheet, Trial Balance (+ A/R Aging)
 - [x] Dashboard (income, expenses, profit, open/overdue invoices, bank balances)
 
-## Phase 2 – Sales (Get paid)
-- [ ] Estimates/quotes → convert to invoice; estimate status (pending/accepted/closed)
-- [ ] Sales receipts, credit memos, refund receipts, delayed charges/credits
-- [ ] Receive payment across multiple invoices, apply credits, partial payments, overpayments
-- [ ] Bank deposits (from Undeposited Funds)
-- [ ] Recurring invoices and recurring sales receipts
-- [ ] Invoice templates/customization, logo, PDF export, print
-- [ ] Email invoices/estimates/statements (EXT: SMTP), reminders for overdue invoices
-- [ ] Customer statements; customer portal / pay-now link (EXT: payment processor)
-- [ ] Discounts, shipping, deposits on invoices; progress invoicing
-- [ ] Payment terms list; late fees
+## Phase 2 – Sales (Get paid) (done)
+- [x] Estimates/quotes → convert to invoice; estimate status (pending/accepted/rejected/closed)
+- [x] Sales receipts, credit memos, refund receipts, delayed charges/credits
+- [x] Receive payment across multiple invoices, apply credits, partial payments, overpayments
+- [x] Bank deposits (from Undeposited Funds, plus extra deposit lines)
+- [x] Recurring invoices and recurring sales receipts
+- [x] Invoice templates/customization (3 styles, accent color, footer), logo, PDF export, print
+- [x] Email invoices/estimates/statements, reminders for overdue invoices — EXT: `EMAIL_PROVIDER=log` records to the Email log; `smtp` sends via SMTP settings
+- [x] Customer statements (balance forward, open item, transaction); customer "view invoice" link
+- [~] Pay-now on the customer link — EXT: `PaymentProcessor` interface ready, `PAYMENT_PROVIDER=none` until a processor (e.g. Stripe) is plugged in
+- [x] Discounts (% or amount), shipping, deposits on invoices; progress invoicing (% of estimate)
+- [x] Payment terms list (customer default terms); late fees (fixed or %, grace days)
 
 ## Phase 3 – Expenses & bills (Pay bills)
 - [ ] Bills, pay bills (single/batch), vendor credits, bill payments by check/card

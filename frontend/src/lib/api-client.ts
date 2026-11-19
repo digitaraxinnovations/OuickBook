@@ -36,12 +36,37 @@ export class ApiClient {
     return this.request<T>("PUT", path, body);
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+  delete<T>(path: string): Promise<T> {
+    return this.request<T>("DELETE", path);
+  }
+
+  /** Downloads a file (e.g. a PDF) with the login token attached. */
+  async getBlob(path: string, query?: QueryParams): Promise<Blob> {
+    let response: Response;
+    try {
+      response = await fetch(this.baseUrl + path + this.buildQuery(query), { headers: this.authHeaders() });
+    } catch {
+      throw new ApiError("Cannot reach the server. Is the backend running?", 0);
+    }
+    if (!response.ok) {
+      const text = await response.text();
+      throw new ApiError(this.readErrorMessage(text ? JSON.parse(text) : null), response.status);
+    }
+    return response.blob();
+  }
+
+  private authHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {};
     const token = this.tokenStorage.get();
     if (token) {
       headers["Authorization"] = "Bearer " + token;
     }
+    return headers;
+  }
+
+  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+    const headers = this.authHeaders();
+    headers["Content-Type"] = "application/json";
 
     let response: Response;
     try {

@@ -3,7 +3,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { paymentMethodOptions } from "@/components/forms/ReceivePaymentForm";
+import { paymentMethodOptions } from "@/config/options";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorMessage, Loading } from "@/components/ui/Feedback";

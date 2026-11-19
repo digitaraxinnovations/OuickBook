@@ -1,6 +1,6 @@
 import { ApiClient } from "@/lib/api-client";
 import { TokenStorage } from "@/lib/token-storage";
-import { CompanyInput, LoginInput, SignupInput } from "@/types/inputs";
+import { LoginInput, SignupInput } from "@/types/inputs";
 import { Company, User } from "@/types/models";
 
 interface TokenResponse {
@@ -41,9 +41,5 @@ export class AuthService {
 
   getCurrentSession(): Promise<CurrentSession> {
     return this.api.get<CurrentSession>("/auth/me");
-  }
-
-  updateCompany(input: CompanyInput): Promise<Company> {
-    return this.api.put<Company>("/company", input);
   }
 }

@@ -53,7 +53,31 @@ class Settings(BaseSettings):
     # ---------- Business defaults ----------
     default_currency: str = "USD"
     default_payment_terms_days: int = 30
+    # First number for invoices, estimates, sales receipts, credit memos...
     invoice_number_start: int = 1001
+    # Largest company logo that can be uploaded, in bytes.
+    max_logo_bytes: int = 500_000
+
+    # ---------- Links sent to customers ----------
+    # The frontend address customers open (invoice "view and pay" links).
+    public_app_url: str = "http://localhost:3000"
+
+    # ---------- Email (EXT) ----------
+    # "log"  = do not send; just record the email in the app's email log (default, no setup needed)
+    # "smtp" = send through the SMTP server below
+    email_provider: str = "log"
+    email_from: str = "no-reply@example.com"
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_use_tls: bool = True
+
+    # ---------- Online card/bank payments on invoices (EXT) ----------
+    # "none" = the "Pay now" button is hidden. A real provider (e.g. Stripe)
+    # can be added later as a new PaymentProcessor class - see app/integrations/payments.
+    payment_provider: str = "none"
+    payment_provider_secret_key: str = ""
 
     def get_database_url(self) -> str:
         """Return the SQLAlchemy connection URL for PostgreSQL."""

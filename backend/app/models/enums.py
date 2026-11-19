@@ -48,6 +48,53 @@ class RecurringType(str, Enum):
     """Which kind of transaction a recurring schedule creates."""
 
     JOURNAL_ENTRY = "JOURNAL_ENTRY"
+    INVOICE = "INVOICE"
+    SALES_RECEIPT = "SALES_RECEIPT"
+
+
+class SalesDocType(str, Enum):
+    """Sales forms other than invoices. They share one table."""
+
+    ESTIMATE = "ESTIMATE"
+    SALES_RECEIPT = "SALES_RECEIPT"
+    CREDIT_MEMO = "CREDIT_MEMO"
+    REFUND_RECEIPT = "REFUND_RECEIPT"
+    DELAYED_CHARGE = "DELAYED_CHARGE"
+    DELAYED_CREDIT = "DELAYED_CREDIT"
+
+
+class SalesDocStatus(str, Enum):
+    PENDING = "PENDING"      # estimate waiting for the customer
+    ACCEPTED = "ACCEPTED"    # estimate accepted (may be partly invoiced)
+    REJECTED = "REJECTED"    # estimate rejected
+    OPEN = "OPEN"            # credit memo with credit left, delayed charge not yet invoiced
+    CLOSED = "CLOSED"        # fully used / converted / invoiced
+    PAID = "PAID"            # sales receipt, refund receipt
+    VOID = "VOID"
+
+
+class DiscountType(str, Enum):
+    PERCENT = "PERCENT"
+    AMOUNT = "AMOUNT"
+
+
+class CreditSource(str, Enum):
+    """Where a customer credit used in a payment comes from."""
+
+    CREDIT_MEMO = "CREDIT_MEMO"
+    PAYMENT = "PAYMENT"  # the unapplied part of an earlier payment
+
+
+class DepositLineSource(str, Enum):
+    PAYMENT = "PAYMENT"
+    SALES_RECEIPT = "SALES_RECEIPT"
+    OTHER = "OTHER"
+
+
+class StatementType(str, Enum):
+    BALANCE_FORWARD = "BALANCE_FORWARD"
+    OPEN_ITEM = "OPEN_ITEM"
+    TRANSACTION = "TRANSACTION"
 
 
 class JournalSource(str, Enum):
@@ -58,3 +105,9 @@ class JournalSource(str, Enum):
     INVOICE_VOID = "INVOICE_VOID"
     PAYMENT = "PAYMENT"
     EXPENSE = "EXPENSE"
+    SALES_RECEIPT = "SALES_RECEIPT"
+    CREDIT_MEMO = "CREDIT_MEMO"
+    REFUND_RECEIPT = "REFUND_RECEIPT"
+    SALES_DOC_VOID = "SALES_DOC_VOID"
+    DEPOSIT = "DEPOSIT"
+    LATE_FEE = "LATE_FEE"

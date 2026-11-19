@@ -1,22 +1,38 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
+import { LinkButton } from "@/components/ui/Button";
 import { DataTable } from "@/components/ui/DataTable";
 import { ErrorMessage, Loading } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
-import { formatDate, formatLabel, formatMoney } from "@/lib/format";
+import { formatDate, formatLabel, formatMoney, toNumber } from "@/lib/format";
 import { paymentService } from "@/services";
+import { Payment } from "@/types/models";
+
+function appliedTo(payment: Payment): string {
+  if (payment.applications.length === 0) {
+    return "Not applied (customer credit)";
+  }
+  return payment.applications.map((item) => "Invoice " + item.invoice.invoice_number).join(", ");
+}
 
 export default function PaymentsPage() {
   const { company } = useAuth();
-  const router = useRouter();
+  const currency = company?.currency;
   const payments = useLoad(() => paymentService.list());
 
   return (
     <div>
-      <PageHeader title="Payments received" subtitle="To receive a payment, open the invoice and click Receive payment." />
+      <PageHeader
+        title="Payments received"
+        actions={
+          <LinkButton href="/sales/payments/new">
+            <Plus size={16} /> Receive payment
+          </LinkButton>
+        }
+      />
       <ErrorMessage message={payments.error} />
       {payments.loading ? (
         <Loading />
@@ -24,15 +40,19 @@ export default function PaymentsPage() {
         <DataTable
           rows={payments.data || []}
           rowKey={(row) => row.id}
-          onRowClick={(row) => router.push("/sales/invoices/" + row.invoice.id)}
           emptyText="No payments received yet."
           columns={[
             { header: "Date", render: (row) => formatDate(row.payment_date) },
             { header: "Customer", render: (row) => row.customer.display_name },
-            { header: "Invoice", render: (row) => row.invoice.invoice_number },
+            { header: "Applied to", render: (row) => appliedTo(row) },
             { header: "Method", render: (row) => formatLabel(row.payment_method) },
-            { header: "Deposited to", render: (row) => row.deposit_account.name },
-            { header: "Amount", align: "right", render: (row) => formatMoney(row.amount, company?.currency) },
+            { header: "Deposited to", render: (row) => row.deposit_account.name + (row.deposit_id ? " (deposited)" : "") },
+            {
+              header: "Unapplied",
+              align: "right",
+              render: (row) => (toNumber(row.unapplied_amount) > 0 ? formatMoney(row.unapplied_amount, currency) : ""),
+            },
+            { header: "Amount", align: "right", render: (row) => formatMoney(row.amount, currency) },
           ]}
         />
       )}

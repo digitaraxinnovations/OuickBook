@@ -7,6 +7,12 @@ export type AccountType = "ASSET" | "LIABILITY" | "EQUITY" | "INCOME" | "EXPENSE
 export type InvoiceStatus = "OPEN" | "PARTIALLY_PAID" | "PAID" | "VOID";
 export type PaymentMethod = "CASH" | "CHECK" | "CREDIT_CARD" | "BANK_TRANSFER" | "OTHER";
 export type ProductType = "SERVICE" | "NON_INVENTORY";
+export type DiscountType = "PERCENT" | "AMOUNT";
+export type SalesDocType = "ESTIMATE" | "SALES_RECEIPT" | "CREDIT_MEMO" | "REFUND_RECEIPT" | "DELAYED_CHARGE" | "DELAYED_CREDIT";
+export type SalesDocStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "OPEN" | "CLOSED" | "PAID" | "VOID";
+export type CreditSource = "CREDIT_MEMO" | "PAYMENT";
+export type DepositLineSource = "PAYMENT" | "SALES_RECEIPT" | "OTHER";
+export type StatementType = "BALANCE_FORWARD" | "OPEN_ITEM" | "TRANSACTION";
 
 export interface User {
   id: number;
@@ -22,7 +28,29 @@ export interface Company {
   email: string | null;
   phone: string | null;
   address: string | null;
+  website: string | null;
   payment_terms_days: number;
+  invoice_template: string;
+  invoice_accent_color: string;
+}
+
+export interface SalesSettings {
+  invoice_template: string;
+  invoice_accent_color: string;
+  invoice_footer: string | null;
+  late_fee_enabled: boolean;
+  late_fee_type: "FIXED" | "PERCENT";
+  late_fee_amount: string;
+  late_fee_grace_days: number;
+  reminders_enabled: boolean;
+  reminder_days_after_due: number;
+}
+
+export interface PaymentTerm {
+  id: number;
+  name: string;
+  due_days: number;
+  is_active: boolean;
 }
 
 export interface AccountSummary {
@@ -43,28 +71,6 @@ export interface Account extends AccountSummary {
   balance: string;
 }
 
-export type RecurringFrequency = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
-export type RecurringType = "JOURNAL_ENTRY";
-
-export interface RecurringSchedule {
-  id: number;
-  name: string;
-  transaction_type: RecurringType;
-  frequency: RecurringFrequency;
-  interval: number;
-  start_date: string;
-  end_date: string | null;
-  next_date: string | null;
-  run_count: number;
-  last_run_date: string | null;
-  is_active: boolean;
-  template: Record<string, unknown>;
-}
-
-export interface RunDueResult {
-  created: { schedule_id: number; schedule_name: string; transaction_type: RecurringType; transaction_id: number; transaction_date: string }[];
-}
-
 export interface ContactSummary {
   id: number;
   display_name: string;
@@ -83,6 +89,7 @@ export interface Contact {
 }
 
 export interface Customer extends Contact {
+  terms_id: number | null;
   open_balance: string;
 }
 
@@ -99,7 +106,7 @@ export interface Product {
   is_active: boolean;
 }
 
-export interface InvoiceLine {
+export interface SalesLine {
   id: number;
   product_id: number | null;
   income_account_id: number;
@@ -107,6 +114,7 @@ export interface InvoiceLine {
   quantity: string;
   rate: string;
   amount: string;
+  is_late_fee: boolean;
 }
 
 export interface InvoiceSummary {
@@ -124,19 +132,158 @@ export interface InvoiceSummary {
 
 export interface Invoice extends InvoiceSummary {
   memo: string | null;
-  lines: InvoiceLine[];
+  terms_id: number | null;
+  subtotal: string;
+  discount_type: DiscountType | null;
+  discount_value: string;
+  discount_amount: string;
+  shipping_amount: string;
+  estimate_id: number | null;
+  late_fee_applied_on: string | null;
+  last_emailed_at: string | null;
+  lines: SalesLine[];
+}
+
+export interface InvoicePayment {
+  payment_id: number;
+  payment_date: string;
+  payment_method: PaymentMethod;
+  reference_no: string | null;
+  deposit_account: AccountSummary;
+  amount: string;
+}
+
+export interface SalesDocumentSummary {
+  id: number;
+  doc_type: SalesDocType;
+  doc_number: string;
+  customer: ContactSummary;
+  doc_date: string;
+  expiration_date: string | null;
+  status: SalesDocStatus;
+  total: string;
+  amount_applied: string;
+  remaining: string;
+}
+
+export interface SalesDocument extends SalesDocumentSummary {
+  memo: string | null;
+  subtotal: string;
+  discount_type: DiscountType | null;
+  discount_value: string;
+  discount_amount: string;
+  shipping_amount: string;
+  money_account: AccountSummary | null;
+  payment_method: PaymentMethod | null;
+  reference_no: string | null;
+  invoice_id: number | null;
+  deposit_id: number | null;
+  last_emailed_at: string | null;
+  lines: SalesLine[];
 }
 
 export interface Payment {
   id: number;
-  invoice: { id: number; invoice_number: string };
   customer: ContactSummary;
   payment_date: string;
   amount: string;
+  unapplied_amount: string;
   payment_method: PaymentMethod;
   reference_no: string | null;
   deposit_account: AccountSummary;
   memo: string | null;
+  deposit_id: number | null;
+  applications: { invoice: { id: number; invoice_number: string }; amount: string }[];
+  credits_used: { source_type: CreditSource; source_id: number; amount: string }[];
+}
+
+export interface CustomerCredit {
+  source_type: CreditSource;
+  source_id: number;
+  reference: string;
+  credit_date: string;
+  remaining: string;
+}
+
+export interface UndepositedItem {
+  source_type: DepositLineSource;
+  source_id: number;
+  item_date: string;
+  customer_name: string;
+  reference: string;
+  amount: string;
+}
+
+export interface Deposit {
+  id: number;
+  deposit_date: string;
+  bank_account: AccountSummary;
+  memo: string | null;
+  total: string;
+  lines: { id: number; source_type: DepositLineSource; source_id: number | null; account: AccountSummary; description: string | null; amount: string }[];
+}
+
+export interface StatementLine {
+  line_date: string;
+  transaction_type: string;
+  reference: string;
+  amount: string;
+  balance: string;
+}
+
+export interface Statement {
+  customer_id: number;
+  customer_name: string;
+  customer_email: string | null;
+  customer_address: string | null;
+  statement_type: StatementType;
+  start_date: string | null;
+  end_date: string;
+  opening_balance: string;
+  lines: StatementLine[];
+  closing_balance: string;
+}
+
+export interface EmailLogEntry {
+  id: number;
+  sent_at: string;
+  to_address: string;
+  subject: string;
+  body: string;
+  attachment_name: string | null;
+  related_type: string | null;
+  related_id: number | null;
+  provider: string;
+  status: string;
+  error: string | null;
+}
+
+export interface BatchResult {
+  count: number;
+  details: string[];
+}
+
+export interface PublicInvoice {
+  company_name: string;
+  company_email: string | null;
+  company_address: string | null;
+  accent_color: string;
+  logo_data_url: string | null;
+  invoice_number: string;
+  customer_name: string;
+  invoice_date: string;
+  due_date: string;
+  status: string;
+  subtotal: string;
+  discount_amount: string;
+  shipping_amount: string;
+  total: string;
+  amount_paid: string;
+  balance_due: string;
+  memo: string | null;
+  currency: string;
+  lines: { description: string | null; quantity: string; rate: string; amount: string }[];
+  online_payment_enabled: boolean;
 }
 
 export interface ExpenseLine {
@@ -173,6 +320,28 @@ export interface JournalEntry {
   source_type: string;
   source_id: number | null;
   lines: JournalLine[];
+}
+
+export type RecurringFrequency = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+export type RecurringType = "JOURNAL_ENTRY" | "INVOICE" | "SALES_RECEIPT";
+
+export interface RecurringSchedule {
+  id: number;
+  name: string;
+  transaction_type: RecurringType;
+  frequency: RecurringFrequency;
+  interval: number;
+  start_date: string;
+  end_date: string | null;
+  next_date: string | null;
+  run_count: number;
+  last_run_date: string | null;
+  is_active: boolean;
+  template: Record<string, unknown>;
+}
+
+export interface RunDueResult {
+  created: { schedule_id: number; schedule_name: string; transaction_type: RecurringType; transaction_id: number; transaction_date: string }[];
 }
 
 export interface ReportRow {

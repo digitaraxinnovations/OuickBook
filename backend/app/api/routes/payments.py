@@ -16,10 +16,20 @@ def list_payments(
     return service.list(user.company_id)
 
 
+@router.get("/{payment_id}", response_model=PaymentRead)
+def get_payment(
+    payment_id: int,
+    user: User = Depends(get_current_user),
+    service: PaymentService = Depends(get_payment_service),
+):
+    return service.get(user.company_id, payment_id)
+
+
 @router.post("", response_model=PaymentRead, status_code=status.HTTP_201_CREATED)
 def receive_payment(
     data: PaymentCreate,
     user: User = Depends(get_current_user),
     service: PaymentService = Depends(get_payment_service),
 ):
+    """Receive a payment for one or more invoices, optionally using existing credits."""
     return service.receive(user.company_id, data)

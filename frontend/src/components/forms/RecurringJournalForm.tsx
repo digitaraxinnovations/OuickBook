@@ -8,25 +8,30 @@ import {
   JournalLineState,
   journalTotals,
 } from "@/components/forms/JournalLinesEditor";
+import { ScheduleFields, ScheduleValues } from "@/components/forms/ScheduleFields";
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/Feedback";
-import { Field, Select, SelectOption, TextInput } from "@/components/ui/FormFields";
+import { Field, SelectOption, TextInput } from "@/components/ui/FormFields";
 import { todayString } from "@/lib/format";
 import { RecurringScheduleInput } from "@/types/inputs";
-import { RecurringFrequency, RecurringSchedule } from "@/types/models";
-
-export const frequencyOptions = [
-  { value: "DAILY", label: "Day(s)" },
-  { value: "WEEKLY", label: "Week(s)" },
-  { value: "MONTHLY", label: "Month(s)" },
-  { value: "YEARLY", label: "Year(s)" },
-];
+import { RecurringSchedule } from "@/types/models";
 
 interface SavedLine {
   account_id: number;
   description: string | null;
   debit: string;
   credit: string;
+}
+
+export function scheduleToValues(schedule: RecurringSchedule | null): ScheduleValues {
+  return {
+    name: schedule?.name || "",
+    frequency: schedule?.frequency || "MONTHLY",
+    interval: schedule?.interval || 1,
+    start_date: schedule?.start_date || todayString(),
+    end_date: schedule?.end_date || "",
+    is_active: schedule ? schedule.is_active : true,
+  };
 }
 
 /** Turns a saved template back into editor rows. */
@@ -52,12 +57,7 @@ interface RecurringJournalFormProps {
 }
 
 export function RecurringJournalForm({ initial, accountOptions, currency, onSave, onCancel }: RecurringJournalFormProps) {
-  const [name, setName] = useState(initial?.name || "");
-  const [frequency, setFrequency] = useState<RecurringFrequency>(initial?.frequency || "MONTHLY");
-  const [repeatEvery, setRepeatEvery] = useState(initial?.interval || 1);
-  const [startDate, setStartDate] = useState(initial?.start_date || todayString());
-  const [endDate, setEndDate] = useState(initial?.end_date || "");
-  const [isActive, setIsActive] = useState(initial ? initial.is_active : true);
+  const [schedule, setSchedule] = useState<ScheduleValues>(scheduleToValues(initial));
   const [memo, setMemo] = useState(initial ? String(initial.template.memo || "") : "");
   const [lines, setLines] = useState<JournalLineState[]>(templateToLines(initial));
   const [error, setError] = useState<string | null>(null);
@@ -69,13 +69,8 @@ export function RecurringJournalForm({ initial, accountOptions, currency, onSave
     setError(null);
     try {
       await onSave({
-        name: name,
+        ...schedule,
         transaction_type: "JOURNAL_ENTRY",
-        frequency: frequency,
-        interval: repeatEvery,
-        start_date: startDate,
-        end_date: endDate,
-        is_active: isActive,
         template: { memo: memo, lines: journalLinesToInput(lines) },
       });
     } catch (problem) {
@@ -87,34 +82,14 @@ export function RecurringJournalForm({ initial, accountOptions, currency, onSave
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <ErrorMessage message={error} />
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Template name" required>
-          <TextInput required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Monthly depreciation" />
-        </Field>
-        <Field label="Memo">
-          <TextInput value={memo} onChange={(e) => setMemo(e.target.value)} />
-        </Field>
-      </div>
-      <div className="grid gap-4 md:grid-cols-4">
-        <Field label="Every" required>
-          <TextInput type="number" min="1" max="99" required value={repeatEvery} onChange={(e) => setRepeatEvery(Number(e.target.value))} />
-        </Field>
-        <Field label="Period">
-          <Select value={frequency} onChange={(e) => setFrequency(e.target.value as RecurringFrequency)} options={frequencyOptions} />
-        </Field>
-        <Field label="Start date" required>
-          <TextInput type="date" required disabled={initial !== null && initial.run_count > 0} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        </Field>
-        <Field label="End date">
-          <TextInput type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-        </Field>
-      </div>
-
+      <ScheduleFields values={schedule} onChange={setSchedule} startDateLocked={initial !== null && initial.run_count > 0} />
+      <Field label="Memo">
+        <TextInput value={memo} onChange={(e) => setMemo(e.target.value)} />
+      </Field>
       <JournalLinesEditor lines={lines} onChange={setLines} accountOptions={accountOptions} currency={currency} />
-
       {initial && (
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+          <input type="checkbox" checked={schedule.is_active} onChange={(e) => setSchedule({ ...schedule, is_active: e.target.checked })} />
           Active (uncheck to pause)
         </label>
       )}

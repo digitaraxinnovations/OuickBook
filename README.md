@@ -13,16 +13,33 @@ expenses, a chart of accounts, double-entry bookkeeping and financial reports.
 
 ## Features
 
-- **Sign up / sign in** - each sign-up creates a company with a ready-made Chart of Accounts.
-- **Sales** - customers, products & services, invoices (auto-numbered, due date from payment terms),
-  receive payments (partial or full), void invoices, print invoices.
+- **Sign up / sign in** - each sign-up creates a company with a ready-made Chart of Accounts and payment terms.
+- **Sales** - customers (with statements), products & services, invoices with discounts, shipping,
+  deposits, payment terms and late fees; estimates with progress invoicing; sales receipts,
+  credit memos, refund receipts, delayed charges and credits; payments across several invoices
+  using credits and overpayments; PDF, email and a customer "view invoice" link.
+- **Banking** - bank deposits from Undeposited Funds.
 - **Expenses** - vendors, expenses split across several categories, paid from bank or credit card.
-- **Accounting** - chart of accounts with live balances, journal entries (automatic + manual).
+- **Accounting** - chart of accounts with sub-accounts and live balances, journal entries
+  (automatic + manual), recurring invoices / sales receipts / journal entries.
 - **Reports** - Profit and Loss, Balance Sheet, Trial Balance, Accounts Receivable Aging.
 - **Dashboard** - income, expenses, net income, unpaid and overdue invoices, bank balances.
 
 Every money event is posted to the general ledger as a balanced journal entry
 (debits always equal credits), so all reports are built from one source of truth.
+
+The full roadmap, and what is done, is in [docs/FEATURES.md](docs/FEATURES.md).
+
+### Outside services (EXT)
+
+Features that need an outside provider work out of the box in a safe "off" mode and
+switch on with settings in `.env` - no code changes:
+
+| Feature | Setting | Default |
+|---|---|---|
+| Sending email | `EMAIL_PROVIDER` = `log` or `smtp` (+ `SMTP_*`) | `log`: emails are saved in **Settings → Email log** instead of being sent |
+| "Pay now" on invoices | `PAYMENT_PROVIDER` | `none`: button hidden. Add a class in `backend/app/integrations/payments.py` |
+| Links in emails | `PUBLIC_APP_URL` | `http://localhost:3000` |
 
 ---
 
@@ -157,15 +174,18 @@ Docker database - change or delete it freely.
 
 ---
 
-## Recurring transactions (daily job)
+## Daily job
 
-Recurring templates create their transactions when you click **Run due** on the
-Recurring transactions page, or when this job runs. Schedule it once a day
-(Windows Task Scheduler or cron), from the `backend` folder:
+Once a day, the app creates due recurring transactions, adds late fees and emails
+overdue reminders (late fees and reminders only when turned on in **Settings → Sales**).
+Schedule this command once a day (Windows Task Scheduler or cron), from the `backend` folder:
 
 ```powershell
-.venv\Scripts\python -m app.scripts.run_recurring
+.venv\Scripts\python -m app.scripts.run_daily_jobs
 ```
+
+Each step can also be run by hand: **Run due** on the Recurring transactions page,
+and **Apply late fees** / **Send reminders** on the Invoices page.
 
 ---
 

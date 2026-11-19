@@ -3,12 +3,12 @@
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/Feedback";
-import { Field, TextArea, TextInput } from "@/components/ui/FormFields";
+import { Field, Select, TextArea, TextInput } from "@/components/ui/FormFields";
 import { useFormState } from "@/hooks/useFormState";
 import { ContactInput } from "@/types/inputs";
-import { Contact } from "@/types/models";
+import { Contact, PaymentTerm } from "@/types/models";
 
-export function contactToInput(contact: Contact | null): ContactInput {
+export function contactToInput(contact: (Contact & { terms_id?: number | null }) | null): ContactInput {
   return {
     display_name: contact?.display_name || "",
     company_name: contact?.company_name || "",
@@ -17,17 +17,20 @@ export function contactToInput(contact: Contact | null): ContactInput {
     address: contact?.address || "",
     notes: contact?.notes || "",
     is_active: contact ? contact.is_active : true,
+    terms_id: contact?.terms_id ?? null,
   };
 }
 
 interface ContactFormProps {
-  initial: Contact | null;
+  initial: (Contact & { terms_id?: number | null }) | null;
+  /** Only passed for customers: shows the default payment terms field. */
+  terms?: PaymentTerm[];
   onSave: (input: ContactInput) => Promise<void>;
   onCancel: () => void;
 }
 
 /** Form used for both customers and vendors. */
-export function ContactForm({ initial, onSave, onCancel }: ContactFormProps) {
+export function ContactForm({ initial, terms, onSave, onCancel }: ContactFormProps) {
   const form = useFormState<ContactInput>(contactToInput(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -64,6 +67,16 @@ export function ContactForm({ initial, onSave, onCancel }: ContactFormProps) {
       <Field label="Address">
         <TextArea rows={2} value={form.values.address} onChange={(e) => form.setField("address", e.target.value)} />
       </Field>
+      {terms && (
+        <Field label="Payment terms">
+          <Select
+            value={form.values.terms_id ?? ""}
+            onChange={(e) => form.setField("terms_id", e.target.value ? Number(e.target.value) : null)}
+            placeholder="Company default"
+            options={terms.filter((term) => term.is_active).map((term) => ({ value: term.id, label: term.name }))}
+          />
+        </Field>
+      )}
       <Field label="Notes">
         <TextArea rows={2} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} />
       </Field>

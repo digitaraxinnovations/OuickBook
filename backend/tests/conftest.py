@@ -8,7 +8,7 @@ or your real data.
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 import app.models  # noqa: F401  (registers every table)
@@ -29,10 +29,17 @@ def get_test_db():
         session.close()
 
 
+def reset_test_database():
+    """Throw away every table in the TEST database and create them fresh."""
+    with test_engine.begin() as connection:
+        connection.execute(text("DROP SCHEMA public CASCADE"))
+        connection.execute(text("CREATE SCHEMA public"))
+    Base.metadata.create_all(test_engine)
+
+
 @pytest.fixture
 def client():
-    Base.metadata.drop_all(test_engine)
-    Base.metadata.create_all(test_engine)
+    reset_test_database()
     app.dependency_overrides[get_db] = get_test_db
     with TestClient(app) as test_client:
         yield test_client
