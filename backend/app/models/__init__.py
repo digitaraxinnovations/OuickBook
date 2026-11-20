@@ -10,6 +10,16 @@ from app.models.contact import Customer, Vendor
 from app.models.deposit import BankDeposit, DepositLine
 from app.models.email_log import EmailLog
 from app.models.expense import Expense, ExpenseLine
+from app.models.inventory import (
+    BundleComponent,
+    InventoryAdjustment,
+    InventoryAdjustmentLine,
+    InventoryLayer,
+    InventoryMovement,
+    InventoryUse,
+    PriceRule,
+    ProductCategory,
+)
 from app.models.invoice import Invoice, InvoiceLine
 from app.models.journal import JournalEntry, JournalLine
 from app.models.mileage import Trip
@@ -29,6 +39,14 @@ from app.models.terms import NumberSequence, PaymentTerm
 from app.models.user import User
 
 __all__ = [
+    "BundleComponent",
+    "InventoryAdjustment",
+    "InventoryAdjustmentLine",
+    "InventoryLayer",
+    "InventoryMovement",
+    "InventoryUse",
+    "PriceRule",
+    "ProductCategory",
     "Account",
     "Attachment",
     "BankDeposit",

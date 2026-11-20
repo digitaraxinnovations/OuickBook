@@ -31,6 +31,8 @@ export const sidebarMenu: NavGroup[] = [
       { label: "Delayed credits", href: "/sales/forms/delayed-credits" },
       { label: "Customers", href: "/sales/customers" },
       { label: "Products & services", href: "/sales/products" },
+      { label: "Inventory adjustments", href: "/sales/inventory-adjustments" },
+      { label: "Categories & price rules", href: "/sales/price-rules" },
     ],
   },
   {
@@ -120,6 +122,7 @@ export const newMenuGroups: { title: string; links: NavLink[] }[] = [
       { label: "Customer", href: "/sales/customers?new=1" },
       { label: "Vendor", href: "/expenses/vendors?new=1" },
       { label: "Product or service", href: "/sales/products?new=1" },
+      { label: "Inventory qty adjustment", href: "/sales/inventory-adjustments?new=1" },
     ],
   },
 ];

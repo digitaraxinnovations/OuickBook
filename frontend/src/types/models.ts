@@ -6,7 +6,7 @@
 export type AccountType = "ASSET" | "LIABILITY" | "EQUITY" | "INCOME" | "EXPENSE";
 export type InvoiceStatus = "OPEN" | "PARTIALLY_PAID" | "PAID" | "VOID";
 export type PaymentMethod = "CASH" | "CHECK" | "CREDIT_CARD" | "BANK_TRANSFER" | "OTHER";
-export type ProductType = "SERVICE" | "NON_INVENTORY";
+export type ProductType = "SERVICE" | "NON_INVENTORY" | "INVENTORY" | "BUNDLE";
 export type DiscountType = "PERCENT" | "AMOUNT";
 export type SalesDocType = "ESTIMATE" | "SALES_RECEIPT" | "CREDIT_MEMO" | "REFUND_RECEIPT" | "DELAYED_CHARGE" | "DELAYED_CREDIT";
 export type SalesDocStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "OPEN" | "CLOSED" | "PAID" | "VOID";
@@ -119,6 +119,16 @@ export interface Product {
   income_account: AccountSummary;
   is_active: boolean;
   taxable: boolean;
+  category: { id: number; name: string } | null;
+  purchase_description: string | null;
+  purchase_cost: string;
+  expense_account_id: number | null;
+  inventory_asset_account_id: number | null;
+  cogs_account_id: number | null;
+  quantity_on_hand: string;
+  reorder_point: string | null;
+  is_low_stock: boolean;
+  components: { product_id: number; name: string; quantity: string; sales_price: string }[];
 }
 
 export interface SalesLine {
@@ -310,6 +320,8 @@ export interface PublicInvoice {
 export interface ExpenseLine {
   id: number;
   account: AccountSummary;
+  product_id: number | null;
+  quantity: string;
   description: string | null;
   amount: string;
   customer_id: number | null;
@@ -334,6 +346,7 @@ export interface Expense {
 export interface PurchaseLine {
   id: number;
   account: AccountSummary;
+  product_id: number | null;
   description: string | null;
   quantity: string;
   rate: string;
@@ -686,4 +699,56 @@ export interface SalesTaxAdjustment {
   amount: string;
   account: AccountSummary;
   reason: string;
+}
+
+// ---------- inventory ----------
+
+export interface ProductCategory {
+  id: number;
+  name: string;
+  parent_id: number | null;
+}
+
+export interface PriceRule {
+  id: number;
+  name: string;
+  adjustment_percent: string;
+  customer_id: number | null;
+  category_id: number | null;
+  product_id: number | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_active: boolean;
+}
+
+export interface ProductPrice {
+  product_id: number;
+  price: string;
+  rule_name: string | null;
+}
+
+export interface InventoryAdjustment {
+  id: number;
+  adjustment_number: string;
+  adjustment_date: string;
+  account: AccountSummary;
+  memo: string | null;
+  is_void: boolean;
+  lines: { product_id: number; quantity_change: string; value_change: string }[];
+}
+
+export interface StockMovement {
+  id: number;
+  movement_date: string;
+  source_type: string;
+  source_id: number;
+  description: string;
+  quantity: string;
+  value: string;
+}
+
+export interface ProductImportResult {
+  created: number;
+  updated: number;
+  errors: string[];
 }

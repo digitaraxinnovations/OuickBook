@@ -20,6 +20,8 @@ class AccountType(str, Enum):
 class ProductType(str, Enum):
     SERVICE = "SERVICE"
     NON_INVENTORY = "NON_INVENTORY"
+    INVENTORY = "INVENTORY"
+    BUNDLE = "BUNDLE"
 
 
 class InvoiceStatus(str, Enum):
@@ -175,3 +177,5 @@ class JournalSource(str, Enum):
     SALES_TAX_ADJUST = "SALES_TAX_ADJUST"
     CARD_CREDIT = "CARD_CREDIT"
     BANK_DEPOSIT = "BANK_DEPOSIT"
+    INVENTORY_ADJUST = "INVENTORY_ADJUST"
+    INVENTORY_START = "INVENTORY_START"

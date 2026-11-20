@@ -49,6 +49,9 @@ class ExpenseLine(Base):
     expense_id: Mapped[int] = mapped_column(ForeignKey("expenses.id"), index=True)
     # The category, e.g. "Rent & Lease" or "Office Supplies".
     account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
+    # Set on "item details" lines (a product or service bought).
+    product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id"))
+    quantity: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default=text("1"))
     description: Mapped[str | None] = mapped_column(String(500))
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     # Billable to a customer.

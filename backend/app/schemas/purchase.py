@@ -10,7 +10,9 @@ from app.schemas.common import AccountSummary, CleanStringsModel, ContactSummary
 
 
 class PurchaseLineInput(CleanStringsModel):
-    account_id: int
+    # A category line has an account; an item line has a product (the account comes from it).
+    account_id: int | None = None
+    product_id: int | None = None
     description: str | None = Field(default=None, max_length=500)
     quantity: Decimal = Field(default=Decimal("1"), gt=0, max_digits=12, decimal_places=2)
     rate: Decimal = Field(max_digits=12, decimal_places=2)
@@ -33,6 +35,7 @@ class PurchaseDocumentCreate(CleanStringsModel):
 class PurchaseLineRead(ORMModel):
     id: int
     account: AccountSummary
+    product_id: int | None
     description: str | None
     quantity: Decimal
     rate: Decimal

@@ -12,18 +12,21 @@ import { paymentMethodOptions } from "@/config/options";
 import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
 import { formatMoney, todayString, toNumber } from "@/lib/format";
-import { accountService, attachmentService, checkService, customerService, expenseService, vendorService } from "@/services";
+import { purchasableProducts } from "@/components/purchases/PurchaseLinesEditor";
+import { accountService, attachmentService, checkService, customerService, expenseService, productService, vendorService } from "@/services";
 import { ExpenseKind, PaymentMethod } from "@/types/models";
 
 interface LineState {
   account_id: string;
+  product_id: string;
+  quantity: string;
   description: string;
   amount: string;
   customer_id: string;
 }
 
 function emptyLine(): LineState {
-  return { account_id: "", description: "", amount: "", customer_id: "" };
+  return { account_id: "", product_id: "", quantity: "1", description: "", amount: "", customer_id: "" };
 }
 
 /** New expense, or new check when the URL has ?kind=CHECK. ?receipt=ID attaches an uploaded receipt. */
@@ -33,6 +36,7 @@ export default function NewExpensePage() {
   const vendors = useLoad(() => vendorService.list({ active_only: true }));
   const customers = useLoad(() => customerService.list({ active_only: true }));
   const accounts = useLoad(() => accountService.list({ active_only: true }));
+  const products = useLoad(() => productService.list({ active_only: true }));
 
   const [kind, setKind] = useState<ExpenseKind>("EXPENSE");
   const [receiptId, setReceiptId] = useState<number | null>(null);
@@ -69,7 +73,7 @@ export default function NewExpensePage() {
       .catch(() => setCheckNumber(""));
   }, [kind, paymentAccountId]);
 
-  if (vendors.loading || accounts.loading || customers.loading) {
+  if (vendors.loading || accounts.loading || customers.loading || products.loading) {
     return <Loading />;
   }
 
@@ -89,6 +93,34 @@ export default function NewExpensePage() {
 
   function updateLine(index: number, changes: Partial<LineState>) {
     setLines(lines.map((line, i) => (i === index ? { ...line, ...changes } : line)));
+  }
+
+  const items = purchasableProducts(products.data || []);
+  const productOptions = items.map((product) => ({ value: product.id, label: product.name }));
+
+  function findItem(productId: string) {
+    return items.find((item) => item.id === Number(productId));
+  }
+
+  /** Picking an item fills in its description, cost and expense account. */
+  function chooseProduct(index: number, productId: string) {
+    const product = findItem(productId);
+    if (!product) {
+      updateLine(index, { product_id: "" });
+      return;
+    }
+    const quantity = toNumber(lines[index].quantity) || 1;
+    updateLine(index, {
+      product_id: String(product.id),
+      description: product.purchase_description || product.name,
+      amount: (toNumber(product.purchase_cost) * quantity).toFixed(2),
+      account_id: product.expense_account_id ? String(product.expense_account_id) : "",
+    });
+  }
+
+  function isInventoryLine(line: LineState): boolean {
+    const product = findItem(line.product_id);
+    return product !== undefined && product.product_type === "INVENTORY";
   }
 
   let total = 0;
@@ -112,7 +144,9 @@ export default function NewExpensePage() {
         print_later: isCheck && printLater,
         memo: memo,
         lines: lines.map((line) => ({
-          account_id: Number(line.account_id),
+          account_id: line.account_id && !isInventoryLine(line) ? Number(line.account_id) : null,
+          product_id: line.product_id ? Number(line.product_id) : null,
+          quantity: line.quantity || "1",
           description: line.description,
           amount: line.amount,
           customer_id: line.customer_id ? Number(line.customer_id) : null,
@@ -184,14 +218,16 @@ export default function NewExpensePage() {
           )}
         </div>
 
-        <h3 className="mt-6 mb-2 text-sm font-semibold uppercase text-gray-500">Category details</h3>
+        <h3 className="mt-6 mb-2 text-sm font-semibold uppercase text-gray-500">Category and item details</h3>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full min-w-[920px] text-sm">
             <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
               <tr>
                 <th className="w-8 py-2">#</th>
-                <th className="w-60 py-2">Category</th>
+                <th className="w-44 py-2">Product / service</th>
+                <th className="w-52 py-2">Category</th>
                 <th className="py-2">Description</th>
+                <th className="w-20 py-2">Qty</th>
                 <th className="w-32 py-2">Amount</th>
                 <th className="w-44 py-2 pl-2">Billable to</th>
                 <th className="w-8"></th>
@@ -202,10 +238,26 @@ export default function NewExpensePage() {
                 <tr key={index} className="border-b border-gray-100">
                   <td className="py-2 text-gray-500">{index + 1}</td>
                   <td className="py-2 pr-2">
-                    <Select required value={line.account_id} onChange={(e) => updateLine(index, { account_id: e.target.value })} placeholder="Choose a category" options={categoryOptions} />
+                    <Select value={line.product_id} onChange={(e) => chooseProduct(index, e.target.value)} placeholder="-" options={productOptions} />
+                  </td>
+                  <td className="py-2 pr-2">
+                    {isInventoryLine(line) ? (
+                      <span className="text-gray-500">Inventory Asset</span>
+                    ) : (
+                      <Select
+                        required={!line.product_id}
+                        value={line.account_id}
+                        onChange={(e) => updateLine(index, { account_id: e.target.value })}
+                        placeholder={line.product_id ? "Item's account" : "Choose a category"}
+                        options={categoryOptions}
+                      />
+                    )}
                   </td>
                   <td className="py-2 pr-2">
                     <TextInput value={line.description} onChange={(e) => updateLine(index, { description: e.target.value })} />
+                  </td>
+                  <td className="py-2 pr-2">
+                    <TextInput type="number" step="0.01" min="0.01" value={line.quantity} onChange={(e) => updateLine(index, { quantity: e.target.value })} />
                   </td>
                   <td className="py-2 pr-2">
                     <TextInput type="number" step="0.01" min="0.01" required value={line.amount} onChange={(e) => updateLine(index, { amount: e.target.value })} />

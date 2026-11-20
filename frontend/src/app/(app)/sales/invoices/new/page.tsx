@@ -12,7 +12,16 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
 import { formatMoney, todayString, toNumber } from "@/lib/format";
-import { accountService, customerService, invoiceService, productService, salesDocumentService, taxService, termsService } from "@/services";
+import {
+  accountService,
+  customerService,
+  inventoryService,
+  invoiceService,
+  productService,
+  salesDocumentService,
+  taxService,
+  termsService,
+} from "@/services";
 import { SalesAmountsInput, SalesLineInput } from "@/types/inputs";
 import { SalesDocumentSummary } from "@/types/models";
 
@@ -55,6 +64,7 @@ export default function NewInvoicePage() {
   const [saving, setSaving] = useState(false);
 
   const delayedItems = useLoad(() => loadDelayedItems(customerId), [customerId]);
+  const prices = useLoad(() => inventoryService.prices(customerId ? Number(customerId) : null, invoiceDate), [customerId, invoiceDate]);
 
   if (customers.loading || products.loading || terms.loading || accounts.loading || taxCodes.loading) {
     return <Loading />;
@@ -162,7 +172,7 @@ export default function NewInvoicePage() {
         )}
 
         <div className="mt-6">
-          <SalesLinesEditor lines={lines} onChange={setLines} products={products.data || []} currency={currency} />
+          <SalesLinesEditor lines={lines} onChange={setLines} products={products.data || []} prices={prices.data || []} currency={currency} />
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">

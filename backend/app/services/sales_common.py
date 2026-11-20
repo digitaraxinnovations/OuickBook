@@ -10,7 +10,7 @@ from decimal import Decimal
 
 from app.core.exceptions import BusinessRuleError
 from app.core.money import ZERO, to_money
-from app.models.enums import DiscountType
+from app.models.enums import DiscountType, ProductType
 from app.repositories.product_repository import ProductRepository
 from app.schemas.invoice import InvoiceLineCreate
 from app.seed.default_accounts import SystemAccount
@@ -61,6 +61,9 @@ class SalesLineBuilder:
                 product = self.product_repository.get(company_id, data.product_id)
                 if product is None:
                     raise BusinessRuleError(f"Product {data.product_id} does not exist.")
+                if product.product_type == ProductType.BUNDLE:
+                    result.extend(self.bundle_lines(company_id, product, data))
+                    continue
                 income_account_id = product.income_account_id
                 taxable = product.taxable
                 if description is None:
@@ -75,6 +78,43 @@ class SalesLineBuilder:
                     rate=data.rate,
                     amount=to_money(data.quantity * data.rate),
                     taxable=data.taxable if data.taxable is not None else taxable,
+                )
+            )
+        return result
+
+    def bundle_lines(self, company_id: int, bundle, data: InvoiceLineCreate) -> list[SalesLineValues]:
+        """
+        A bundle is sold as its items, so each item's income, stock and cost
+        are recorded. The line's amount is shared out by each item's list price.
+        """
+        line_amount = to_money(data.quantity * data.rate)
+        list_total = ZERO
+        for component in bundle.components:
+            list_total += component.product.sales_price * component.quantity
+
+        result = []
+        amount_left = line_amount
+        last_index = len(bundle.components) - 1
+        for index, component in enumerate(bundle.components):
+            item = component.product
+            quantity = data.quantity * component.quantity
+            if index == last_index:
+                amount = amount_left
+            elif list_total > 0:
+                amount = to_money(line_amount * item.sales_price * component.quantity / list_total)
+            else:
+                amount = to_money(line_amount / len(bundle.components))
+            amount_left -= amount
+            taxable = data.taxable if data.taxable is not None else item.taxable
+            result.append(
+                SalesLineValues(
+                    product_id=item.id,
+                    income_account_id=item.income_account_id,
+                    description=f"{item.name} ({bundle.name})",
+                    quantity=quantity,
+                    rate=to_money(amount / quantity),
+                    amount=amount,
+                    taxable=taxable,
                 )
             )
         return result

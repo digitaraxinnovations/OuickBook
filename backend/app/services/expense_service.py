@@ -24,7 +24,11 @@ from app.schemas.expense import ExpenseCreate
 from app.seed.default_accounts import DetailType, SystemAccount
 from app.services.base import BaseService
 from app.services.check_numbers import CheckNumberService
+from app.services.inventory_service import InventoryService, StockSource
 from app.services.ledger_service import LedgerLine, LedgerService
+
+
+STOCK_SOURCE = "EXPENSE"
 
 
 class ExpenseService(BaseService):
@@ -38,8 +42,10 @@ class ExpenseService(BaseService):
         journal_repository: JournalRepository,
         check_numbers: CheckNumberService,
         ledger: LedgerService,
+        inventory: InventoryService,
     ):
         super().__init__(session)
+        self.inventory = inventory
         self.expense_repository = expense_repository
         self.vendor_repository = vendor_repository
         self.customer_repository = customer_repository
@@ -86,7 +92,8 @@ class ExpenseService(BaseService):
         total = ZERO
         ledger_lines = []
         for line_data in data.lines:
-            category = self.account_repository.get(company_id, line_data.account_id)
+            account_id, product = self.inventory.purchase_line_account(company_id, line_data.product_id, line_data.account_id)
+            category = self.account_repository.get(company_id, account_id)
             if category is None or not category.is_active:
                 raise BusinessRuleError("Please choose an active category for every line.")
             if category.id == payment_account.id:
@@ -94,18 +101,23 @@ class ExpenseService(BaseService):
             if line_data.customer_id is not None and self.customer_repository.get(company_id, line_data.customer_id) is None:
                 raise BusinessRuleError("The billable customer does not exist.")
 
+            description = line_data.description
+            if description is None and product is not None:
+                description = product.purchase_description or product.name
             expense.lines.append(
                 ExpenseLine(
                     account_id=category.id,
-                    description=line_data.description,
+                    product_id=product.id if product else None,
+                    quantity=line_data.quantity,
+                    description=description,
                     amount=line_data.amount,
                     customer_id=line_data.customer_id,
                 )
             )
             if is_card_credit:
-                ledger_lines.append(LedgerLine(category.id, credit=line_data.amount, description=line_data.description))
+                ledger_lines.append(LedgerLine(category.id, credit=line_data.amount, description=description))
             else:
-                ledger_lines.append(LedgerLine(category.id, debit=line_data.amount, description=line_data.description))
+                ledger_lines.append(LedgerLine(category.id, debit=line_data.amount, description=description))
             total += line_data.amount
 
         expense.total = total
@@ -114,6 +126,8 @@ class ExpenseService(BaseService):
         else:
             ledger_lines.append(LedgerLine(payment_account.id, credit=total))
         self.expense_repository.add(expense)
+        stock = StockSource(STOCK_SOURCE, expense.id, expense.expense_date, expense.memo or "Expense")
+        ledger_lines.extend(self.inventory.purchase_lines(company_id, expense.lines, stock, is_return=is_card_credit))
 
         entry = self.ledger.post(
             company_id=company_id,
@@ -160,6 +174,7 @@ class ExpenseService(BaseService):
             raise BusinessRuleError("This expense is already void.")
         original = self.journal_repository.get(company_id, expense.journal_entry_id)
         self.ledger.reverse(company_id, original, date.today(), JournalSource.EXPENSE_VOID, "Void")
+        self.inventory.undo(company_id, STOCK_SOURCE, expense.id, date.today(), "Void of expense")
         expense.is_void = True
         expense.print_later = False
         self.commit()

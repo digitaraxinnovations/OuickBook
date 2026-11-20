@@ -24,6 +24,7 @@ from app.schemas.invoice import InvoiceCreate, InvoiceLineCreate
 from app.schemas.payment import PaymentApplicationInput, PaymentCreate
 from app.seed.default_accounts import SystemAccount
 from app.services.base import BaseService
+from app.services.inventory_service import InventoryService, StockSource
 from app.services.ledger_service import LedgerLine, LedgerService
 from app.services.payment_service import PaymentService
 from app.services.sales_common import (
@@ -57,6 +58,7 @@ class InvoiceService(BaseService):
         ledger: LedgerService,
         payment_service: PaymentService,
         tax_calculator: SalesTaxCalculator,
+        inventory: InventoryService,
     ):
         super().__init__(session)
         self.invoice_repository = invoice_repository
@@ -70,6 +72,7 @@ class InvoiceService(BaseService):
         self.ledger = ledger
         self.payment_service = payment_service
         self.tax_calculator = tax_calculator
+        self.inventory = inventory
 
     # ---------- reading ----------
 
@@ -139,12 +142,15 @@ class InvoiceService(BaseService):
         receivable = self.system_accounts.get(company_id, SystemAccount.ACCOUNTS_RECEIVABLE)
         ledger_lines = [LedgerLine(receivable.id, debit=totals.total)]
         ledger_lines.extend(income_ledger_lines(company_id, invoice.lines, totals, self.system_accounts, is_return=False))
+        label = f"Invoice {invoice.invoice_number} - {customer.display_name}"
+        stock = StockSource(TAX_SOURCE, invoice.id, invoice.invoice_date, label)
+        ledger_lines.extend(self.inventory.cost_of_sales_lines(company_id, invoice.lines, stock, is_return=False))
         entry = self.ledger.post(
             company_id=company_id,
             entry_date=invoice.invoice_date,
             source_type=JournalSource.INVOICE,
             source_id=invoice.id,
-            memo=f"Invoice {invoice.invoice_number} - {customer.display_name}",
+            memo=label,
             lines=ledger_lines,
         )
         invoice.journal_entry_id = entry.id
@@ -281,6 +287,7 @@ class InvoiceService(BaseService):
             memo=f"Void of invoice {invoice.invoice_number}",
         )
         self.tax_calculator.void(company_id, TAX_SOURCE, invoice.id)
+        self.inventory.undo(company_id, TAX_SOURCE, invoice.id, date.today(), f"Void of invoice {invoice.invoice_number}")
         # Late fees were posted as separate entries - reverse those too.
         for entry in self.journal_repository.list_for_source(company_id, JournalSource.LATE_FEE, invoice.id):
             self.ledger.reverse(company_id, entry, date.today(), JournalSource.INVOICE_VOID, "Void of late fee")

@@ -64,7 +64,10 @@ class PurchaseDocumentLine(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     document_id: Mapped[int] = mapped_column(ForeignKey("purchase_documents.id"), index=True)
     # The category, e.g. "Office Supplies" or "Cost of Goods Sold".
+    # For an inventory item this is its Inventory Asset account.
     account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
+    # Set on "item details" lines (a product or service bought).
+    product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id"))
     description: Mapped[str | None] = mapped_column(String(500))
     quantity: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("1"))
     rate: Mapped[Decimal] = mapped_column(Numeric(12, 2))

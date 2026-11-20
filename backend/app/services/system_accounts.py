@@ -8,7 +8,7 @@ so a missing one is created on the spot from the default chart of accounts.
 
 from app.models import Account
 from app.repositories.account_repository import AccountRepository
-from app.seed.default_accounts import DEFAULT_ACCOUNTS
+from app.seed.default_accounts import DEFAULT_ACCOUNTS, DEFAULT_TAX_LINES
 
 
 def find_template(system_key: str) -> dict:
@@ -45,5 +45,6 @@ class SystemAccounts:
             account_type=template["type"],
             detail_type=template["detail"],
             system_key=system_key,
+            tax_line=DEFAULT_TAX_LINES.get(template["code"]),
         )
         return self.account_repository.add(account)

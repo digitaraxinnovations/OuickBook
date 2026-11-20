@@ -28,6 +28,7 @@ function templateLines(schedule: RecurringSchedule | null): PurchaseLineInput[] 
   const saved = (schedule.template.lines || []) as SavedLine[];
   return saved.map((line) => ({
     account_id: line.account_id,
+    product_id: null,
     description: line.description || "",
     quantity: String(line.quantity || "1"),
     rate: String(line.rate || line.amount || ""),

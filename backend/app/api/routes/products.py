@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 
-from app.api.deps import get_current_user, get_product_service
+from app.api.deps import get_current_user, get_product_import_service, get_product_service
 from app.models import User
-from app.schemas.product import ProductRead, ProductWrite
+from app.schemas.product import ProductImportRequest, ProductImportResult, ProductRead, ProductWrite
+from app.services.product_import_service import ProductImportService
 from app.services.product_service import ProductService
 
 router = APIRouter(prefix="/products", tags=["Products and Services"])
@@ -34,3 +35,23 @@ def update_product(
     service: ProductService = Depends(get_product_service),
 ):
     return service.update(user.company_id, product_id, data)
+
+
+@router.get("/export")
+def export_products(
+    user: User = Depends(get_current_user),
+    service: ProductImportService = Depends(get_product_import_service),
+):
+    """All products and services as a CSV file."""
+    content = service.export_csv(user.company_id)
+    headers = {"Content-Disposition": 'attachment; filename="products-and-services.csv"'}
+    return Response(content=content, media_type="text/csv", headers=headers)
+
+
+@router.post("/import", response_model=ProductImportResult)
+def import_products(
+    data: ProductImportRequest,
+    user: User = Depends(get_current_user),
+    service: ProductImportService = Depends(get_product_import_service),
+):
+    return service.import_csv(user.company_id, data.content)
