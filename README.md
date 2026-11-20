@@ -118,9 +118,52 @@ Nothing is hardcoded. Backend and database settings live in the root `.env`
 
 ---
 
-## Running it locally
+## Running everything in Docker
 
-Requirements: Docker Desktop, Python 3.12+, Node.js 20+.
+Requirements: Docker Desktop only.
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Edit `.env`: set `POSTGRES_PASSWORD` and a long random `JWT_SECRET_KEY`. Then:
+
+```powershell
+docker compose up -d --build
+```
+
+Open http://localhost:3000 and create an account.
+
+| Container | What it does |
+|---|---|
+| `ledgerly-postgres` | PostgreSQL 17; data is kept in the `postgres_data` volume |
+| `ledgerly-backend` | The API on http://localhost:8000 (docs at `/docs`); applies database migrations every time it starts |
+| `ledgerly-scheduler` | Runs the daily job (recurring transactions, late fees, reminders, scheduled reports) every `DAILY_JOBS_INTERVAL_SECONDS` |
+| `ledgerly-frontend` | The web app on http://localhost:3000 |
+
+Docker settings are in the `# Docker` section of `.env`: the ports (`BACKEND_PORT`, `FRONTEND_PORT`), `PUBLIC_API_URL`, `API_WORKERS` and the scheduler interval.
+`PUBLIC_API_URL` is the API address the browser uses, so it is built into the web app - after changing it run `docker compose build frontend`.
+`CORS_ORIGINS` and `PUBLIC_APP_URL` must include the web app's address (http://localhost:3000 by default).
+
+Useful commands:
+
+```powershell
+docker compose logs -f backend
+```
+
+```powershell
+docker compose down
+```
+
+`docker compose down -v` also deletes the database.
+
+**Hosting on a server:** set `PUBLIC_API_URL`, `CORS_ORIGINS` and `PUBLIC_APP_URL` to your real addresses, use strong passwords, and put a web server with HTTPS (Caddy, Nginx, or your host's load balancer) in front of ports 3000 and 8000.
+
+---
+
+## Running it locally (without Docker for the code)
+
+Requirements: Docker Desktop, Python 3.15, Node.js 20+.
 
 **1. Configuration** (first time only)
 
@@ -131,10 +174,10 @@ Copy-Item frontend/.env.example frontend/.env.local
 
 Then edit `.env`: set `POSTGRES_PASSWORD` and a long random `JWT_SECRET_KEY`.
 
-**2. Database**
+**2. Database** (only the database container)
 
 ```powershell
-docker compose up -d
+docker compose up -d postgres
 ```
 
 **3. Backend** (inside `backend/`)
