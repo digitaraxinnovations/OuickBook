@@ -14,13 +14,14 @@ from app.repositories.tax_repositories import (
     SalesTaxPaymentRepository,
     TaxAgencyRepository,
 )
-from app.schemas.report import ReportResult, ReportRow
+from app.schemas.report import ReportOptions, ReportResult, ReportRow
 
 EARLIEST_DATE = date(1900, 1, 1)
 
 
 class SalesTaxLiabilityReport(Report):
     key = "sales-tax-liability"
+    group = "Sales tax"
     title = "Sales Tax Liability"
     description = "Sales tax charged per agency and rate, adjustments and payments for a period."
 
@@ -36,7 +37,7 @@ class SalesTaxLiabilityReport(Report):
         self.payment_repository = payment_repository
         self.adjustment_repository = adjustment_repository
 
-    def generate(self, company_id: int, start_date: date | None, end_date: date) -> ReportResult:
+    def generate(self, company_id: int, start_date: date | None, end_date: date, options: ReportOptions) -> ReportResult:
         start = start_date or EARLIEST_DATE
         sections = []
         total_owed = ZERO

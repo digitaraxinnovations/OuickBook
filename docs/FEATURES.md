@@ -70,14 +70,14 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [x] Tags (with groups) on transactions; P&L by Tag
 
 ## Phase 9 – Reports (full library)
-- [ ] P&L (by month, by customer, by class/location, comparison), Balance Sheet (comparison, detail)
-- [ ] Cash flow statement, General ledger, Journal, Transaction list, Account QuickReport
-- [ ] A/R aging summary/detail, open invoices, collections, customer balance
-- [ ] A/P aging summary/detail, unpaid bills, vendor balance
-- [ ] Sales by customer/product, expenses by vendor, inventory valuation
-- [ ] Sales tax, 1099, payroll reports, audit log
-- [ ] Custom date ranges, accrual vs cash basis, filters, saved/custom reports
-- [ ] Export to PDF / Excel / CSV, scheduled email reports (EXT)
+- [x] P&L (by month / quarter / year, by customer / vendor, by class / location / tag, comparison), Balance Sheet (comparison, detail)
+- [x] Cash flow statement, General ledger, Journal, Transaction list, Account QuickReport (click any account on a report)
+- [x] A/R aging summary/detail, open invoices, collections, customer balance summary/detail
+- [x] A/P aging summary/detail, unpaid bills, vendor balance summary/detail
+- [x] Sales by customer/product, expenses by vendor, inventory valuation
+- [~] Sales tax, 1099, payroll reports (done); audit log comes with Phase 10 (audit log of every change)
+- [x] Custom date ranges (presets + custom), accrual vs cash basis, filters, saved/custom reports
+- [x] Export to PDF / Excel / CSV, scheduled email reports (sent by the daily job through the EMAIL_PROVIDER interface)
 
 ## Phase 10 – Company, users & platform
 - [ ] Multiple companies per login, company switcher

@@ -27,10 +27,34 @@ from app.recurring.base import RecurringHandler
 from app.recurring.journal_entry_handler import JournalEntryRecurringHandler
 from app.recurring.purchase_handlers import BillRecurringHandler, ExpenseRecurringHandler
 from app.recurring.sales_handlers import InvoiceRecurringHandler, SalesReceiptRecurringHandler
-from app.reports.balance_sheet import BalanceSheetReport
+from app.reports.balance_sheet import BalanceSheetComparisonReport, BalanceSheetReport
+from app.reports.cash_flow import CashFlowReport
+from app.reports.ledger_reports import (
+    AccountQuickReport,
+    BalanceSheetDetailReport,
+    GeneralLedgerReport,
+    JournalReport,
+    LedgerQueries,
+    TransactionListReport,
+)
+from app.reports.receivables_payables import (
+    CollectionsReport,
+    CustomerBalanceDetailReport,
+    CustomerBalanceSummaryReport,
+    OpenInvoicesReport,
+    OpenItems,
+    PayablesAgingDetailReport,
+    PayablesAgingSummaryReport,
+    ReceivablesAgingDetailReport,
+    ReceivablesAgingSummaryReport,
+    UnpaidBillsReport,
+    VendorBalanceDetailReport,
+    VendorBalanceSummaryReport,
+)
+from app.reports.report_data import LedgerFacts, ListNames, SourceNames
+from app.reports.sales_expense_reports import ExpensesByVendorReport, SalesByCustomerReport, SalesByProductReport
 from app.reports.inventory_valuation import InventoryValuationDetailReport, InventoryValuationSummaryReport
 from app.reports.base import Report
-from app.reports.payables_aging import PayablesAgingReport
 from app.reports.payroll_summary import PayrollSummaryReport
 from app.reports.profit_and_loss_by import (
     ProfitAndLossByClassReport,
@@ -38,8 +62,12 @@ from app.reports.profit_and_loss_by import (
     ProfitAndLossByTagReport,
     ProjectProfitabilityReport,
 )
-from app.reports.profit_and_loss import ProfitAndLossReport
-from app.reports.receivables_aging import ReceivablesAgingReport
+from app.reports.profit_and_loss import (
+    ProfitAndLossByCustomerReport,
+    ProfitAndLossByMonthReport,
+    ProfitAndLossComparisonReport,
+    ProfitAndLossReport,
+)
 from app.reports.sales_tax_liability import SalesTaxLiabilityReport
 from app.reports.tax_schedule import TaxScheduleReport
 from app.reports.trial_balance import TrialBalanceReport
@@ -127,6 +155,7 @@ from app.services.purchase_kinds import ALL_PURCHASE_KINDS
 from app.services.reconciliation_service import ReconciliationService
 from app.services.recurring_service import RecurringService
 from app.services.report_service import ReportService
+from app.services.saved_report_service import SavedReportService
 from app.services.catalog_service import CatalogService
 from app.services.inventory_adjustment_service import InventoryAdjustmentService
 from app.services.inventory_service import InventoryService
@@ -370,12 +399,45 @@ def build_bank_review_service(db: Session) -> BankReviewService:
 
 def build_reports(db: Session) -> list[Report]:
     """Every report in the Reports page. Add new reports here."""
+    names = SourceNames(db)
+    facts = LedgerFacts(db, names)
+    list_names = ListNames(db)
+    ledger_queries = LedgerQueries(db)
+    open_items = OpenItems(InvoiceRepository(db), PurchaseDocumentRepository(db))
     return [
-        ProfitAndLossReport(JournalRepository(db)),
+        # Business overview
+        ProfitAndLossReport(facts, list_names),
+        ProfitAndLossByMonthReport(facts, list_names),
+        ProfitAndLossByCustomerReport(facts, list_names),
+        ProfitAndLossComparisonReport(facts, list_names),
         BalanceSheetReport(JournalRepository(db)),
+        BalanceSheetComparisonReport(JournalRepository(db)),
+        BalanceSheetDetailReport(ledger_queries, names, JournalRepository(db)),
+        CashFlowReport(JournalRepository(db)),
+        # Who owes you
+        ReceivablesAgingSummaryReport(open_items),
+        ReceivablesAgingDetailReport(open_items),
+        OpenInvoicesReport(open_items),
+        CollectionsReport(open_items),
+        CustomerBalanceSummaryReport(InvoiceRepository(db), SalesDocumentRepository(db), PaymentRepository(db), list_names),
+        CustomerBalanceDetailReport(open_items),
+        # Sales and customers
+        SalesByCustomerReport(facts, list_names),
+        SalesByProductReport(db),
+        # What you owe
+        PayablesAgingSummaryReport(open_items),
+        PayablesAgingDetailReport(open_items),
+        UnpaidBillsReport(open_items),
+        VendorBalanceSummaryReport(PurchaseDocumentRepository(db), list_names),
+        VendorBalanceDetailReport(open_items),
+        # Expenses and vendors
+        ExpensesByVendorReport(facts, list_names),
+        # For my accountant
         TrialBalanceReport(JournalRepository(db)),
-        ReceivablesAgingReport(InvoiceRepository(db)),
-        PayablesAgingReport(PurchaseDocumentRepository(db)),
+        GeneralLedgerReport(ledger_queries, names, JournalRepository(db)),
+        AccountQuickReport(ledger_queries, names, JournalRepository(db)),
+        JournalReport(ledger_queries, names),
+        TransactionListReport(ledger_queries, names),
         Vendor1099Report(VendorRepository(db), ExpenseQueries(db), BillPaymentRepository(db), settings.form_1099_threshold),
         SalesTaxLiabilityReport(
             TaxAgencyRepository(db), SalesTaxLineRepository(db), SalesTaxPaymentRepository(db), SalesTaxAdjustmentRepository(db)
@@ -700,3 +762,14 @@ def get_budget_service(db: Session = Depends(get_db)) -> BudgetService:
     return BudgetService(
         db, BudgetRepository(db), AccountRepository(db), TrackingClassRepository(db), LocationRepository(db), DimensionQueries(db)
     )
+
+
+# ---------- saved reports, export, schedules ----------
+
+
+def build_saved_report_service(db: Session) -> SavedReportService:
+    return SavedReportService(db, ReportService(build_reports(db)), CompanyRepository(db), build_email_service(db))
+
+
+def get_saved_report_service(db: Session = Depends(get_db)) -> SavedReportService:
+    return build_saved_report_service(db)

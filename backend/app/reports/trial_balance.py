@@ -2,11 +2,12 @@ from datetime import date
 
 from app.reports.base import Report
 from app.repositories.journal_repository import JournalRepository
-from app.schemas.report import ReportResult, ReportRow
+from app.schemas.report import ReportOptions, ReportResult, ReportRow
 
 
 class TrialBalanceReport(Report):
     key = "trial-balance"
+    group = "For my accountant"
     title = "Trial Balance"
     description = "Every account's debit or credit balance. Total debits must equal total credits."
     uses_start_date = False
@@ -14,7 +15,7 @@ class TrialBalanceReport(Report):
     def __init__(self, journal_repository: JournalRepository):
         self.journal_repository = journal_repository
 
-    def generate(self, company_id: int, start_date: date | None, end_date: date) -> ReportResult:
+    def generate(self, company_id: int, start_date: date | None, end_date: date, options: ReportOptions) -> ReportResult:
         debit_rows = []
         credit_rows = []
 

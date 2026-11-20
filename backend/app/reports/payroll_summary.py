@@ -5,7 +5,7 @@ from datetime import date
 from app.core.money import ZERO
 from app.reports.base import Report
 from app.repositories.payroll_repositories import PayrollRunRepository
-from app.schemas.report import ReportResult, ReportRow
+from app.schemas.report import ReportOptions, ReportResult, ReportRow
 
 
 class EmployeeTotals:
@@ -19,13 +19,14 @@ class EmployeeTotals:
 
 class PayrollSummaryReport(Report):
     key = "payroll-summary"
+    group = "Employees"
     title = "Payroll Summary"
     description = "Gross pay, deductions, taxes and net pay per employee (approved payrolls)."
 
     def __init__(self, run_repository: PayrollRunRepository):
         self.run_repository = run_repository
 
-    def generate(self, company_id: int, start_date: date | None, end_date: date) -> ReportResult:
+    def generate(self, company_id: int, start_date: date | None, end_date: date, options: ReportOptions) -> ReportResult:
         per_employee = {}
         for run in self.run_repository.approved_between(company_id, start_date, end_date):
             for paycheck in run.paychecks:

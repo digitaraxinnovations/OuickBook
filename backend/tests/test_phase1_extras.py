@@ -104,7 +104,7 @@ def test_recurring_journal_creates_every_missed_month(auth_client):
     assert auth_client.post(f"{API}/recurring/run-due").json()["created"] == []
 
     report = auth_client.get(f"{API}/reports/profit-and-loss?start_date=2026-01-01&end_date=2026-12-31").json()
-    assert float(report["summary"][0]["amount"]) == -300
+    assert float(report["summary"][-1]["amount"]) == -300
 
 
 def test_unbalanced_recurring_template_is_rejected(auth_client):

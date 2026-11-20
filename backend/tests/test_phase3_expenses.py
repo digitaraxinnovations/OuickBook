@@ -395,7 +395,7 @@ def test_1099_summary(auth_client):
     assert len(report["sections"]) == 1
     section = report["sections"][0]
     assert section["title"].startswith("1099-NEC")
-    assert section["rows"] == [{"label": "Jane Contractor (Tax ID 12-3456789)", "amount": "900.00", "account_id": None}]
+    assert [(row["label"], row["amount"]) for row in section["rows"]] == [("Jane Contractor (Tax ID 12-3456789)", "900.00")]
     assert float(report["summary"][0]["amount"]) == 900
 
 

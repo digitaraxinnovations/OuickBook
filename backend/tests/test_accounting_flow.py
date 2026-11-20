@@ -107,7 +107,7 @@ def test_expense_reduces_profit_and_books_stay_balanced(auth_client):
     assert response.status_code == 201, response.text
 
     report = auth_client.get(f"{API}/reports/profit-and-loss?start_date=2026-01-01&end_date=2026-12-31").json()
-    assert float(report["summary"][0]["amount"]) == 800  # 1100 income - 300 rent
+    assert float(report["summary"][-1]["amount"]) == 800  # 1100 income - 300 rent
 
     trial = auth_client.get(f"{API}/reports/trial-balance?end_date=2026-12-31").json()
     total_debits = float(trial["summary"][0]["amount"])
@@ -125,7 +125,7 @@ def test_void_invoice_reverses_income(auth_client):
     assert response.json()["status"] == "VOID"
 
     report = auth_client.get(f"{API}/reports/profit-and-loss?start_date=2026-01-01&end_date=2026-12-31").json()
-    assert float(report["summary"][0]["amount"]) == 0
+    assert float(report["summary"][-1]["amount"]) == 0
 
 
 def test_unbalanced_manual_journal_is_rejected(auth_client):

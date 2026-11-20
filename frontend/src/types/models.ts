@@ -480,13 +480,20 @@ export interface ReportRow {
   label: string;
   amount: string;
   account_id: number | null;
+  /** Text columns of detail reports (see ReportResult.text_columns). */
+  cells: string[];
+  /** Amount columns of multi-column reports (see ReportResult.columns). */
+  values: (string | null)[];
 }
 
 export interface ReportSection {
   title: string;
   rows: ReportRow[];
   total: string;
+  totals: (string | null)[];
 }
+
+export type ColumnKind = "money" | "number" | "percent";
 
 export interface ReportResult {
   key: string;
@@ -495,6 +502,24 @@ export interface ReportResult {
   end_date: string;
   sections: ReportSection[];
   summary: ReportRow[];
+  columns: string[];
+  column_kinds: ColumnKind[];
+  text_columns: string[];
+  basis: "accrual" | "cash";
+  notes: string[];
+}
+
+/** Choices on a report. Each report says which ones it supports. */
+export interface ReportOptions {
+  basis?: string;
+  column_by?: string;
+  compare?: string | null;
+  class_id?: number | null;
+  location_id?: number | null;
+  customer_id?: number | null;
+  vendor_id?: number | null;
+  project_id?: number | null;
+  account_id?: number | null;
 }
 
 export interface ReportInfo {
@@ -502,6 +527,30 @@ export interface ReportInfo {
   title: string;
   description: string;
   uses_start_date: boolean;
+  group: string;
+  options: string[];
+  defaults: Record<string, string>;
+}
+
+export interface SavedReport {
+  id: number;
+  name: string;
+  report_key: string;
+  date_range: string;
+  start_date: string | null;
+  end_date: string | null;
+  options: ReportOptions;
+}
+
+export interface ReportSchedule {
+  id: number;
+  saved_report_id: number;
+  frequency: "DAILY" | "WEEKLY" | "MONTHLY";
+  next_send_date: string;
+  recipients: string[];
+  file_format: "pdf" | "csv" | "xlsx";
+  is_active: boolean;
+  last_sent_at: string | null;
 }
 
 export interface DashboardSummary {
