@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from app.models.enums import PaymentMethod, PurchaseDocStatus, PurchaseDocType, TripPurpose
 from app.schemas.common import AccountSummary, CleanStringsModel, ContactSummary, ORMModel
+from app.schemas.tracking import TrackingInput, TrackingRead
 
 # ---------- bills, vendor credits, purchase orders ----------
 
@@ -19,7 +20,7 @@ class PurchaseLineInput(CleanStringsModel):
     customer_id: int | None = None
 
 
-class PurchaseDocumentCreate(CleanStringsModel):
+class PurchaseDocumentCreate(TrackingInput, CleanStringsModel):
     doc_type: PurchaseDocType
     vendor_id: int
     doc_date: date
@@ -57,7 +58,7 @@ class PurchaseDocumentSummary(ORMModel):
     is_overdue: bool
 
 
-class PurchaseDocumentRead(PurchaseDocumentSummary):
+class PurchaseDocumentRead(TrackingRead, PurchaseDocumentSummary):
     memo: str | None
     terms_id: int | None
     purchase_order_id: int | None

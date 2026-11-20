@@ -5,6 +5,7 @@ from pydantic import Field
 
 from app.models.enums import DiscountType, InvoiceStatus
 from app.schemas.common import AccountSummary, CleanStringsModel, ContactSummary, ORMModel
+from app.schemas.tracking import TrackingInput, TrackingRead
 
 
 class InvoiceLineCreate(CleanStringsModel):
@@ -18,7 +19,7 @@ class InvoiceLineCreate(CleanStringsModel):
     taxable: bool | None = None
 
 
-class SalesAmountsInput(CleanStringsModel):
+class SalesAmountsInput(TrackingInput, CleanStringsModel):
     """Discount, shipping and sales tax - shared by invoices and other sales forms."""
 
     tax_code_id: int | None = None
@@ -71,7 +72,7 @@ class InvoiceSummary(ORMModel):
     is_overdue: bool
 
 
-class InvoiceRead(InvoiceSummary):
+class InvoiceRead(TrackingRead, InvoiceSummary):
     memo: str | None
     terms_id: int | None
     subtotal: Decimal

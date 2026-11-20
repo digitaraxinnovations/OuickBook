@@ -10,13 +10,14 @@ export interface NavLink {
 
 export interface NavGroup {
   label: string;
-  icon: "home" | "sales" | "expenses" | "banking" | "payroll" | "taxes" | "accounting" | "reports" | "settings";
+  icon: "home" | "projects" | "sales" | "expenses" | "banking" | "payroll" | "taxes" | "accounting" | "reports" | "settings";
   href?: string;
   links?: NavLink[];
 }
 
 export const sidebarMenu: NavGroup[] = [
   { label: "Dashboard", icon: "home", href: "/dashboard" },
+  { label: "Projects", icon: "projects", href: "/projects" },
   {
     label: "Sales",
     icon: "sales",
@@ -88,6 +89,8 @@ export const sidebarMenu: NavGroup[] = [
       { label: "Chart of accounts", href: "/accounting/chart-of-accounts" },
       { label: "Journal entries", href: "/accounting/journal-entries" },
       { label: "Recurring transactions", href: "/accounting/recurring" },
+      { label: "Budgets", href: "/accounting/budgets" },
+      { label: "Classes, locations & tags", href: "/accounting/tracking" },
     ],
   },
   { label: "Reports", icon: "reports", href: "/reports" },
@@ -133,6 +136,7 @@ export const newMenuGroups: { title: string; links: NavLink[] }[] = [
       { label: "Run payroll", href: "/payroll/runs?new=1" },
       { label: "Weekly timesheet", href: "/payroll/time" },
       { label: "Customer", href: "/sales/customers?new=1" },
+      { label: "Project", href: "/projects?new=1" },
       { label: "Vendor", href: "/expenses/vendors?new=1" },
       { label: "Product or service", href: "/sales/products?new=1" },
       { label: "Inventory qty adjustment", href: "/sales/inventory-adjustments?new=1" },

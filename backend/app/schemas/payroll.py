@@ -212,6 +212,7 @@ class TimeEntryWrite(CleanStringsModel):
     work_date: date
     hours: Decimal = Field(gt=0, le=24, max_digits=8, decimal_places=2)
     customer_id: int | None = None
+    project_id: int | None = None
     product_id: int | None = None
     description: str | None = Field(default=None, max_length=500)
     billable: bool = False
@@ -225,6 +226,7 @@ class TimeEntryRead(ORMModel):
     work_date: date
     hours: Decimal
     customer_id: int | None
+    project_id: int | None
     product_id: int | None
     description: str | None
     billable: bool

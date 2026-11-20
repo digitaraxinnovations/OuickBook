@@ -32,6 +32,12 @@ from app.reports.inventory_valuation import InventoryValuationDetailReport, Inve
 from app.reports.base import Report
 from app.reports.payables_aging import PayablesAgingReport
 from app.reports.payroll_summary import PayrollSummaryReport
+from app.reports.profit_and_loss_by import (
+    ProfitAndLossByClassReport,
+    ProfitAndLossByLocationReport,
+    ProfitAndLossByTagReport,
+    ProjectProfitabilityReport,
+)
 from app.reports.profit_and_loss import ProfitAndLossReport
 from app.reports.receivables_aging import ReceivablesAgingReport
 from app.reports.sales_tax_liability import SalesTaxLiabilityReport
@@ -139,6 +145,10 @@ from app.services.statement_service import StatementService
 from app.services.system_accounts import SystemAccounts
 from app.services.terms_service import TermsService
 from app.services.transfer_service import TransferService
+from app.repositories.tracking_repositories import BudgetRepository, DimensionQueries, LocationRepository, ProjectRepository, TagRepository, TrackingClassRepository
+from app.services.budget_service import BudgetService
+from app.services.project_service import ProjectService
+from app.services.tracking_service import TrackingService
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -157,6 +167,12 @@ def build_system_accounts(db: Session) -> SystemAccounts:
 
 def build_line_builder(db: Session) -> SalesLineBuilder:
     return SalesLineBuilder(ProductRepository(db), build_system_accounts(db))
+
+
+def build_tracking(db: Session) -> TrackingService:
+    return TrackingService(
+        db, TrackingClassRepository(db), LocationRepository(db), TagRepository(db), ProjectRepository(db), CustomerRepository(db)
+    )
 
 
 def build_inventory(db: Session) -> InventoryService:
@@ -242,6 +258,7 @@ def build_invoice_service(db: Session) -> InvoiceService:
         build_tax_calculator(db),
         build_inventory(db),
         TimeEntryRepository(db),
+        build_tracking(db),
     )
 
 
@@ -259,6 +276,7 @@ def build_sales_document_service(db: Session) -> SalesDocumentService:
         ALL_KINDS,
         build_tax_calculator(db),
         build_inventory(db),
+        build_tracking(db),
     )
 
 
@@ -297,6 +315,7 @@ def build_expense_service(db: Session) -> ExpenseService:
         build_check_numbers(db),
         build_ledger(db),
         build_inventory(db),
+        build_tracking(db),
     )
 
 
@@ -315,6 +334,7 @@ def build_purchase_service(db: Session) -> PurchaseDocumentService:
         build_ledger(db),
         ALL_PURCHASE_KINDS,
         build_inventory(db),
+        build_tracking(db),
     )
 
 
@@ -364,6 +384,10 @@ def build_reports(db: Session) -> list[Report]:
         InventoryValuationSummaryReport(ProductRepository(db), InventoryMovementRepository(db)),
         InventoryValuationDetailReport(ProductRepository(db), InventoryMovementRepository(db)),
         PayrollSummaryReport(PayrollRunRepository(db)),
+        ProfitAndLossByClassReport(DimensionQueries(db), AccountRepository(db), TrackingClassRepository(db)),
+        ProfitAndLossByLocationReport(DimensionQueries(db), AccountRepository(db), LocationRepository(db)),
+        ProfitAndLossByTagReport(DimensionQueries(db), AccountRepository(db), TagRepository(db)),
+        ProjectProfitabilityReport(DimensionQueries(db), AccountRepository(db), ProjectRepository(db)),
     ]
 
 
@@ -373,7 +397,7 @@ def build_late_fee_service(db: Session) -> LateFeeService:
 
 def build_recurring_handlers(db: Session) -> list[RecurringHandler]:
     """Every transaction type that can recur. Add new handlers here."""
-    journal_service = JournalService(db, JournalRepository(db), build_ledger(db))
+    journal_service = JournalService(db, JournalRepository(db), build_ledger(db), build_tracking(db))
     return [
         JournalEntryRecurringHandler(journal_service, build_ledger(db)),
         InvoiceRecurringHandler(build_invoice_service(db)),
@@ -556,7 +580,7 @@ def get_mileage_service(db: Session = Depends(get_db)) -> MileageService:
 
 
 def get_journal_service(db: Session = Depends(get_db)) -> JournalService:
-    return JournalService(db, JournalRepository(db), build_ledger(db))
+    return JournalService(db, JournalRepository(db), build_ledger(db), build_tracking(db))
 
 
 def get_report_service(db: Session = Depends(get_db)) -> ReportService:
@@ -652,8 +676,27 @@ def get_payroll_liability_service(db: Session = Depends(get_db)) -> PayrollLiabi
 
 
 def get_time_service(db: Session = Depends(get_db)) -> TimeService:
-    return TimeService(db, TimeEntryRepository(db), EmployeeRepository(db), VendorRepository(db), CustomerRepository(db), ProductRepository(db))
+    return TimeService(
+        db, TimeEntryRepository(db), EmployeeRepository(db), VendorRepository(db), CustomerRepository(db), ProductRepository(db), ProjectRepository(db)
+    )
 
 
 def get_company_repository(db: Session = Depends(get_db)) -> CompanyRepository:
     return CompanyRepository(db)
+
+
+# ---------- classes, locations, projects, budgets ----------
+
+
+def get_tracking_service(db: Session = Depends(get_db)) -> TrackingService:
+    return build_tracking(db)
+
+
+def get_project_service(db: Session = Depends(get_db)) -> ProjectService:
+    return ProjectService(ProjectRepository(db), CustomerRepository(db), build_tracking(db))
+
+
+def get_budget_service(db: Session = Depends(get_db)) -> BudgetService:
+    return BudgetService(
+        db, BudgetRepository(db), AccountRepository(db), TrackingClassRepository(db), LocationRepository(db), DimensionQueries(db)
+    )

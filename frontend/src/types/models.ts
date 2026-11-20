@@ -156,7 +156,7 @@ export interface InvoiceSummary {
   is_overdue: boolean;
 }
 
-export interface Invoice extends InvoiceSummary {
+export interface Invoice extends TrackingFields, InvoiceSummary {
   memo: string | null;
   terms_id: number | null;
   subtotal: string;
@@ -194,7 +194,7 @@ export interface SalesDocumentSummary {
   remaining: string;
 }
 
-export interface SalesDocument extends SalesDocumentSummary {
+export interface SalesDocument extends TrackingFields, SalesDocumentSummary {
   memo: string | null;
   subtotal: string;
   discount_type: DiscountType | null;
@@ -327,7 +327,7 @@ export interface ExpenseLine {
   customer_id: number | null;
 }
 
-export interface Expense {
+export interface Expense extends TrackingFields {
   id: number;
   kind: ExpenseKind;
   vendor: ContactSummary | null;
@@ -368,7 +368,7 @@ export interface PurchaseDocumentSummary {
   is_overdue: boolean;
 }
 
-export interface PurchaseDocument extends PurchaseDocumentSummary {
+export interface PurchaseDocument extends TrackingFields, PurchaseDocumentSummary {
   memo: string | null;
   terms_id: number | null;
   purchase_order_id: number | null;
@@ -882,4 +882,80 @@ export interface TimeEntry {
   billable: boolean;
   bill_rate: string | null;
   invoice_id: number | null;
+}
+
+// ---------- classes, locations, projects, tags, budgets ----------
+
+export interface TrackingFields {
+  class_id: number | null;
+  location_id: number | null;
+  project_id: number | null;
+  tag_ids: number[];
+}
+
+export interface NamedListItem {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  is_active: boolean;
+}
+
+export interface Tag {
+  id: number;
+  name: string;
+  group_name: string | null;
+}
+
+export type ProjectStatus = "IN_PROGRESS" | "COMPLETED" | "CANCELED";
+
+export interface Project {
+  id: number;
+  name: string;
+  customer_id: number;
+  status: ProjectStatus;
+  start_date: string | null;
+  end_date: string | null;
+  description: string | null;
+}
+
+export interface ProjectSummary {
+  project: Project;
+  customer: ContactSummary;
+  income: string;
+  costs: string;
+  labor_cost: string;
+  labor_hours: string;
+  profit: string;
+  margin_percent: string | null;
+  transactions: { entry_date: string; memo: string | null; account: AccountSummary; amount: string }[];
+}
+
+export interface BudgetSummary {
+  id: number;
+  name: string;
+  fiscal_year: number;
+  class_id: number | null;
+  location_id: number | null;
+}
+
+export interface Budget extends BudgetSummary {
+  lines: { account_id: number; account_name: string; account_type: string; months: string[] }[];
+}
+
+export interface BudgetVsActual {
+  budget_id: number;
+  name: string;
+  start_date: string;
+  end_date: string;
+  rows: {
+    account_id: number;
+    account_name: string;
+    account_type: string;
+    budget: string;
+    actual: string;
+    difference: string;
+    percent_of_budget: string | null;
+  }[];
+  budget_net_income: string;
+  actual_net_income: string;
 }

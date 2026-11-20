@@ -18,6 +18,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
 import { todayString } from "@/lib/format";
 import { accountService, journalService } from "@/services";
+import { emptyTracking, TrackingFields } from "@/components/forms/TrackingFields";
+import { TrackingInput } from "@/types/inputs";
 
 export default function NewJournalEntryPage() {
   const { company } = useAuth();
@@ -26,6 +28,7 @@ export default function NewJournalEntryPage() {
 
   const [entryDate, setEntryDate] = useState(todayString());
   const [memo, setMemo] = useState("");
+  const [tracking, setTracking] = useState<TrackingInput>(emptyTracking());
   const [lines, setLines] = useState<JournalLineState[]>([emptyJournalLine(), emptyJournalLine()]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -40,7 +43,7 @@ export default function NewJournalEntryPage() {
     setSaving(true);
     setError(null);
     try {
-      await journalService.create({ entry_date: entryDate, memo: memo, lines: journalLinesToInput(lines) });
+      await journalService.create({ entry_date: entryDate, memo: memo, tag_ids: tracking.tag_ids, lines: journalLinesToInput(lines) });
       router.push("/accounting/journal-entries");
     } catch (problem) {
       setError(problem instanceof Error ? problem.message : "Could not save the journal entry.");
@@ -63,6 +66,9 @@ export default function NewJournalEntryPage() {
               <TextInput value={memo} onChange={(e) => setMemo(e.target.value)} />
             </Field>
           </div>
+        </div>
+        <div className="mt-4">
+          <TrackingFields value={tracking} onChange={setTracking} tagsOnly />
         </div>
         <JournalLinesEditor lines={lines} onChange={setLines} accountOptions={accountOptions} currency={company?.currency} />
       </Card>

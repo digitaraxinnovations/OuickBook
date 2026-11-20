@@ -38,6 +38,7 @@ from app.services.sales_common import (
 from app.services.sales_tax import SalesTaxCalculator
 from app.services.system_accounts import SystemAccounts
 from app.services.terms_service import TermsService
+from app.services.tracking_service import TrackingService
 
 # Rounding can leave a few cents when an estimate is invoiced in parts.
 ROUNDING_TOLERANCE = Decimal("0.05")
@@ -61,6 +62,7 @@ class InvoiceService(BaseService):
         tax_calculator: SalesTaxCalculator,
         inventory: InventoryService,
         time_repository: TimeEntryRepository,
+        tracking: TrackingService,
     ):
         super().__init__(session)
         self.invoice_repository = invoice_repository
@@ -76,6 +78,7 @@ class InvoiceService(BaseService):
         self.tax_calculator = tax_calculator
         self.inventory = inventory
         self.time_repository = time_repository
+        self.tracking = tracking
 
     # ---------- reading ----------
 
@@ -95,6 +98,7 @@ class InvoiceService(BaseService):
         if customer is None or not customer.is_active:
             raise BusinessRuleError("Please choose an active customer.")
 
+        tracking = self.tracking.check(company_id, data, customer_id=customer.id)
         company = self.company_repository.get(company_id)
         if data.due_date is not None:
             due_date = data.due_date
@@ -143,6 +147,7 @@ class InvoiceService(BaseService):
         )
         for values in line_values:
             invoice.lines.append(InvoiceLine(**values.as_dict()))
+        self.tracking.apply(invoice, tracking)
         company.next_invoice_number += 1
         self.invoice_repository.add(invoice)
 
@@ -159,6 +164,7 @@ class InvoiceService(BaseService):
             source_id=invoice.id,
             memo=label,
             lines=ledger_lines,
+            tracking=tracking,
         )
         invoice.journal_entry_id = entry.id
         self.tax_calculator.record(company_id, TAX_SOURCE, invoice.id, invoice.invoice_date, totals.tax, is_return=False)
@@ -284,6 +290,10 @@ class InvoiceService(BaseService):
             discount_value=discount_value,
             shipping_amount=to_money(estimate.shipping_amount * factor),
             tax_code_id=estimate.tax_code_id,
+            class_id=estimate.class_id,
+            location_id=estimate.location_id,
+            project_id=estimate.project_id,
+            tag_ids=estimate.tag_ids,
         )
 
         # Check before saving that we do not invoice more than the estimate.

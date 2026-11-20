@@ -13,12 +13,13 @@ from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
+from app.models.tracking import TrackingMixin
 from app.models.account import Account
 from app.models.contact import Vendor
 from app.models.enums import PaymentMethod, PurchaseDocStatus, PurchaseDocType
 
 
-class PurchaseDocument(CompanyOwnedMixin, TimestampMixin, Base):
+class PurchaseDocument(TrackingMixin, CompanyOwnedMixin, TimestampMixin, Base):
     __tablename__ = "purchase_documents"
 
     id: Mapped[int] = mapped_column(primary_key=True)

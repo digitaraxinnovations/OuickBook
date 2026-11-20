@@ -22,6 +22,7 @@ from app.services.sales_common import SalesLineBuilder, calculate_totals, income
 from app.services.sales_document_kinds import SalesDocumentKind
 from app.services.sales_tax import SalesTaxCalculator
 from app.services.system_accounts import SystemAccounts
+from app.services.tracking_service import TrackingService
 
 ESTIMATE_STATUSES_USERS_CAN_SET = (SalesDocStatus.PENDING, SalesDocStatus.ACCEPTED, SalesDocStatus.REJECTED)
 TAX_SOURCE = "SALES_DOCUMENT"
@@ -42,6 +43,7 @@ class SalesDocumentService(BaseService):
         kinds: list[SalesDocumentKind],
         tax_calculator: SalesTaxCalculator,
         inventory: InventoryService,
+        tracking: TrackingService,
     ):
         super().__init__(session)
         self.repository = repository
@@ -54,6 +56,7 @@ class SalesDocumentService(BaseService):
         self.ledger = ledger
         self.tax_calculator = tax_calculator
         self.inventory = inventory
+        self.tracking = tracking
         self.kinds = {}
         for kind in kinds:
             self.kinds[kind.doc_type] = kind
@@ -82,6 +85,7 @@ class SalesDocumentService(BaseService):
             raise BusinessRuleError("Please choose an active customer.")
         if data.expiration_date is not None and data.expiration_date < data.doc_date:
             raise BusinessRuleError("The expiration date cannot be before the date.")
+        tracking = self.tracking.check(company_id, data, customer_id=customer.id)
 
         line_values = self.line_builder.build(company_id, data.lines)
         totals = calculate_totals(line_values, data.discount_type, data.discount_value, data.shipping_amount)
@@ -114,6 +118,7 @@ class SalesDocumentService(BaseService):
         )
         for values in line_values:
             document.lines.append(SalesDocumentLine(**values.as_dict()))
+        self.tracking.apply(document, tracking)
         self.repository.add(document)
 
         if kind.journal_source is not None:
@@ -129,6 +134,7 @@ class SalesDocumentService(BaseService):
                 source_id=document.id,
                 memo=label,
                 lines=ledger_lines,
+                tracking=tracking,
             )
             document.journal_entry_id = entry.id
             # Only forms that post are real sales (estimates and delayed forms are not yet).

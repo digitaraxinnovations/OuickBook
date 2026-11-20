@@ -15,8 +15,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
 import { todayString } from "@/lib/format";
 import { accountService, customerService, inventoryService, productService, salesDocumentService, taxService } from "@/services";
-import { SalesAmountsInput, SalesLineInput } from "@/types/inputs";
+import { SalesAmountsInput, SalesLineInput, TrackingInput } from "@/types/inputs";
 import { Account, PaymentMethod } from "@/types/models";
+import { emptyTracking, TrackingFields } from "@/components/forms/TrackingFields";
 
 /** Accounts that can receive money (sales receipt) or pay a refund. */
 function moneyAccountsFor(kind: string, accounts: Account[]): Account[] {
@@ -44,6 +45,7 @@ export default function NewSalesFormPage() {
   const [docDate, setDocDate] = useState(todayString());
   const [expirationDate, setExpirationDate] = useState("");
   const [memo, setMemo] = useState("");
+  const [tracking, setTracking] = useState<TrackingInput>(emptyTracking());
   const [lines, setLines] = useState<SalesLineInput[]>([emptySalesLine()]);
   const [amounts, setAmounts] = useState<SalesAmountsInput>(emptySalesAmounts());
   const [moneyAccountId, setMoneyAccountId] = useState("");
@@ -81,6 +83,7 @@ export default function NewSalesFormPage() {
         doc_date: docDate,
         expiration_date: expirationDate,
         memo: memo,
+        ...tracking,
         lines: lines.filter(isFilled),
         tax_code_id: amounts.tax_code_id,
         discount_type: amounts.discount_type,
@@ -144,6 +147,9 @@ export default function NewSalesFormPage() {
               </Field>
             </>
           )}
+        </div>
+        <div className="mt-4">
+          <TrackingFields value={tracking} onChange={setTracking} customerId={customerId ? Number(customerId) : null} />
         </div>
 
         <div className="mt-6">

@@ -9,7 +9,8 @@ the total credits - that rule is enforced by LedgerService.
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, text
+from sqlalchemy import Date, Enum, ForeignKey, Integer, Numeric, String, text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
@@ -28,6 +29,8 @@ class JournalEntry(CompanyOwnedMixin, TimestampMixin, Base):
     source_id: Mapped[int | None]
     # Set on void / undo entries: the entry this one cancels.
     reverses_entry_id: Mapped[int | None] = mapped_column(ForeignKey("journal_entries.id"))
+    # Tags of the transaction (see models/tracking.py).
+    tag_ids: Mapped[list[int]] = mapped_column(ARRAY(Integer), server_default=text("'{}'"))
 
     lines: Mapped[list["JournalLine"]] = relationship(
         back_populates="entry",
@@ -49,6 +52,10 @@ class JournalLine(Base):
     cleared: Mapped[bool] = mapped_column(server_default=text("false"))
     # Set when a completed reconciliation includes this line ("R" in the register).
     reconciliation_id: Mapped[int | None] = mapped_column(ForeignKey("reconciliations.id"), index=True)
+    # Class, location and project of the transaction (for reports by each).
+    class_id: Mapped[int | None] = mapped_column(ForeignKey("tracking_classes.id"), index=True)
+    location_id: Mapped[int | None] = mapped_column(ForeignKey("locations.id"), index=True)
+    project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id"), index=True)
 
     entry: Mapped[JournalEntry] = relationship(back_populates="lines")
     account: Mapped[Account] = relationship()

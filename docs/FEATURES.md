@@ -64,10 +64,10 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [~] (EXT) payroll tax calculation, filing, direct deposit - PayrollProvider interface, PAYROLL_PROVIDER=none (taxes are pay items; direct deposit recorded, sent by you)
 
 ## Phase 8 – Projects, classes, locations, budgets
-- [ ] Projects with income/cost/profitability
-- [ ] Class and location tracking on every transaction
-- [ ] Budgets and Budget vs Actual
-- [ ] Tags
+- [x] Projects with income, costs, labor cost (from time) and profit; Project Profitability report
+- [x] Class and location tracking on invoices, sales forms, expenses, bills and journal entries (per line); P&L by Class / by Location
+- [x] Budgets (per account per month, optionally per class or location) and Budget vs Actual
+- [x] Tags (with groups) on transactions; P&L by Tag
 
 ## Phase 9 – Reports (full library)
 - [ ] P&L (by month, by customer, by class/location, comparison), Balance Sheet (comparison, detail)

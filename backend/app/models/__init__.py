@@ -46,10 +46,17 @@ from app.models.purchase import (
 from app.models.recurring import RecurringSchedule
 from app.models.sales_document import SalesDocument, SalesDocumentLine
 from app.models.tax import SalesTaxAdjustment, SalesTaxLine, SalesTaxPayment, TaxAgency, TaxCode, TaxCodeRate, TaxRate
+from app.models.tracking import Budget, BudgetLine, Location, Project, Tag, TrackingClass
 from app.models.terms import NumberSequence, PaymentTerm
 from app.models.user import User
 
 __all__ = [
+    "Budget",
+    "BudgetLine",
+    "Location",
+    "Project",
+    "Tag",
+    "TrackingClass",
     "Employee",
     "EmployeePayItem",
     "PayItem",
