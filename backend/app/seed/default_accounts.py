@@ -23,6 +23,10 @@ class SystemAccount:
     SHIPPING_INCOME = "shipping_income"
     LATE_FEE_INCOME = "late_fee_income"
     UNCATEGORIZED_EXPENSE = "uncategorized_expense"
+    INVENTORY_ASSET = "inventory_asset"
+    COST_OF_GOODS_SOLD = "cost_of_goods_sold"
+    INVENTORY_SHRINKAGE = "inventory_shrinkage"
+    OPENING_BALANCE_EQUITY = "opening_balance_equity"
 
 
 class DetailType:
@@ -78,6 +82,7 @@ DEFAULT_TAX_LINES = {
     "4800": "SCHC_2",
     "4900": "SCHC_6",
     "5000": "SCHC_4",
+    "5100": "SCHC_4",
     "6000": "SCHC_8",
     "6100": "SCHC_27A",
     "6200": "SCHC_15",
@@ -106,6 +111,7 @@ DEFAULT_ACCOUNTS = [
     {"code": "1010", "name": "Savings", "type": AccountType.ASSET, "detail": DetailType.BANK, "key": None},
     {"code": "1200", "name": "Accounts Receivable (A/R)", "type": AccountType.ASSET, "detail": "Accounts Receivable", "key": SystemAccount.ACCOUNTS_RECEIVABLE},
     {"code": "1300", "name": "Undeposited Funds", "type": AccountType.ASSET, "detail": "Other Current Assets", "key": SystemAccount.UNDEPOSITED_FUNDS},
+    {"code": "1400", "name": "Inventory Asset", "type": AccountType.ASSET, "detail": "Inventory", "key": SystemAccount.INVENTORY_ASSET},
     {"code": "1500", "name": "Furniture and Equipment", "type": AccountType.ASSET, "detail": "Fixed Assets", "key": None},
     # ---------- Liabilities ----------
     {"code": "2000", "name": "Accounts Payable (A/P)", "type": AccountType.LIABILITY, "detail": "Accounts Payable", "key": SystemAccount.ACCOUNTS_PAYABLE},
@@ -114,6 +120,7 @@ DEFAULT_ACCOUNTS = [
     {"code": "2500", "name": "Loan Payable", "type": AccountType.LIABILITY, "detail": "Long Term Liabilities", "key": None},
     # ---------- Equity ----------
     {"code": "3000", "name": "Owner's Investment", "type": AccountType.EQUITY, "detail": "Owner's Equity", "key": SystemAccount.OWNERS_EQUITY},
+    {"code": "3050", "name": "Opening Balance Equity", "type": AccountType.EQUITY, "detail": "Opening Balance Equity", "key": SystemAccount.OPENING_BALANCE_EQUITY},
     {"code": "3100", "name": "Owner's Draw", "type": AccountType.EQUITY, "detail": "Owner's Equity", "key": None},
     {"code": "3900", "name": "Retained Earnings", "type": AccountType.EQUITY, "detail": "Retained Earnings", "key": SystemAccount.RETAINED_EARNINGS},
     # ---------- Income ----------
@@ -125,7 +132,8 @@ DEFAULT_ACCOUNTS = [
     {"code": "4800", "name": "Discounts Given", "type": AccountType.INCOME, "detail": "Discounts/Refunds Given", "key": SystemAccount.DISCOUNTS_GIVEN},
     {"code": "4900", "name": "Other Income", "type": AccountType.INCOME, "detail": "Other Income", "key": None},
     # ---------- Expenses ----------
-    {"code": "5000", "name": "Cost of Goods Sold", "type": AccountType.EXPENSE, "detail": "Cost of Goods Sold", "key": None},
+    {"code": "5000", "name": "Cost of Goods Sold", "type": AccountType.EXPENSE, "detail": "Cost of Goods Sold", "key": SystemAccount.COST_OF_GOODS_SOLD},
+    {"code": "5100", "name": "Inventory Shrinkage", "type": AccountType.EXPENSE, "detail": "Supplies & Materials - COGS", "key": SystemAccount.INVENTORY_SHRINKAGE},
     {"code": "6000", "name": "Advertising & Marketing", "type": AccountType.EXPENSE, "detail": "Advertising/Promotional", "key": None},
     {"code": "6100", "name": "Bank Charges & Fees", "type": AccountType.EXPENSE, "detail": "Bank Charges", "key": None},
     {"code": "6200", "name": "Insurance", "type": AccountType.EXPENSE, "detail": "Insurance", "key": None},

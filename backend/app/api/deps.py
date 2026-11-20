@@ -27,6 +27,7 @@ from app.recurring.journal_entry_handler import JournalEntryRecurringHandler
 from app.recurring.purchase_handlers import BillRecurringHandler, ExpenseRecurringHandler
 from app.recurring.sales_handlers import InvoiceRecurringHandler, SalesReceiptRecurringHandler
 from app.reports.balance_sheet import BalanceSheetReport
+from app.reports.inventory_valuation import InventoryValuationDetailReport, InventoryValuationSummaryReport
 from app.reports.base import Report
 from app.reports.payables_aging import PayablesAgingReport
 from app.reports.profit_and_loss import ProfitAndLossReport
@@ -46,6 +47,14 @@ from app.repositories.banking_repositories import (
 from app.repositories.company_repository import CompanyRepository, UserRepository
 from app.repositories.contact_repository import CustomerRepository, VendorRepository
 from app.repositories.expense_repository import ExpenseRepository
+from app.repositories.inventory_repositories import (
+    InventoryAdjustmentRepository,
+    InventoryLayerRepository,
+    InventoryMovementRepository,
+    InventoryUseRepository,
+    PriceRuleRepository,
+    ProductCategoryRepository,
+)
 from app.repositories.invoice_repository import InvoiceRepository
 from app.repositories.journal_repository import JournalRepository
 from app.repositories.product_repository import ProductRepository
@@ -102,6 +111,10 @@ from app.services.purchase_kinds import ALL_PURCHASE_KINDS
 from app.services.reconciliation_service import ReconciliationService
 from app.services.recurring_service import RecurringService
 from app.services.report_service import ReportService
+from app.services.catalog_service import CatalogService
+from app.services.inventory_adjustment_service import InventoryAdjustmentService
+from app.services.inventory_service import InventoryService
+from app.services.product_import_service import ProductImportService
 from app.services.sales_common import SalesLineBuilder
 from app.services.sales_tax import SalesTaxCalculator
 from app.services.tax_service import TaxService
@@ -129,6 +142,33 @@ def build_system_accounts(db: Session) -> SystemAccounts:
 
 def build_line_builder(db: Session) -> SalesLineBuilder:
     return SalesLineBuilder(ProductRepository(db), build_system_accounts(db))
+
+
+def build_inventory(db: Session) -> InventoryService:
+    return InventoryService(
+        ProductRepository(db),
+        InventoryLayerRepository(db),
+        InventoryUseRepository(db),
+        InventoryMovementRepository(db),
+        build_system_accounts(db),
+    )
+
+
+def build_product_service(db: Session) -> ProductService:
+    return ProductService(
+        db,
+        ProductRepository(db),
+        AccountRepository(db),
+        ProductCategoryRepository(db),
+        InventoryMovementRepository(db),
+        build_system_accounts(db),
+        build_inventory(db),
+        build_ledger(db),
+    )
+
+
+def build_catalog_service(db: Session) -> CatalogService:
+    return CatalogService(db, ProductCategoryRepository(db), PriceRuleRepository(db), ProductRepository(db), CustomerRepository(db))
 
 
 def build_tax_calculator(db: Session) -> SalesTaxCalculator:
@@ -185,6 +225,7 @@ def build_invoice_service(db: Session) -> InvoiceService:
         build_ledger(db),
         build_payment_service(db),
         build_tax_calculator(db),
+        build_inventory(db),
     )
 
 
@@ -201,6 +242,7 @@ def build_sales_document_service(db: Session) -> SalesDocumentService:
         build_ledger(db),
         ALL_KINDS,
         build_tax_calculator(db),
+        build_inventory(db),
     )
 
 
@@ -238,6 +280,7 @@ def build_expense_service(db: Session) -> ExpenseService:
         JournalRepository(db),
         build_check_numbers(db),
         build_ledger(db),
+        build_inventory(db),
     )
 
 
@@ -255,6 +298,7 @@ def build_purchase_service(db: Session) -> PurchaseDocumentService:
         DocumentNumberService(db, settings.invoice_number_start),
         build_ledger(db),
         ALL_PURCHASE_KINDS,
+        build_inventory(db),
     )
 
 
@@ -301,6 +345,8 @@ def build_reports(db: Session) -> list[Report]:
             TaxAgencyRepository(db), SalesTaxLineRepository(db), SalesTaxPaymentRepository(db), SalesTaxAdjustmentRepository(db)
         ),
         TaxScheduleReport(JournalRepository(db)),
+        InventoryValuationSummaryReport(ProductRepository(db), InventoryMovementRepository(db)),
+        InventoryValuationDetailReport(ProductRepository(db), InventoryMovementRepository(db)),
     ]
 
 
@@ -376,7 +422,33 @@ def get_vendor_service(db: Session = Depends(get_db)) -> VendorService:
 
 
 def get_product_service(db: Session = Depends(get_db)) -> ProductService:
-    return ProductService(db, ProductRepository(db), AccountRepository(db))
+    return build_product_service(db)
+
+
+def get_product_import_service(db: Session = Depends(get_db)) -> ProductImportService:
+    return ProductImportService(db, ProductRepository(db), ProductCategoryRepository(db), build_product_service(db), build_catalog_service(db))
+
+
+def get_catalog_service(db: Session = Depends(get_db)) -> CatalogService:
+    return build_catalog_service(db)
+
+
+def get_inventory_adjustment_service(db: Session = Depends(get_db)) -> InventoryAdjustmentService:
+    return InventoryAdjustmentService(
+        db,
+        InventoryAdjustmentRepository(db),
+        ProductRepository(db),
+        AccountRepository(db),
+        JournalRepository(db),
+        build_system_accounts(db),
+        DocumentNumberService(db, 1),
+        build_inventory(db),
+        build_ledger(db),
+    )
+
+
+def get_inventory_history(db: Session = Depends(get_db)) -> InventoryMovementRepository:
+    return InventoryMovementRepository(db)
 
 
 def get_terms_service(db: Session = Depends(get_db)) -> TermsService:

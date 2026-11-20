@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Select, TextInput } from "@/components/ui/FormFields";
 import { formatMoney, toNumber } from "@/lib/format";
 import { SalesLineInput } from "@/types/inputs";
-import { Product } from "@/types/models";
+import { Product, ProductPrice } from "@/types/models";
 
 export function emptySalesLine(): SalesLineInput {
   return { product_id: null, description: "", quantity: "1", rate: "", taxable: true };
@@ -19,15 +19,23 @@ interface SalesLinesEditorProps {
   lines: SalesLineInput[];
   onChange: (lines: SalesLineInput[]) => void;
   products: Product[];
+  /** Prices after price rules for the chosen customer and date. */
+  prices?: ProductPrice[];
   currency?: string;
 }
 
 /** Product / service rows used by invoices, estimates, receipts and credits. */
-export function SalesLinesEditor({ lines, onChange, products, currency }: SalesLinesEditorProps) {
+export function SalesLinesEditor({ lines, onChange, products, prices, currency }: SalesLinesEditorProps) {
   const productOptions = products.map((product) => ({ value: product.id, label: product.name }));
 
   function updateLine(index: number, changes: Partial<SalesLineInput>) {
     onChange(lines.map((line, i) => (i === index ? { ...line, ...changes } : line)));
+  }
+
+  /** The item's price after price rules (or its normal price). */
+  function priceOf(product: Product): string {
+    const ruled = (prices || []).find((item) => item.product_id === product.id);
+    return ruled ? ruled.price : product.sales_price;
   }
 
   /** Picking a product fills in its description and price. */
@@ -41,10 +49,20 @@ export function SalesLinesEditor({ lines, onChange, products, currency }: SalesL
       updateLine(index, {
         product_id: product.id,
         description: product.description || product.name,
-        rate: product.sales_price,
+        rate: priceOf(product),
         taxable: product.taxable,
       });
     }
+  }
+
+  /** "12 on hand" under an inventory item, in amber when it is low. */
+  function stockNote(productId: number | null) {
+    const product = products.find((item) => item.id === productId);
+    if (!product || product.product_type !== "INVENTORY") {
+      return null;
+    }
+    const color = product.is_low_stock ? "text-amber-700" : "text-gray-500";
+    return <div className={"mt-1 text-xs " + color}>{toNumber(product.quantity_on_hand)} on hand</div>;
   }
 
   return (
@@ -69,6 +87,7 @@ export function SalesLinesEditor({ lines, onChange, products, currency }: SalesL
                 <td className="py-2 text-gray-500">{index + 1}</td>
                 <td className="py-2 pr-2">
                   <Select value={line.product_id ?? ""} onChange={(e) => chooseProduct(index, e.target.value)} placeholder="-" options={productOptions} />
+                  {stockNote(line.product_id)}
                 </td>
                 <td className="py-2 pr-2">
                   <TextInput value={line.description} onChange={(e) => updateLine(index, { description: e.target.value })} />

@@ -17,10 +17,14 @@ from app.repositories.purchase_repositories import PurchaseDocumentRepository
 from app.repositories.sales_repositories import PaymentTermRepository
 from app.schemas.purchase import PurchaseDocumentCreate, PurchaseLineInput
 from app.services.base import BaseService
+from app.services.inventory_service import InventoryService, StockSource
 from app.services.ledger_service import LedgerService
 from app.services.numbering import DocumentNumberService
 from app.services.purchase_kinds import PurchaseKind
 from app.services.system_accounts import SystemAccounts
+
+
+STOCK_SOURCE = "PURCHASE"
 
 
 class PurchaseDocumentService(BaseService):
@@ -38,6 +42,7 @@ class PurchaseDocumentService(BaseService):
         numbering: DocumentNumberService,
         ledger: LedgerService,
         kinds: list[PurchaseKind],
+        inventory: InventoryService,
     ):
         super().__init__(session)
         self.repository = repository
@@ -50,6 +55,7 @@ class PurchaseDocumentService(BaseService):
         self.system_accounts = system_accounts
         self.numbering = numbering
         self.ledger = ledger
+        self.inventory = inventory
         self.kinds = {}
         for kind in kinds:
             self.kinds[kind.doc_type] = kind
@@ -104,13 +110,18 @@ class PurchaseDocumentService(BaseService):
         self.repository.add(document)
 
         if kind.journal_source is not None:
+            label = f"{kind.label} {document.doc_number or ''} - {vendor.display_name}".replace("  ", " ")
+            ledger_lines = kind.ledger_lines(company_id, document, self.system_accounts)
+            stock = StockSource(STOCK_SOURCE, document.id, document.doc_date, label)
+            is_return = kind.doc_type == PurchaseDocType.VENDOR_CREDIT
+            ledger_lines.extend(self.inventory.purchase_lines(company_id, document.lines, stock, is_return))
             entry = self.ledger.post(
                 company_id=company_id,
                 entry_date=document.doc_date,
                 source_type=kind.journal_source,
                 source_id=document.id,
-                memo=f"{kind.label} {document.doc_number or ''} - {vendor.display_name}".replace("  ", " "),
-                lines=kind.ledger_lines(company_id, document, self.system_accounts),
+                memo=label,
+                lines=ledger_lines,
             )
             document.journal_entry_id = entry.id
 
@@ -118,14 +129,19 @@ class PurchaseDocumentService(BaseService):
         return document
 
     def build_line(self, company_id: int, data: PurchaseLineInput) -> PurchaseDocumentLine:
-        account = self.account_repository.get(company_id, data.account_id)
+        account_id, product = self.inventory.purchase_line_account(company_id, data.product_id, data.account_id)
+        account = self.account_repository.get(company_id, account_id)
         if account is None or not account.is_active:
             raise BusinessRuleError("Please choose an active category for every line.")
+        description = data.description
+        if description is None and product is not None:
+            description = product.purchase_description or product.name
         if data.customer_id is not None and self.customer_repository.get(company_id, data.customer_id) is None:
             raise BusinessRuleError("The billable customer does not exist.")
         return PurchaseDocumentLine(
             account_id=account.id,
-            description=data.description,
+            product_id=product.id if product else None,
+            description=description,
             quantity=data.quantity,
             rate=data.rate,
             amount=to_money(data.quantity * data.rate),
@@ -164,6 +180,7 @@ class PurchaseDocumentService(BaseService):
             lines.append(
                 PurchaseLineInput(
                     account_id=line.account_id,
+                    product_id=line.product_id,
                     description=line.description,
                     quantity=line.quantity,
                     rate=line.rate,
@@ -203,6 +220,7 @@ class PurchaseDocumentService(BaseService):
             original = self.journal_repository.get(company_id, document.journal_entry_id)
             label = self.kinds[document.doc_type].label.lower()
             self.ledger.reverse(company_id, original, date.today(), JournalSource.PURCHASE_VOID, f"Void of {label}")
+            self.inventory.undo(company_id, STOCK_SOURCE, document.id, date.today(), f"Void of {label}")
 
         # A voided bill that came from a purchase order re-opens the order.
         if document.purchase_order_id is not None:

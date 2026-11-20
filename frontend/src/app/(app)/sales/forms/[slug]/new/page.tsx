@@ -14,7 +14,7 @@ import { findFormBySlug } from "@/config/sales-forms.config";
 import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
 import { todayString } from "@/lib/format";
-import { accountService, customerService, productService, salesDocumentService, taxService } from "@/services";
+import { accountService, customerService, inventoryService, productService, salesDocumentService, taxService } from "@/services";
 import { SalesAmountsInput, SalesLineInput } from "@/types/inputs";
 import { Account, PaymentMethod } from "@/types/models";
 
@@ -51,6 +51,7 @@ export default function NewSalesFormPage() {
   const [referenceNo, setReferenceNo] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const prices = useLoad(() => inventoryService.prices(customerId ? Number(customerId) : null, docDate), [customerId, docDate]);
 
   if (!form) {
     return <ErrorMessage message="This page does not exist." />;
@@ -146,7 +147,7 @@ export default function NewSalesFormPage() {
         </div>
 
         <div className="mt-6">
-          <SalesLinesEditor lines={lines} onChange={setLines} products={products.data || []} currency={currency} />
+          <SalesLinesEditor lines={lines} onChange={setLines} products={products.data || []} prices={prices.data || []} currency={currency} />
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">

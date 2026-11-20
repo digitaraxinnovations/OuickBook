@@ -44,11 +44,16 @@ class CrudService(BaseService):
         return record
 
     def create(self, company_id: int, data):
+        record = self.create_record(company_id, data)
+        self.commit()
+        return record
+
+    def create_record(self, company_id: int, data):
+        """Check, build and save a new record without committing."""
         self.validate(company_id, data)
         record = self.model(company_id=company_id)
         self.apply_changes(company_id, record, data)
         self.repository.add(record)
-        self.commit()
         return record
 
     def update(self, company_id: int, record_id: int, data):

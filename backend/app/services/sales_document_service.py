@@ -15,6 +15,7 @@ from app.repositories.journal_repository import JournalRepository
 from app.repositories.sales_repositories import SalesDocumentRepository
 from app.schemas.sales_document import SalesDocumentCreate
 from app.services.base import BaseService
+from app.services.inventory_service import InventoryService, StockSource
 from app.services.ledger_service import LedgerService
 from app.services.numbering import DocumentNumberService
 from app.services.sales_common import SalesLineBuilder, calculate_totals, income_ledger_lines
@@ -40,6 +41,7 @@ class SalesDocumentService(BaseService):
         ledger: LedgerService,
         kinds: list[SalesDocumentKind],
         tax_calculator: SalesTaxCalculator,
+        inventory: InventoryService,
     ):
         super().__init__(session)
         self.repository = repository
@@ -51,6 +53,7 @@ class SalesDocumentService(BaseService):
         self.numbering = numbering
         self.ledger = ledger
         self.tax_calculator = tax_calculator
+        self.inventory = inventory
         self.kinds = {}
         for kind in kinds:
             self.kinds[kind.doc_type] = kind
@@ -116,12 +119,15 @@ class SalesDocumentService(BaseService):
         if kind.journal_source is not None:
             ledger_lines = income_ledger_lines(company_id, document.lines, totals, self.system_accounts, kind.is_return)
             ledger_lines.extend(kind.other_side(company_id, document, self.system_accounts))
+            label = f"{kind.label} {document.doc_number} - {customer.display_name}"
+            stock = StockSource(TAX_SOURCE, document.id, document.doc_date, label)
+            ledger_lines.extend(self.inventory.cost_of_sales_lines(company_id, document.lines, stock, kind.is_return))
             entry = self.ledger.post(
                 company_id=company_id,
                 entry_date=document.doc_date,
                 source_type=kind.journal_source,
                 source_id=document.id,
-                memo=f"{kind.label} {document.doc_number} - {customer.display_name}",
+                memo=label,
                 lines=ledger_lines,
             )
             document.journal_entry_id = entry.id
@@ -164,6 +170,7 @@ class SalesDocumentService(BaseService):
             memo = f"Void of {kind.label.lower()} {document.doc_number}"
             self.ledger.reverse(company_id, original, date.today(), JournalSource.SALES_DOC_VOID, memo)
             self.tax_calculator.void(company_id, TAX_SOURCE, document.id)
+            self.inventory.undo(company_id, TAX_SOURCE, document.id, date.today(), memo)
 
         document.status = SalesDocStatus.VOID
         self.commit()

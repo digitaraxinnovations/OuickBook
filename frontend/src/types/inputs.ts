@@ -68,6 +68,16 @@ export interface ProductInput {
   income_account_id: number | null;
   is_active: boolean;
   taxable: boolean;
+  category_id: number | null;
+  purchase_description: string;
+  purchase_cost: string;
+  expense_account_id: number | null;
+  inventory_asset_account_id: number | null;
+  cogs_account_id: number | null;
+  reorder_point: string | null;
+  initial_quantity: string;
+  as_of_date: string | null;
+  components: { product_id: number; quantity: string }[];
 }
 
 export interface AccountInput {
@@ -172,7 +182,9 @@ export interface StatementEmailInput extends EmailInput {
 }
 
 export interface ExpenseLineInput {
-  account_id: number;
+  account_id: number | null;
+  product_id: number | null;
+  quantity: string;
   description: string;
   amount: string;
   customer_id: number | null;
@@ -205,7 +217,8 @@ export interface JournalEntryInput {
 }
 
 export interface PurchaseLineInput {
-  account_id: number;
+  account_id: number | null;
+  product_id: number | null;
   description: string;
   quantity: string;
   rate: string;
@@ -332,4 +345,29 @@ export interface SalesTaxAdjustmentInput {
   amount: string;
   account_id: number;
   reason: string;
+}
+
+// ---------- inventory ----------
+
+export interface CategoryInput {
+  name: string;
+  parent_id: number | null;
+}
+
+export interface PriceRuleInput {
+  name: string;
+  adjustment_percent: string;
+  customer_id: number | null;
+  category_id: number | null;
+  product_id: number | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_active: boolean;
+}
+
+export interface InventoryAdjustmentInput {
+  adjustment_date: string;
+  account_id: number | null;
+  memo: string;
+  lines: { product_id: number; quantity_change: string }[];
 }

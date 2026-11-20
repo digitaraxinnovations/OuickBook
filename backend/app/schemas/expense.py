@@ -8,7 +8,10 @@ from app.schemas.common import AccountSummary, CleanStringsModel, ContactSummary
 
 
 class ExpenseLineCreate(CleanStringsModel):
-    account_id: int
+    # A category line has an account; an item line has a product (the account comes from it).
+    account_id: int | None = None
+    product_id: int | None = None
+    quantity: Decimal = Field(default=Decimal("1"), gt=0, max_digits=12, decimal_places=2)
     description: str | None = Field(default=None, max_length=500)
     amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
     # Billable to this customer.
@@ -32,6 +35,8 @@ class ExpenseCreate(CleanStringsModel):
 class ExpenseLineRead(ORMModel):
     id: int
     account: AccountSummary
+    product_id: int | None
+    quantity: Decimal
     description: str | None
     amount: Decimal
     customer_id: int | None

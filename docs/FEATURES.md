@@ -52,10 +52,10 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [~] (EXT) automated tax rate lookup / e-filing - TaxRateProvider interface, TAX_RATE_PROVIDER=none (no provider connected)
 
 ## Phase 6 – Inventory & products
-- [ ] Inventory items (qty on hand, reorder point, FIFO cost), inventory adjustments
-- [ ] Cost of goods sold posting; inventory valuation reports
-- [ ] Bundles, categories, price rules
-- [ ] Product import/export
+- [x] Inventory items (qty on hand, reorder point + low-stock alerts, FIFO cost, stock history), inventory qty adjustments; item lines on bills, expenses, vendor credits, POs
+- [x] Cost of goods sold posting (sales, returns, vendor returns, voids); Inventory Valuation Summary + Detail reports
+- [x] Bundles, categories, price rules (item / category / all, per customer, date range)
+- [x] Product import/export (CSV)
 
 ## Phase 7 – Payroll & time
 - [ ] Employees, pay schedules, pay types, deductions

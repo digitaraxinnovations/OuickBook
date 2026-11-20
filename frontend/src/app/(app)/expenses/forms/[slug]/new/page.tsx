@@ -12,7 +12,7 @@ import { findPurchaseFormBySlug } from "@/config/purchase-forms.config";
 import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
 import { formatMoney, todayString } from "@/lib/format";
-import { accountService, customerService, purchaseService, termsService, vendorService } from "@/services";
+import { accountService, customerService, productService, purchaseService, termsService, vendorService } from "@/services";
 import { PurchaseLineInput } from "@/types/inputs";
 
 export default function NewPurchaseFormPage() {
@@ -25,6 +25,7 @@ export default function NewPurchaseFormPage() {
   const customers = useLoad(() => customerService.list({ active_only: true }));
   const accounts = useLoad(() => accountService.list({ active_only: true }));
   const terms = useLoad(() => termsService.list());
+  const products = useLoad(() => productService.list({ active_only: true }));
 
   const [vendorId, setVendorId] = useState("");
   const [docDate, setDocDate] = useState(todayString());
@@ -39,7 +40,7 @@ export default function NewPurchaseFormPage() {
   if (!form) {
     return <ErrorMessage message="This page does not exist." />;
   }
-  if (vendors.loading || accounts.loading || customers.loading || terms.loading) {
+  if (vendors.loading || accounts.loading || customers.loading || terms.loading || products.loading) {
     return <Loading />;
   }
   const config = form;
@@ -123,7 +124,14 @@ export default function NewPurchaseFormPage() {
         </div>
 
         <div className="mt-6">
-          <PurchaseLinesEditor lines={lines} onChange={setLines} categoryOptions={categoryOptions} customerOptions={customerOptions} currency={currency} />
+          <PurchaseLinesEditor
+            lines={lines}
+            onChange={setLines}
+            categoryOptions={categoryOptions}
+            customerOptions={customerOptions}
+            products={products.data || []}
+            currency={currency}
+          />
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
