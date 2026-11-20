@@ -11,4 +11,5 @@ export const appConfig = {
   locale: process.env.NEXT_PUBLIC_LOCALE || "en-US",
   defaultCurrency: process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || "USD",
   tokenStorageKey: "ledgerly.accessToken",
+  sidebarStorageKey: "ledgerly.sidebarOpenGroups",
 };

@@ -26,3 +26,9 @@ body {
     background: white;
   }
 }
+
+/* Thin scrollbar that fits the dark sidebar. */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-sidebar-hover) transparent;
+}
