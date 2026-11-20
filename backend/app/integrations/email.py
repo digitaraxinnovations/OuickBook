@@ -12,6 +12,7 @@ To support another provider (SendGrid, Amazon SES...), write a new class
 that inherits from EmailSender and add it to build_email_sender().
 """
 
+import mimetypes
 import smtplib
 from abc import ABC, abstractmethod
 from email.message import EmailMessage
@@ -57,7 +58,9 @@ class SmtpEmailSender(EmailSender):
         message["Subject"] = email.subject
         message.set_content(email.body)
         if email.attachment is not None:
-            message.add_attachment(email.attachment, maintype="application", subtype="pdf", filename=email.attachment_name)
+            media_type = mimetypes.guess_type(email.attachment_name or "")[0] or "application/octet-stream"
+            maintype, subtype = media_type.split("/", 1)
+            message.add_attachment(email.attachment, maintype=maintype, subtype=subtype, filename=email.attachment_name)
 
         with smtplib.SMTP(self.settings.smtp_host, self.settings.smtp_port, timeout=20) as server:
             if self.settings.smtp_use_tls:

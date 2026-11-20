@@ -17,7 +17,7 @@ from app.models.enums import AccountType, PaymentMethod
 from app.reports.base import Report
 from app.repositories.contact_repository import VendorRepository
 from app.repositories.purchase_repositories import BillPaymentRepository, ExpenseQueries
-from app.schemas.report import ReportResult, ReportRow
+from app.schemas.report import ReportOptions, ReportResult, ReportRow
 from app.seed.default_accounts import FORM_1099_BOXES
 
 
@@ -27,6 +27,7 @@ def paid_by_card(payment_method: PaymentMethod, account) -> bool:
 
 class Vendor1099Report(Report):
     key = "1099-summary"
+    group = "Expenses and vendors"
     title = "1099 Contractor Summary"
     description = "Payments to 1099 contractors per 1099 box, excluding card payments."
 
@@ -42,7 +43,7 @@ class Vendor1099Report(Report):
         self.bill_payment_repository = bill_payment_repository
         self.threshold = Decimal(threshold)
 
-    def generate(self, company_id: int, start_date: date | None, end_date: date) -> ReportResult:
+    def generate(self, company_id: int, start_date: date | None, end_date: date, options: ReportOptions) -> ReportResult:
         vendors = {}
         for vendor in self.vendor_repository.list_all(company_id):
             if vendor.track_1099:

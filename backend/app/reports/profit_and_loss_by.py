@@ -14,7 +14,7 @@ from app.models.enums import AccountType
 from app.reports.base import Report
 from app.repositories.account_repository import AccountRepository
 from app.repositories.tracking_repositories import DimensionQueries
-from app.schemas.report import ReportResult, ReportRow
+from app.schemas.report import ReportOptions, ReportResult, ReportRow
 
 NOT_SPECIFIED = "Not specified"
 
@@ -29,7 +29,7 @@ class ProfitAndLossByReport(Report):
         self.account_repository = account_repository
         self.name_repository = name_repository
 
-    def generate(self, company_id: int, start_date: date | None, end_date: date) -> ReportResult:
+    def generate(self, company_id: int, start_date: date | None, end_date: date, options: ReportOptions) -> ReportResult:
         accounts = {}
         for account in self.account_repository.list_all(company_id):
             accounts[account.id] = account
@@ -79,6 +79,7 @@ class ProfitAndLossByReport(Report):
 
 class ProfitAndLossByClassReport(ProfitAndLossByReport):
     key = "profit-and-loss-by-class"
+    group = "Business overview"
     title = "Profit and Loss by Class"
     description = "Income, expenses and net income for each class."
     dimension = "class"
@@ -86,6 +87,7 @@ class ProfitAndLossByClassReport(ProfitAndLossByReport):
 
 class ProfitAndLossByLocationReport(ProfitAndLossByReport):
     key = "profit-and-loss-by-location"
+    group = "Business overview"
     title = "Profit and Loss by Location"
     description = "Income, expenses and net income for each location."
     dimension = "location"
@@ -93,6 +95,7 @@ class ProfitAndLossByLocationReport(ProfitAndLossByReport):
 
 class ProfitAndLossByTagReport(ProfitAndLossByReport):
     key = "profit-and-loss-by-tag"
+    group = "Business overview"
     title = "Profit and Loss by Tag"
     description = "Income, expenses and net income of the transactions with each tag."
     dimension = "tag"
@@ -100,6 +103,7 @@ class ProfitAndLossByTagReport(ProfitAndLossByReport):
 
 class ProjectProfitabilityReport(ProfitAndLossByReport):
     key = "project-profitability"
+    group = "Business overview"
     title = "Project Profitability"
     description = "Income, costs and profit of each project (labor cost is on each project's page)."
     dimension = "project"

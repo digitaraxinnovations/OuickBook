@@ -14,7 +14,7 @@ from app.core.money import ZERO, to_money
 from app.reports.base import Report
 from app.repositories.inventory_repositories import InventoryMovementRepository
 from app.repositories.product_repository import ProductRepository
-from app.schemas.report import ReportResult, ReportRow
+from app.schemas.report import ReportOptions, ReportResult, ReportRow
 
 
 def quantity_text(value: Decimal) -> str:
@@ -23,6 +23,7 @@ def quantity_text(value: Decimal) -> str:
 
 class InventoryValuationSummaryReport(Report):
     key = "inventory-valuation-summary"
+    group = "Inventory"
     title = "Inventory Valuation Summary"
     description = "Quantity on hand, average cost and value of each inventory item."
     uses_start_date = False
@@ -31,7 +32,7 @@ class InventoryValuationSummaryReport(Report):
         self.product_repository = product_repository
         self.movement_repository = movement_repository
 
-    def generate(self, company_id: int, start_date: date | None, end_date: date) -> ReportResult:
+    def generate(self, company_id: int, start_date: date | None, end_date: date, options: ReportOptions) -> ReportResult:
         totals = self.movement_repository.totals_up_to(company_id, end_date)
         rows = []
         for product in self.product_repository.list_all(company_id):
@@ -51,6 +52,7 @@ class InventoryValuationSummaryReport(Report):
 
 class InventoryValuationDetailReport(Report):
     key = "inventory-valuation-detail"
+    group = "Inventory"
     title = "Inventory Valuation Detail"
     description = "Every purchase, sale and adjustment of each inventory item, with its value."
 
@@ -58,7 +60,7 @@ class InventoryValuationDetailReport(Report):
         self.product_repository = product_repository
         self.movement_repository = movement_repository
 
-    def generate(self, company_id: int, start_date: date | None, end_date: date) -> ReportResult:
+    def generate(self, company_id: int, start_date: date | None, end_date: date, options: ReportOptions) -> ReportResult:
         opening = {}
         if start_date is not None:
             day_before = date.fromordinal(start_date.toordinal() - 1)

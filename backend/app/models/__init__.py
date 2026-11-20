@@ -44,6 +44,7 @@ from app.models.purchase import (
     VendorCreditUse,
 )
 from app.models.recurring import RecurringSchedule
+from app.models.saved_report import ReportSchedule, SavedReport
 from app.models.sales_document import SalesDocument, SalesDocumentLine
 from app.models.tax import SalesTaxAdjustment, SalesTaxLine, SalesTaxPayment, TaxAgency, TaxCode, TaxCodeRate, TaxRate
 from app.models.tracking import Budget, BudgetLine, Location, Project, Tag, TrackingClass
@@ -51,6 +52,8 @@ from app.models.terms import NumberSequence, PaymentTerm
 from app.models.user import User
 
 __all__ = [
+    "ReportSchedule",
+    "SavedReport",
     "Budget",
     "BudgetLine",
     "Location",

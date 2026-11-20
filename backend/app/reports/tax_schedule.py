@@ -10,7 +10,7 @@ from app.core.money import ZERO
 from app.models.enums import AccountType
 from app.reports.base import Report
 from app.repositories.journal_repository import JournalRepository
-from app.schemas.report import ReportResult, ReportRow
+from app.schemas.report import ReportOptions, ReportResult, ReportRow
 from app.seed.default_accounts import TAX_LINES
 
 UNASSIGNED = "Not assigned to a tax category"
@@ -18,13 +18,14 @@ UNASSIGNED = "Not assigned to a tax category"
 
 class TaxScheduleReport(Report):
     key = "tax-schedule"
+    group = "For my accountant"
     title = "Tax Schedule Summary"
     description = "Income and expenses grouped by income tax category (Schedule C lines)."
 
     def __init__(self, journal_repository: JournalRepository):
         self.journal_repository = journal_repository
 
-    def generate(self, company_id: int, start_date: date | None, end_date: date) -> ReportResult:
+    def generate(self, company_id: int, start_date: date | None, end_date: date, options: ReportOptions) -> ReportResult:
         # amount_per_line[tax_line] = amount; expenses are kept negative so the net adds up.
         amount_per_line = {}
         unassigned_rows = []
