@@ -13,7 +13,7 @@ export type SalesDocStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "OPEN" | "CLO
 export type CreditSource = "CREDIT_MEMO" | "PAYMENT";
 export type DepositLineSource = "PAYMENT" | "SALES_RECEIPT" | "OTHER";
 export type StatementType = "BALANCE_FORWARD" | "OPEN_ITEM" | "TRANSACTION";
-export type ExpenseKind = "EXPENSE" | "CHECK";
+export type ExpenseKind = "EXPENSE" | "CHECK" | "CARD_CREDIT";
 export type PurchaseDocType = "BILL" | "VENDOR_CREDIT" | "PURCHASE_ORDER";
 export type PurchaseDocStatus = "OPEN" | "PARTIALLY_PAID" | "PAID" | "CLOSED" | "VOID";
 export type TripPurpose = "BUSINESS" | "PERSONAL";
@@ -494,4 +494,123 @@ export interface DashboardSummary {
   unpaid_bills_total: string;
   overdue_bills_total: string;
   overdue_bill_count: number;
+}
+
+// ---------- banking ----------
+
+export type BankTransactionStatus = "FOR_REVIEW" | "ADDED" | "MATCHED" | "EXCLUDED";
+export type BankRuleDirection = "MONEY_IN" | "MONEY_OUT" | "ANY";
+export type ReconciliationStatus = "IN_PROGRESS" | "COMPLETED" | "UNDONE";
+
+export interface Transfer {
+  id: number;
+  transfer_date: string;
+  from_account: AccountSummary;
+  to_account: AccountSummary;
+  amount: string;
+  memo: string | null;
+  is_void: boolean;
+}
+
+export interface BankAccountOverview {
+  account: AccountSummary;
+  detail_type: string;
+  books_balance: string;
+  for_review_count: number;
+  last_imported: string | null;
+  last_reconciled: string | null;
+}
+
+export interface BankTransaction {
+  id: number;
+  account_id: number;
+  txn_date: string;
+  description: string;
+  amount: string;
+  source: string;
+  status: BankTransactionStatus;
+  rule_id: number | null;
+  suggested_account: AccountSummary | null;
+  suggested_vendor_id: number | null;
+  journal_line_id: number | null;
+  added_as: string | null;
+  added_id: number | null;
+}
+
+export interface MatchCandidate {
+  journal_line_id: number;
+  entry_date: string;
+  description: string;
+  amount: string;
+}
+
+export interface StatementImportResult {
+  imported: number;
+  duplicates: number;
+  auto_added: number;
+}
+
+export interface RuleCondition {
+  field: "description" | "amount";
+  operator: string;
+  value: string;
+}
+
+export interface BankRule {
+  id: number;
+  name: string;
+  priority: number;
+  account_id: number | null;
+  direction: BankRuleDirection;
+  match_type: "ALL" | "ANY";
+  conditions: RuleCondition[];
+  category_account: AccountSummary;
+  vendor_id: number | null;
+  auto_add: boolean;
+  is_active: boolean;
+}
+
+export interface Reconciliation {
+  id: number;
+  account: AccountSummary;
+  statement_date: string;
+  beginning_balance: string;
+  ending_balance: string;
+  status: ReconciliationStatus;
+  completed_at: string | null;
+}
+
+export interface ReconcileItem {
+  journal_line_id: number;
+  entry_date: string;
+  transaction_type: string;
+  description: string;
+  amount: string;
+  selected: boolean;
+}
+
+export interface ReconciliationWorkspace {
+  reconciliation: Reconciliation;
+  items: ReconcileItem[];
+  cleared_balance: string;
+  difference: string;
+}
+
+export interface ReconciliationReport {
+  reconciliation: Reconciliation;
+  cleared_increases: ReconcileItem[];
+  cleared_decreases: ReconcileItem[];
+  cleared_balance: string;
+  uncleared: ReconcileItem[];
+  register_balance: string;
+}
+
+export interface DiscrepancyItem {
+  reconciliation_id: number;
+  statement_date: string;
+  entry_date: string;
+  description: string;
+  amount: string;
+  changed_on: string;
+  change: string;
 }

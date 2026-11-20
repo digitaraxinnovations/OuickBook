@@ -88,6 +88,15 @@ class Settings(BaseSettings):
     payment_provider: str = "none"
     payment_provider_secret_key: str = ""
 
+    # ---------- Bank feeds (EXT) ----------
+    # "none" = no live feed; import CSV / OFX / QFX statements instead.
+    # A provider such as Plaid can be added in app/integrations/bank_feeds.py.
+    bank_feed_provider: str = "none"
+    bank_feed_client_id: str = ""
+    bank_feed_secret: str = ""
+    # How many days apart a bank line and a book transaction can be and still be suggested as a match.
+    bank_match_days: int = 14
+
     def get_database_url(self) -> str:
         """Return the SQLAlchemy connection URL for PostgreSQL."""
         if self.database_url:

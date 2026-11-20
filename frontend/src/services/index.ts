@@ -8,6 +8,7 @@ import { TokenStorage } from "@/lib/token-storage";
 import { AccountInput, ContactInput, JournalEntryInput, ProductInput } from "@/types/inputs";
 import { Account, JournalEntry, Product, Vendor } from "@/types/models";
 import { AuthService } from "./auth.service";
+import { BankingService } from "./banking.service";
 import { InvoiceService } from "./invoice.service";
 import {
   AttachmentService,
@@ -61,3 +62,4 @@ export const reportService = new ReportService(api);
 export const recurringService = new RecurringService(api, "/recurring");
 export const companySettingsService = new CompanySettingsService(api);
 export const portalService = new PortalService(api);
+export const bankingService = new BankingService(api);

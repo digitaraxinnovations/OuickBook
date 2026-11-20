@@ -9,7 +9,7 @@ the total credits - that rule is enforced by LedgerService.
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Date, Enum, ForeignKey, Numeric, String
+from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
@@ -26,6 +26,8 @@ class JournalEntry(CompanyOwnedMixin, TimestampMixin, Base):
     source_type: Mapped[JournalSource] = mapped_column(Enum(JournalSource, native_enum=False, length=20))
     # Id of the invoice / payment / expense that created this entry (if any).
     source_id: Mapped[int | None]
+    # Set on void / undo entries: the entry this one cancels.
+    reverses_entry_id: Mapped[int | None] = mapped_column(ForeignKey("journal_entries.id"))
 
     lines: Mapped[list["JournalLine"]] = relationship(
         back_populates="entry",
@@ -43,6 +45,10 @@ class JournalLine(Base):
     description: Mapped[str | None] = mapped_column(String(500))
     debit: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     credit: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
+    # Banking: the line was matched to a bank statement line ("C" in the register).
+    cleared: Mapped[bool] = mapped_column(server_default=text("false"))
+    # Set when a completed reconciliation includes this line ("R" in the register).
+    reconciliation_id: Mapped[int | None] = mapped_column(ForeignKey("reconciliations.id"), index=True)
 
     entry: Mapped[JournalEntry] = relationship(back_populates="lines")
     account: Mapped[Account] = relationship()

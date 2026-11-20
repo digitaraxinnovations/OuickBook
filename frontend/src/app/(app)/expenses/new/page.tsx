@@ -50,8 +50,8 @@ export default function NewExpensePage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("kind") === "CHECK") {
-      setKind("CHECK");
+    if (params.get("kind") === "CHECK" || params.get("kind") === "CARD_CREDIT") {
+      setKind(params.get("kind") as ExpenseKind);
     }
     if (params.get("receipt")) {
       setReceiptId(Number(params.get("receipt")));
@@ -74,10 +74,14 @@ export default function NewExpensePage() {
   }
 
   const isCheck = kind === "CHECK";
+  const isCardCredit = kind === "CARD_CREDIT";
   const allAccounts = accounts.data || [];
-  const paymentAccounts = allAccounts.filter(
-    (account) => account.detail_type === "Bank" || (!isCheck && account.detail_type === "Credit Card"),
-  );
+  const paymentAccounts = allAccounts.filter((account) => {
+    if (isCardCredit) {
+      return account.detail_type === "Credit Card";
+    }
+    return account.detail_type === "Bank" || (!isCheck && account.detail_type === "Credit Card");
+  });
   const expenseAccounts = allAccounts.filter((account) => account.account_type === "EXPENSE");
   const otherAccounts = allAccounts.filter((account) => account.account_type !== "EXPENSE");
   const categoryOptions = [...expenseAccounts, ...otherAccounts].map((account) => ({ value: account.id, label: account.full_name }));
@@ -102,7 +106,7 @@ export default function NewExpensePage() {
         vendor_id: vendorId ? Number(vendorId) : null,
         payment_account_id: Number(paymentAccountId),
         expense_date: expenseDate,
-        payment_method: isCheck ? "CHECK" : paymentMethod,
+        payment_method: isCheck ? "CHECK" : isCardCredit ? "CREDIT_CARD" : paymentMethod,
         reference_no: referenceNo,
         check_number: isCheck && !printLater ? checkNumber : "",
         print_later: isCheck && printLater,
@@ -127,7 +131,7 @@ export default function NewExpensePage() {
   return (
     <form onSubmit={handleSubmit}>
       <PageHeader
-        title={isCheck ? "Write check" : "New expense"}
+        title={isCheck ? "Write check" : isCardCredit ? "Credit card credit" : "New expense"}
         subtitle={receiptId !== null ? "The receipt you chose will be attached when you save." : undefined}
       />
       <ErrorMessage message={error} />
@@ -142,7 +146,7 @@ export default function NewExpensePage() {
               options={(vendors.data || []).map((vendor) => ({ value: vendor.id, label: vendor.display_name }))}
             />
           </Field>
-          <Field label={isCheck ? "Bank account" : "Payment account"} required>
+          <Field label={isCheck ? "Bank account" : isCardCredit ? "Credit card" : "Payment account"} required>
             <Select
               required
               value={paymentAccountId}
@@ -154,7 +158,11 @@ export default function NewExpensePage() {
           <Field label="Payment date" required>
             <TextInput type="date" required value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
           </Field>
-          {isCheck ? (
+          {isCardCredit ? (
+            <Field label="Ref no.">
+              <TextInput value={referenceNo} onChange={(e) => setReferenceNo(e.target.value)} />
+            </Field>
+          ) : isCheck ? (
             <>
               <Field label="Check no.">
                 <TextInput value={checkNumber} disabled={printLater} onChange={(e) => setCheckNumber(e.target.value)} />
@@ -237,7 +245,7 @@ export default function NewExpensePage() {
           Cancel
         </Button>
         <Button type="submit" disabled={saving}>
-          {saving ? "Saving..." : isCheck ? "Save check" : "Save expense"}
+          {saving ? "Saving..." : isCheck ? "Save check" : isCardCredit ? "Save credit" : "Save expense"}
         </Button>
       </div>
     </form>

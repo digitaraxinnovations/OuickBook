@@ -5,6 +5,9 @@ Expenses and checks (money paid out right away).
     Credit Bank or Credit Card account   (where the money came from)
 
 A check is an expense paid from a bank account with a check number.
+A credit card credit (a refund onto the card) is the exact opposite:
+    Debit  Credit Card account
+    Credit Category account(s)
 """
 
 from datetime import date
@@ -18,7 +21,7 @@ from app.repositories.contact_repository import CustomerRepository, VendorReposi
 from app.repositories.expense_repository import ExpenseRepository
 from app.repositories.journal_repository import JournalRepository
 from app.schemas.expense import ExpenseCreate
-from app.seed.default_accounts import SystemAccount
+from app.seed.default_accounts import DetailType, SystemAccount
 from app.services.base import BaseService
 from app.services.check_numbers import CheckNumberService
 from app.services.ledger_service import LedgerLine, LedgerService
@@ -61,7 +64,10 @@ class ExpenseService(BaseService):
                 raise BusinessRuleError("Please choose an existing vendor.")
 
         is_check = data.kind == ExpenseKind.CHECK
+        is_card_credit = data.kind == ExpenseKind.CARD_CREDIT
         payment_account = self.get_payment_account(company_id, data.payment_account_id, is_check)
+        if is_card_credit and not (payment_account.account_type == AccountType.LIABILITY and payment_account.detail_type == DetailType.CREDIT_CARD):
+            raise BusinessRuleError("A credit card credit must go on a credit card account.")
 
         expense = Expense(
             company_id=company_id,
@@ -69,7 +75,7 @@ class ExpenseService(BaseService):
             vendor_id=data.vendor_id,
             payment_account_id=payment_account.id,
             expense_date=data.expense_date,
-            payment_method=PaymentMethod.CHECK if is_check else data.payment_method,
+            payment_method=self.method_for(data),
             reference_no=data.reference_no,
             print_later=is_check and data.print_later,
             memo=data.memo,
@@ -96,25 +102,45 @@ class ExpenseService(BaseService):
                     customer_id=line_data.customer_id,
                 )
             )
-            ledger_lines.append(LedgerLine(category.id, debit=line_data.amount, description=line_data.description))
+            if is_card_credit:
+                ledger_lines.append(LedgerLine(category.id, credit=line_data.amount, description=line_data.description))
+            else:
+                ledger_lines.append(LedgerLine(category.id, debit=line_data.amount, description=line_data.description))
             total += line_data.amount
 
         expense.total = total
-        ledger_lines.append(LedgerLine(payment_account.id, credit=total))
+        if is_card_credit:
+            ledger_lines.append(LedgerLine(payment_account.id, debit=total))
+        else:
+            ledger_lines.append(LedgerLine(payment_account.id, credit=total))
         self.expense_repository.add(expense)
 
         entry = self.ledger.post(
             company_id=company_id,
             entry_date=expense.expense_date,
-            source_type=JournalSource.CHECK if is_check else JournalSource.EXPENSE,
+            source_type=self.journal_source_for(data.kind),
             source_id=expense.id,
-            memo=expense.memo or ("Check" if is_check else "Expense"),
+            memo=expense.memo or data.kind.value.replace("_", " ").title(),
             lines=ledger_lines,
         )
         expense.journal_entry_id = entry.id
 
         self.commit()
         return expense
+
+    def method_for(self, data: ExpenseCreate) -> PaymentMethod:
+        if data.kind == ExpenseKind.CHECK:
+            return PaymentMethod.CHECK
+        if data.kind == ExpenseKind.CARD_CREDIT:
+            return PaymentMethod.CREDIT_CARD
+        return data.payment_method
+
+    def journal_source_for(self, kind: ExpenseKind) -> JournalSource:
+        if kind == ExpenseKind.CHECK:
+            return JournalSource.CHECK
+        if kind == ExpenseKind.CARD_CREDIT:
+            return JournalSource.CARD_CREDIT
+        return JournalSource.EXPENSE
 
     def get_payment_account(self, company_id: int, account_id: int, is_check: bool) -> Account:
         """Expenses are paid from a bank (asset) or credit card (liability). Checks only from a bank."""

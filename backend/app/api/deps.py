@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.core.exceptions import AuthenticationError
 from app.core.security import PasswordHasher, TokenService
 from app.db.session import get_db
+from app.integrations.bank_feeds import build_bank_feed_provider
 from app.integrations.email import build_email_sender
 from app.integrations.payments import build_payment_processor
 from app.models import User
@@ -32,6 +33,13 @@ from app.reports.receivables_aging import ReceivablesAgingReport
 from app.reports.trial_balance import TrialBalanceReport
 from app.reports.vendor_1099 import Vendor1099Report
 from app.repositories.account_repository import AccountRepository
+from app.repositories.banking_repositories import (
+    BankRuleRepository,
+    BankTransactionRepository,
+    ReconciliationRepository,
+    RegisterQueries,
+    TransferRepository,
+)
 from app.repositories.company_repository import CompanyRepository, UserRepository
 from app.repositories.contact_repository import CustomerRepository, VendorRepository
 from app.repositories.expense_repository import ExpenseRepository
@@ -56,6 +64,9 @@ from app.repositories.sales_repositories import (
 from app.services.account_service import AccountService
 from app.services.attachment_service import AttachmentService
 from app.services.auth_service import AuthService
+from app.services.bank_import_service import BankImportService
+from app.services.bank_review_service import BankReviewService
+from app.services.bank_rule_service import BankRuleService
 from app.services.bill_payment_service import BillPaymentService
 from app.services.check_numbers import CheckNumberService
 from app.services.check_printing_service import CheckPrintingService
@@ -77,6 +88,7 @@ from app.services.portal_service import PortalService
 from app.services.product_service import ProductService
 from app.services.purchase_document_service import PurchaseDocumentService
 from app.services.purchase_kinds import ALL_PURCHASE_KINDS
+from app.services.reconciliation_service import ReconciliationService
 from app.services.recurring_service import RecurringService
 from app.services.report_service import ReportService
 from app.services.sales_common import SalesLineBuilder
@@ -85,6 +97,7 @@ from app.services.sales_document_service import SalesDocumentService
 from app.services.statement_service import StatementService
 from app.services.system_accounts import SystemAccounts
 from app.services.terms_service import TermsService
+from app.services.transfer_service import TransferService
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -211,6 +224,36 @@ def build_purchase_service(db: Session) -> PurchaseDocumentService:
     )
 
 
+def build_deposit_service(db: Session) -> DepositService:
+    return DepositService(
+        db,
+        DepositRepository(db),
+        PaymentRepository(db),
+        SalesDocumentRepository(db),
+        AccountRepository(db),
+        build_system_accounts(db),
+        build_ledger(db),
+    )
+
+
+def build_transfer_service(db: Session) -> TransferService:
+    return TransferService(db, TransferRepository(db), AccountRepository(db), JournalRepository(db), build_ledger(db))
+
+
+def build_bank_review_service(db: Session) -> BankReviewService:
+    return BankReviewService(
+        db,
+        BankTransactionRepository(db),
+        AccountRepository(db),
+        JournalRepository(db),
+        RegisterQueries(db),
+        build_expense_service(db),
+        build_deposit_service(db),
+        build_transfer_service(db),
+        settings.bank_match_days,
+    )
+
+
 def build_reports(db: Session) -> list[Report]:
     """Every report in the Reports page. Add new reports here."""
     return [
@@ -314,15 +357,7 @@ def get_payment_service(db: Session = Depends(get_db)) -> PaymentService:
 
 
 def get_deposit_service(db: Session = Depends(get_db)) -> DepositService:
-    return DepositService(
-        db,
-        DepositRepository(db),
-        PaymentRepository(db),
-        SalesDocumentRepository(db),
-        AccountRepository(db),
-        build_system_accounts(db),
-        build_ledger(db),
-    )
+    return build_deposit_service(db)
 
 
 def get_late_fee_service(db: Session = Depends(get_db)) -> LateFeeService:
@@ -406,3 +441,33 @@ def get_dashboard_service(db: Session = Depends(get_db)) -> DashboardService:
 
 def get_recurring_service(db: Session = Depends(get_db)) -> RecurringService:
     return build_recurring_service(db)
+
+
+# =====================================================================
+# Banking
+# =====================================================================
+
+def get_transfer_service(db: Session = Depends(get_db)) -> TransferService:
+    return build_transfer_service(db)
+
+
+def get_bank_review_service(db: Session = Depends(get_db)) -> BankReviewService:
+    return build_bank_review_service(db)
+
+
+def get_bank_import_service(db: Session = Depends(get_db)) -> BankImportService:
+    return BankImportService(
+        db,
+        BankTransactionRepository(db),
+        BankRuleRepository(db),
+        build_bank_review_service(db),
+        build_bank_feed_provider(settings),
+    )
+
+
+def get_bank_rule_service(db: Session = Depends(get_db)) -> BankRuleService:
+    return BankRuleService(db, BankRuleRepository(db), AccountRepository(db), VendorRepository(db))
+
+
+def get_reconciliation_service(db: Session = Depends(get_db)) -> ReconciliationService:
+    return ReconciliationService(db, ReconciliationRepository(db), RegisterQueries(db), build_bank_review_service(db))

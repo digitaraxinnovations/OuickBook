@@ -36,13 +36,14 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [x] 1099 contractors (vendor flag + tax ID, account → 1099 box) and 1099 summary report (card payments excluded, threshold in config)
 - [x] Also: Accounts Payable Aging report, billable-to-customer on expense/bill lines, void expenses, vendor detail page, bills on dashboard
 
-## Phase 4 – Banking
-- [ ] Bank and credit card accounts, transfers, credit card credits
-- [ ] Bank feeds (EXT: Plaid or similar) + CSV/OFX/QFX import
-- [ ] For-review queue: match, categorize, split, exclude
-- [ ] Bank rules (auto-categorization)
-- [ ] Reconciliation with reconciliation reports
-- [ ] Undo reconciliation, reconciliation discrepancy report
+## Phase 4 – Banking (done)
+- [x] Bank and credit card accounts, transfers (incl. paying the card), credit card credits
+- [x] CSV / OFX / QFX / QBO statement import with duplicate detection and CSV column mapping
+- [~] Live bank feeds — EXT: `BankFeedProvider` interface + "Update from bank" button ready, `BANK_FEED_PROVIDER=none` until a provider (e.g. Plaid) is plugged in
+- [x] For-review queue: match to existing transactions, add (expense / deposit / transfer / card credit), split, exclude, undo
+- [x] Bank rules (description / amount conditions, all/any, money in/out, per account, priority, auto-add)
+- [x] Reconciliation (statement balance, tick items, difference, save for later, finish) with reconciliation report
+- [x] Undo reconciliation (latest first), reconciliation discrepancy report (reconciled items voided afterwards)
 
 ## Phase 5 – Taxes
 - [ ] Sales tax: tax rates, agencies, combined rates, taxable items/customers

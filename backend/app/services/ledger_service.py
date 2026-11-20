@@ -81,7 +81,9 @@ class LedgerService:
                     description=line.description,
                 )
             )
-        return self.post(company_id, entry_date, source_type, reversed_lines, memo, original.source_id)
+        entry = self.post(company_id, entry_date, source_type, reversed_lines, memo, original.source_id)
+        entry.reverses_entry_id = original.id
+        return entry
 
     def check_lines(self, company_id: int, lines: list[LedgerLine]) -> None:
         if len(lines) < 2:

@@ -4,7 +4,9 @@
 import {
   AccountType,
   CreditSource,
+  BankRuleDirection,
   ExpenseKind,
+  RuleCondition,
   PurchaseDocType,
   TripPurpose,
   DepositLineSource,
@@ -241,4 +243,44 @@ export interface TripInput {
   miles: string;
   purpose: TripPurpose;
   notes: string;
+}
+
+export interface TransferInput {
+  transfer_date: string;
+  from_account_id: number;
+  to_account_id: number;
+  amount: string;
+  memo: string;
+}
+
+export interface StatementImportInput {
+  account_id: number;
+  filename: string;
+  content: string;
+  date_column: string;
+  description_column: string;
+  amount_column: string;
+  debit_column: string;
+  credit_column: string;
+  date_format: string;
+  reverse_signs: boolean;
+}
+
+export interface AddBankLineInput {
+  vendor_id: number | null;
+  memo: string;
+  lines: { account_id: number; amount: string; description: string }[];
+}
+
+export interface BankRuleInput {
+  name: string;
+  priority: number;
+  account_id: number | null;
+  direction: BankRuleDirection;
+  match_type: "ALL" | "ANY";
+  conditions: RuleCondition[];
+  category_account_id: number;
+  vendor_id: number | null;
+  auto_add: boolean;
+  is_active: boolean;
 }

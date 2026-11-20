@@ -24,6 +24,9 @@ function typeLabel(expense: Expense): string {
   if (expense.kind === "CHECK") {
     return expense.check_number ? "Check " + expense.check_number : "Check (to print)";
   }
+  if (expense.kind === "CARD_CREDIT") {
+    return "Credit card credit";
+  }
   return "Expense";
 }
 

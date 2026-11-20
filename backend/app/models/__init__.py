@@ -4,6 +4,7 @@ Import every model here so SQLAlchemy and Alembic can see all tables.
 
 from app.models.account import Account
 from app.models.attachment import Attachment
+from app.models.banking import BankRule, BankTransaction, Reconciliation, Transfer
 from app.models.company import Company
 from app.models.contact import Customer, Vendor
 from app.models.deposit import BankDeposit, DepositLine
@@ -30,6 +31,8 @@ __all__ = [
     "Account",
     "Attachment",
     "BankDeposit",
+    "BankRule",
+    "BankTransaction",
     "BillPayment",
     "BillPaymentApplication",
     "Company",
@@ -50,9 +53,11 @@ __all__ = [
     "Product",
     "PurchaseDocument",
     "PurchaseDocumentLine",
+    "Reconciliation",
     "RecurringSchedule",
     "SalesDocument",
     "SalesDocumentLine",
+    "Transfer",
     "Trip",
     "User",
     "Vendor",

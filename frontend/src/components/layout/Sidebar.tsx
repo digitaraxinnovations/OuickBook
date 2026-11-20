@@ -46,7 +46,7 @@ function SidebarGroup({ group, pathname }: { group: NavGroup; pathname: string }
       </div>
       <div className="ml-9 flex flex-col">
         {group.links?.map((link) => {
-          const active = pathname === link.href || (link.href !== "/expenses" && isActive(pathname, link.href));
+          const active = pathname === link.href || (link.href !== "/expenses" && link.href !== "/banking" && isActive(pathname, link.href));
           return (
             <Link
               key={link.href}

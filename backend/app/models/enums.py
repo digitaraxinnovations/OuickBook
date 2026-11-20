@@ -55,10 +55,33 @@ class RecurringType(str, Enum):
 
 
 class ExpenseKind(str, Enum):
-    """An expense paid right away. A check is an expense with a check number."""
+    """
+    EXPENSE / CHECK: money paid out (a check is an expense with a check number).
+    CARD_CREDIT: a refund put back on a credit card (the reverse of an expense).
+    """
 
     EXPENSE = "EXPENSE"
     CHECK = "CHECK"
+    CARD_CREDIT = "CARD_CREDIT"
+
+
+class BankTransactionStatus(str, Enum):
+    FOR_REVIEW = "FOR_REVIEW"
+    ADDED = "ADDED"        # a new transaction was created from it
+    MATCHED = "MATCHED"    # linked to a transaction already in the books
+    EXCLUDED = "EXCLUDED"  # duplicate or personal - ignored
+
+
+class BankRuleDirection(str, Enum):
+    MONEY_IN = "MONEY_IN"
+    MONEY_OUT = "MONEY_OUT"
+    ANY = "ANY"
+
+
+class ReconciliationStatus(str, Enum):
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    UNDONE = "UNDONE"
 
 
 class PurchaseDocType(str, Enum):
@@ -147,3 +170,6 @@ class JournalSource(str, Enum):
     VENDOR_CREDIT = "VENDOR_CREDIT"
     BILL_PAYMENT = "BILL_PAYMENT"
     PURCHASE_VOID = "PURCHASE_VOID"
+    TRANSFER = "TRANSFER"
+    CARD_CREDIT = "CARD_CREDIT"
+    BANK_DEPOSIT = "BANK_DEPOSIT"

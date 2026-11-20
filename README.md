@@ -18,7 +18,8 @@ expenses, a chart of accounts, double-entry bookkeeping and financial reports.
   deposits, payment terms and late fees; estimates with progress invoicing; sales receipts,
   credit memos, refund receipts, delayed charges and credits; payments across several invoices
   using credits and overpayments; PDF, email and a customer "view invoice" link.
-- **Banking** - bank deposits from Undeposited Funds.
+- **Banking** - statement import (CSV / OFX / QFX), review queue (match, add, split, exclude),
+  bank rules, transfers, credit card credits, reconciliation with reports, bank deposits.
 - **Expenses** - vendors (with 1099 tracking), expenses and checks (numbering, batch printing),
   bills with terms, paying bills one by one or in batches, vendor credits, purchase orders,
   receipt uploads and attachments, mileage log.
@@ -41,6 +42,7 @@ switch on with settings in `.env` - no code changes:
 |---|---|---|
 | Sending email | `EMAIL_PROVIDER` = `log` or `smtp` (+ `SMTP_*`) | `log`: emails are saved in **Settings → Email log** instead of being sent |
 | "Pay now" on invoices | `PAYMENT_PROVIDER` | `none`: button hidden. Add a class in `backend/app/integrations/payments.py` |
+| Live bank feeds | `BANK_FEED_PROVIDER` | `none`: upload statements instead. Add a class in `backend/app/integrations/bank_feeds.py` |
 | Links in emails | `PUBLIC_APP_URL` | `http://localhost:3000` |
 
 ---

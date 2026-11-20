@@ -52,7 +52,13 @@ export const sidebarMenu: NavGroup[] = [
   {
     label: "Banking",
     icon: "banking",
-    links: [{ label: "Bank deposits", href: "/banking/deposits" }],
+    links: [
+      { label: "Bank transactions", href: "/banking" },
+      { label: "Reconcile", href: "/banking/reconcile" },
+      { label: "Bank rules", href: "/banking/rules" },
+      { label: "Transfers", href: "/banking/transfers" },
+      { label: "Bank deposits", href: "/banking/deposits" },
+    ],
   },
   {
     label: "Accounting",
@@ -99,6 +105,8 @@ export const newMenuGroups: { title: string; links: NavLink[] }[] = [
     title: "Other",
     links: [
       { label: "Bank deposit", href: "/banking/deposits/new" },
+      { label: "Transfer", href: "/banking/transfers?new=1" },
+      { label: "Credit card credit", href: "/expenses/new?kind=CARD_CREDIT" },
       { label: "Journal entry", href: "/accounting/journal-entries/new" },
       { label: "Customer", href: "/sales/customers?new=1" },
       { label: "Vendor", href: "/expenses/vendors?new=1" },
