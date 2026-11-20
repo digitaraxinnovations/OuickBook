@@ -6,6 +6,8 @@ uvicorn==0.54.0
 SQLAlchemy==2.1.9
 alembic==1.20.1
 psycopg[binary]==3.3.9
+# Pure-Python alternative driver (POSTGRES_DRIVER=pg8000)
+pg8000==1.31.6
 
 # Settings and validation
 pydantic==2.14.4

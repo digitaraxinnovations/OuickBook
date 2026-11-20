@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     postgres_user: str = "ledgerly"
     postgres_password: str = ""
     postgres_db: str = "ledgerly"
+    # Python database driver: "psycopg" (fast, uses a compiled library) or
+    # "pg8000" (pure Python - use it if Windows Application Control blocks psycopg).
+    postgres_driver: str = "psycopg"
     database_echo: bool = False
     # Optional full URL. When set, it wins over the POSTGRES_* values.
     database_url: str | None = None
@@ -96,7 +99,7 @@ class Settings(BaseSettings):
 
     def build_postgres_url(self, database_name: str) -> str:
         return (
-            f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
+            f"postgresql+{self.postgres_driver}://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{database_name}"
         )
 

@@ -156,6 +156,21 @@ Open http://localhost:3000 and create an account.
 
 ---
 
+### Windows: "An Application Control policy has blocked this file"
+
+Windows Smart App Control can block the compiled parts of two Python packages.
+The app works without them:
+
+```powershell
+cd backend
+.venv\Scripts\python -m pip uninstall -y sqlalchemy
+$env:DISABLE_SQLALCHEMY_CEXT = "1"; .venv\Scripts\python -m pip install --no-binary sqlalchemy SQLAlchemy==2.1.9
+```
+
+and set `POSTGRES_DRIVER=pg8000` in `.env` (a pure-Python database driver).
+
+---
+
 ## Tests
 
 Tests use a separate database (`TEST_POSTGRES_DB`, wiped on every run).

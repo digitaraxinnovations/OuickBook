@@ -63,12 +63,11 @@ class CheckPdfBuilder:
         # Pay to the order of ... $ amount
         pdf.set_xy(MARGIN, 42)
         pdf.set_font("Helvetica", "", 8)
-        pdf.cell(25, 6, "PAY TO THE ORDER OF")
+        pdf.cell(36, 6, "PAY TO THE ORDER OF")
         pdf.set_font("Helvetica", "B", 11)
-        pdf.cell(110, 6, safe_text(check.payee))
-        pdf.set_font("Helvetica", "B", 11)
+        pdf.cell(99, 6, safe_text(check.payee))
         pdf.cell(45, 6, "**" + money(check.amount, currency).replace("-", ""), border=1, align="R")
-        pdf.line(MARGIN + 25, 48, 150, 48)
+        pdf.line(MARGIN + 36, 48, 150, 48)
 
         # Amount in words
         pdf.set_xy(MARGIN, 54)

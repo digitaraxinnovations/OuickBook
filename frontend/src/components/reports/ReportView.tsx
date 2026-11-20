@@ -32,7 +32,7 @@ export function ReportView({ report, companyName, currency }: ReportViewProps) {
             </div>
           ))}
           <div className="flex justify-between border-t border-gray-200 pt-1.5 text-sm font-semibold">
-            <span>Total {section.title.toLowerCase()}</span>
+            <span>Total {section.title}</span>
             <span>{formatMoney(section.total, currency)}</span>
           </div>
         </div>
