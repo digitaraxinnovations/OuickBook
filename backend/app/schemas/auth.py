@@ -53,3 +53,6 @@ class CompanyUpdate(CleanStringsModel):
 class MeResponse(BaseModel):
     user: UserRead
     company: CompanyRead
+    # The user's role in this company (see core/permissions.py) and every company they can open.
+    role: str = "ADMIN"
+    companies: list[dict] = []

@@ -68,6 +68,12 @@ class AccountService(BaseService):
     # ---------- writing ----------
 
     def create(self, company_id: int, data: AccountCreate) -> Account:
+        account = self.create_without_commit(company_id, data)
+        self.commit()
+        return account
+
+    def create_without_commit(self, company_id: int, data: AccountCreate) -> Account:
+        """Also used by the CSV import, which commits once at the end."""
         self.check_name_is_free(company_id, data.name)
         self.check_parent(company_id, None, data.parent_id, data.account_type)
         account = Account(
@@ -82,7 +88,6 @@ class AccountService(BaseService):
             tax_line=data.tax_line,
         )
         self.account_repository.add(account)
-        self.commit()
         return account
 
     def update(self, company_id: int, account_id: int, data: AccountUpdate) -> Account:

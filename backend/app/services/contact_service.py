@@ -10,6 +10,7 @@ from app.repositories.sales_repositories import PaymentRepository, PaymentTermRe
 from app.repositories.tax_repositories import TaxCodeRepository
 from app.schemas.contact import CustomerWrite, VendorWrite
 from app.services.base import CrudService
+from app.services.currency_service import CurrencyService
 
 
 class CustomerService(CrudService):
@@ -25,8 +26,10 @@ class CustomerService(CrudService):
         payment_repository: PaymentRepository,
         terms_repository: PaymentTermRepository,
         tax_code_repository: TaxCodeRepository,
+        currencies: CurrencyService,
     ):
         super().__init__(session, repository)
+        self.currencies = currencies
         self.tax_code_repository = tax_code_repository
         self.invoice_repository = invoice_repository
         self.sales_document_repository = sales_document_repository
@@ -38,6 +41,14 @@ class CustomerService(CrudService):
             raise BusinessRuleError("Those payment terms do not exist.")
         if data.default_tax_code_id is not None and self.tax_code_repository.get(company_id, data.default_tax_code_id) is None:
             raise BusinessRuleError("That sales tax rate does not exist.")
+        data.currency_code = self.currencies.check_customer_currency(company_id, data.currency_code)
+
+    def update(self, company_id: int, record_id: int, data: CustomerWrite):
+        customer = self.get(company_id, record_id)
+        new_currency = self.currencies.check_customer_currency(company_id, data.currency_code)
+        if new_currency != customer.currency_code and self.invoice_repository.list_filtered(company_id, customer_id=customer.id):
+            raise BusinessRuleError("This customer has invoices, so their currency cannot change.")
+        return super().update(company_id, record_id, data)
 
     def open_balances(self, company_id: int) -> dict[int, Decimal]:
         """What each customer owes: unpaid invoices minus credit memos and overpayments not used yet."""

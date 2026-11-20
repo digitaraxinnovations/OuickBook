@@ -16,7 +16,10 @@ from app.core.exceptions import AppError
 
 def handle_app_error(request: Request, error: AppError) -> JSONResponse:
     """Turn any AppError raised by a service into a clean JSON response."""
-    return JSONResponse(status_code=error.status_code, content={"detail": error.message})
+    content = {"detail": error.message}
+    if error.code:
+        content["code"] = error.code
+    return JSONResponse(status_code=error.status_code, content=content)
 
 
 def create_app() -> FastAPI:

@@ -12,6 +12,7 @@ import { BankingService } from "./banking.service";
 import { InventoryService } from "./inventory.service";
 import { InvoiceService } from "./invoice.service";
 import { PayrollService } from "./payroll.service";
+import { PlatformService } from "./platform.service";
 import {
   AttachmentService,
   BillPaymentService,
@@ -71,3 +72,4 @@ export const taxService = new TaxService(api);
 export const inventoryService = new InventoryService(api);
 export const payrollService = new PayrollService(api);
 export const trackingService = new TrackingService(api);
+export const platformService = new PlatformService(api);

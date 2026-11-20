@@ -116,7 +116,8 @@ class SavedReportService(BaseService):
         record = self.get_record(company_id, saved_id)
         start, end = resolve_date_range(record.date_range, today or date.today(), record.start_date, record.end_date)
         options = ReportOptions(**record.options)
-        result = self.reports.run(record.report_key, company_id, start, end, options)
+        company = self.company_repository.get(company_id)
+        result = self.reports.run(record.report_key, company_id, start, end, options, company.accounting_method.lower(), company.fiscal_year_start_month)
         result.title = f"{record.name} ({result.title})" if record.name != result.title else result.title
         return result
 

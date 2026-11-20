@@ -232,3 +232,15 @@ class ProjectStatus(str, Enum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     CANCELED = "CANCELED"
+
+
+class UserRole(str, Enum):
+    """What a user may do in a company (see core/permissions.py)."""
+
+    ADMIN = "ADMIN"
+    STANDARD = "STANDARD"
+    SALES = "SALES"
+    PURCHASES = "PURCHASES"
+    REPORTS_ONLY = "REPORTS_ONLY"
+    TIME_ONLY = "TIME_ONLY"
+    ACCOUNTANT = "ACCOUNTANT"

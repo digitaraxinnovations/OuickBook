@@ -50,6 +50,8 @@ export interface ContactInput {
   is_active: boolean;
   /** Customers and vendors: default payment terms. */
   terms_id?: number | null;
+  /** Customers: their currency (empty = home currency). */
+  currency_code?: string | null;
   /** Customers only: sales tax. */
   tax_exempt?: boolean;
   exemption_reason?: string;
@@ -120,6 +122,8 @@ export interface SalesLineInput {
 /** Discount, shipping and sales tax - shared by invoices and other sales forms. */
 export interface SalesAmountsInput {
   tax_code_id: number | null;
+  /** Foreign currency customers: home currency per 1 unit (empty = latest saved rate). */
+  exchange_rate?: string | null;
   discount_type: DiscountType | null;
   discount_value: string;
   shipping_amount: string;
@@ -160,6 +164,7 @@ export interface PaymentInput {
   memo: string;
   applications: { invoice_id: number; amount: string }[];
   credits: { source_type: CreditSource; source_id: number; amount: string }[];
+  exchange_rate?: string | null;
 }
 
 export interface DepositInput {

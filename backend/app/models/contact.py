@@ -11,6 +11,8 @@ from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
 
 class ContactMixin:
     display_name: Mapped[str] = mapped_column(String(200))
+    # Empty = the company's home currency.
+    currency_code: Mapped[str | None] = mapped_column(String(3))
     company_name: Mapped[str | None] = mapped_column(String(200))
     email: Mapped[str | None] = mapped_column(String(255))
     phone: Mapped[str | None] = mapped_column(String(50))

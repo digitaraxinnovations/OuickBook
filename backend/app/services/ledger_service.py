@@ -56,9 +56,11 @@ class LedgerLine:
 
 
 class LedgerService:
-    def __init__(self, journal_repository: JournalRepository, account_repository: AccountRepository):
+    def __init__(self, journal_repository: JournalRepository, account_repository: AccountRepository, closing_guard=None):
         self.journal_repository = journal_repository
         self.account_repository = account_repository
+        # Stops entries in a closed period (see ClosingDateGuard). Optional so tools can post freely.
+        self.closing_guard = closing_guard
 
     def post(
         self,
@@ -71,6 +73,8 @@ class LedgerService:
         tracking: Tracking | None = None,
     ) -> JournalEntry:
         """Check the lines and save them as one journal entry. Does not commit."""
+        if self.closing_guard is not None:
+            self.closing_guard.check(company_id, entry_date)
         self.check_lines(company_id, lines)
         if tracking is None:
             tracking = Tracking()

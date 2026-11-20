@@ -43,10 +43,15 @@ class ReportService:
         start_date: date | None,
         end_date: date | None,
         options: ReportOptions | None = None,
+        default_basis: str = "accrual",
+        fiscal_year_start_month: int = 1,
     ) -> ReportResult:
         report = self.get(key)
         if options is None:
             options = ReportOptions()
+        # The company's accounting method (Settings -> Advanced) unless the user chose one.
+        if "basis" not in options.model_fields_set:
+            options.basis = default_basis
         # Options the user did not set take the report's own defaults (e.g. "by month").
         for name, value in report.defaults.items():
             if name not in options.model_fields_set:
@@ -60,7 +65,9 @@ class ReportService:
         if end_date is None:
             end_date = today
         if start_date is None and report.uses_start_date:
-            start_date = date(end_date.year, 1, 1)
+            # The start of the fiscal year the end date is in.
+            year = end_date.year if end_date.month >= fiscal_year_start_month else end_date.year - 1
+            start_date = date(year, fiscal_year_start_month, 1)
         if start_date is not None and start_date > end_date:
             raise BusinessRuleError("The start date must be on or before the end date.")
 

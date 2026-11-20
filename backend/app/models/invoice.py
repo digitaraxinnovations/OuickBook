@@ -32,6 +32,10 @@ class Invoice(TrackingMixin, CompanyOwnedMixin, TimestampMixin, Base):
     shipping_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default=text("0"))
     tax_code_id: Mapped[int | None] = mapped_column(ForeignKey("tax_codes.id"))
     tax_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default=text("0"))
+    # Foreign currency: amounts on this form are in `currency_code`;
+    # home amount = amount x exchange_rate. Empty / 1 for the home currency.
+    currency_code: Mapped[str | None] = mapped_column(String(3))
+    exchange_rate: Mapped[Decimal] = mapped_column(Numeric(18, 8), server_default=text("1"))
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     amount_paid: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     journal_entry_id: Mapped[int | None] = mapped_column(ForeignKey("journal_entries.id"))

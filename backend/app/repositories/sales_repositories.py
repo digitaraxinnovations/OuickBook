@@ -55,7 +55,7 @@ class SalesDocumentRepository(BaseRepository):
     def open_credit_by_customer(self, company_id: int) -> dict[int, Decimal]:
         """Credit memo money not yet used, per customer."""
         query = (
-            select(SalesDocument.customer_id, func.sum(SalesDocument.total - SalesDocument.amount_applied))
+            select(SalesDocument.customer_id, func.sum((SalesDocument.total - SalesDocument.amount_applied) * SalesDocument.exchange_rate))
             .where(
                 SalesDocument.company_id == company_id,
                 SalesDocument.doc_type == SalesDocType.CREDIT_MEMO,
@@ -65,7 +65,7 @@ class SalesDocumentRepository(BaseRepository):
         )
         result = {}
         for customer_id, amount in self.session.execute(query):
-            result[customer_id] = Decimal(amount or 0)
+            result[customer_id] = Decimal(amount or 0).quantize(Decimal("0.01"))
         return result
 
     def list_undeposited_receipts(self, company_id: int, undeposited_account_id: int) -> list[SalesDocument]:
@@ -100,13 +100,13 @@ class PaymentRepository(BaseRepository):
 
     def unapplied_by_customer(self, company_id: int) -> dict[int, Decimal]:
         query = (
-            select(Payment.customer_id, func.sum(Payment.unapplied_amount))
+            select(Payment.customer_id, func.sum(Payment.unapplied_amount * Payment.exchange_rate))
             .where(Payment.company_id == company_id, Payment.unapplied_amount > 0)
             .group_by(Payment.customer_id)
         )
         result = {}
         for customer_id, amount in self.session.execute(query):
-            result[customer_id] = Decimal(amount or 0)
+            result[customer_id] = Decimal(amount or 0).quantize(Decimal("0.01"))
         return result
 
     def list_undeposited(self, company_id: int, undeposited_account_id: int) -> list[Payment]:

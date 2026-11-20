@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { appConfig } from "@/config/app.config";
 import { NavGroup, sidebarMenu } from "@/config/navigation";
+import { VISIBLE_MENU } from "@/config/permissions";
+import { useAuth } from "@/context/AuthContext";
 import { NewMenuButton } from "./NewMenuButton";
 
 const icons = {
@@ -69,6 +71,9 @@ function SidebarGroup({ group, pathname }: { group: NavGroup; pathname: string }
 }
 
 export function Sidebar() {
+  const { role } = useAuth();
+  // Only the menu groups the user's role can open.
+  const visible = sidebarMenu.filter((group) => !role || VISIBLE_MENU[role].includes(group.label));
   const pathname = usePathname();
   return (
     <aside className="no-print flex w-60 shrink-0 flex-col bg-sidebar px-3 py-4">
@@ -80,7 +85,7 @@ export function Sidebar() {
       </div>
       <NewMenuButton />
       <nav className="mt-4 flex flex-col gap-1">
-        {sidebarMenu.map((group) => (
+        {visible.map((group) => (
           <SidebarGroup key={group.label} group={group} pathname={pathname} />
         ))}
       </nav>

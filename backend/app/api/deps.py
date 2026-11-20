@@ -9,16 +9,18 @@ The build_* functions take a database session and return a service.
 The get_* functions are the FastAPI dependencies used by the routes.
 """
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.exceptions import AuthenticationError
+from app.core.request_context import remember_request
 from app.core.security import PasswordHasher, TokenService
 from app.db.session import get_db
 from app.integrations.bank_feeds import build_bank_feed_provider
 from app.integrations.email import build_email_sender
+from app.integrations.exchange_rates import build_exchange_rate_provider
 from app.integrations.payments import build_payment_processor
 from app.integrations.payroll import PayrollProvider, build_payroll_provider
 from app.integrations.tax_rates import TaxRateProvider, build_tax_rate_provider
@@ -155,6 +157,13 @@ from app.services.purchase_kinds import ALL_PURCHASE_KINDS
 from app.services.reconciliation_service import ReconciliationService
 from app.services.recurring_service import RecurringService
 from app.services.report_service import ReportService
+from app.services.closing_date import ClosingDateGuard
+from app.services.currency_service import CurrencyService
+from app.services.data_transfer_service import DataTransferService, build_transfers
+from app.services.integration_service import IntegrationService
+from app.services.membership_service import MembershipService
+from app.services.notification_service import NotificationService
+from app.services.platform_service import AuditLogService, RecentService, SearchService, SettingsService
 from app.services.saved_report_service import SavedReportService
 from app.services.catalog_service import CatalogService
 from app.services.inventory_adjustment_service import InventoryAdjustmentService
@@ -187,7 +196,8 @@ bearer_scheme = HTTPBearer(auto_error=False)
 # =====================================================================
 
 def build_ledger(db: Session) -> LedgerService:
-    return LedgerService(JournalRepository(db), AccountRepository(db))
+    guard = ClosingDateGuard(CompanyRepository(db), PasswordHasher(settings.bcrypt_rounds))
+    return LedgerService(JournalRepository(db), AccountRepository(db), guard)
 
 
 def build_system_accounts(db: Session) -> SystemAccounts:
@@ -258,6 +268,10 @@ def build_terms_service(db: Session) -> TermsService:
     return TermsService(db, PaymentTermRepository(db))
 
 
+def build_currency_service(db: Session) -> CurrencyService:
+    return CurrencyService(db, CompanyRepository(db), build_exchange_rate_provider(settings))
+
+
 def build_payment_service(db: Session) -> PaymentService:
     return PaymentService(
         db,
@@ -268,6 +282,7 @@ def build_payment_service(db: Session) -> PaymentService:
         AccountRepository(db),
         build_system_accounts(db),
         build_ledger(db),
+        build_currency_service(db),
     )
 
 
@@ -285,6 +300,7 @@ def build_invoice_service(db: Session) -> InvoiceService:
         build_ledger(db),
         build_payment_service(db),
         build_tax_calculator(db),
+        build_currency_service(db),
         build_inventory(db),
         TimeEntryRepository(db),
         build_tracking(db),
@@ -304,6 +320,7 @@ def build_sales_document_service(db: Session) -> SalesDocumentService:
         build_ledger(db),
         ALL_KINDS,
         build_tax_calculator(db),
+        build_currency_service(db),
         build_inventory(db),
         build_tracking(db),
     )
@@ -487,13 +504,40 @@ def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
     )
 
 
+def build_membership_service(db: Session) -> MembershipService:
+    return MembershipService(
+        db,
+        settings,
+        UserRepository(db),
+        CompanyRepository(db),
+        build_company_service(db),
+        build_email_service(db),
+        PasswordHasher(settings.bcrypt_rounds),
+        TokenService(settings.jwt_secret_key, settings.jwt_algorithm, settings.access_token_expire_minutes),
+    )
+
+
+def get_membership_service(db: Session = Depends(get_db)) -> MembershipService:
+    return build_membership_service(db)
+
+
 def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     auth_service: AuthService = Depends(get_auth_service),
+    memberships: MembershipService = Depends(get_membership_service),
 ) -> User:
+    """
+    The signed-in user, after checking their role allows this request
+    (see core/permissions.py). Also remembers who they are for the audit log,
+    and the closing password if they typed one (X-Closing-Password header).
+    """
     if credentials is None:
         raise AuthenticationError("Please sign in.")
-    return auth_service.get_user_from_token(credentials.credentials)
+    user = auth_service.get_user_from_token(credentials.credentials)
+    memberships.check_access(user, request.url.path, request.method)
+    remember_request(memberships.session, user.id, request.headers.get("X-Closing-Password"))
+    return user
 
 
 # =====================================================================
@@ -517,6 +561,7 @@ def get_customer_service(db: Session = Depends(get_db)) -> CustomerService:
         PaymentRepository(db),
         PaymentTermRepository(db),
         TaxCodeRepository(db),
+        build_currency_service(db),
     )
 
 
@@ -773,3 +818,49 @@ def build_saved_report_service(db: Session) -> SavedReportService:
 
 def get_saved_report_service(db: Session = Depends(get_db)) -> SavedReportService:
     return build_saved_report_service(db)
+
+
+# ---------- settings, currencies, audit log, search, import ----------
+
+
+def get_settings_service(db: Session = Depends(get_db)) -> SettingsService:
+    return SettingsService(db, CompanyRepository(db), PasswordHasher(settings.bcrypt_rounds))
+
+
+def get_currency_service(db: Session = Depends(get_db)) -> CurrencyService:
+    return build_currency_service(db)
+
+
+def get_audit_log_service(db: Session = Depends(get_db)) -> AuditLogService:
+    return AuditLogService(db)
+
+
+def get_search_service(db: Session = Depends(get_db)) -> SearchService:
+    return SearchService(db)
+
+
+def get_recent_service(db: Session = Depends(get_db)) -> RecentService:
+    return RecentService(db, SourceNames(db))
+
+
+def get_data_transfer_service(db: Session = Depends(get_db)) -> DataTransferService:
+    transfers = build_transfers(
+        CustomerRepository(db),
+        get_customer_service(db),
+        VendorRepository(db),
+        get_vendor_service(db),
+        AccountRepository(db),
+        get_account_service(db),
+        JournalRepository(db),
+        get_journal_service(db),
+    )
+    return DataTransferService(db, transfers)
+
+
+def get_notification_service(db: Session = Depends(get_db)) -> NotificationService:
+    return NotificationService(db, build_tax_service(db))
+
+
+def get_integration_service(db: Session = Depends(get_db)) -> IntegrationService:
+    return IntegrationService(db)
+

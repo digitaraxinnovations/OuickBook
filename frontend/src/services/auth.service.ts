@@ -1,7 +1,7 @@
 import { ApiClient } from "@/lib/api-client";
 import { TokenStorage } from "@/lib/token-storage";
 import { LoginInput, SignupInput } from "@/types/inputs";
-import { Company, User } from "@/types/models";
+import { Company, CompanyMembership, User, UserRole } from "@/types/models";
 
 interface TokenResponse {
   access_token: string;
@@ -10,6 +10,8 @@ interface TokenResponse {
 export interface CurrentSession {
   user: User;
   company: Company;
+  role: UserRole;
+  companies: CompanyMembership[];
 }
 
 export class AuthService {
@@ -28,6 +30,12 @@ export class AuthService {
 
   async signup(input: SignupInput): Promise<void> {
     const result = await this.api.post<TokenResponse>("/auth/signup", input);
+    this.tokenStorage.save(result.access_token);
+  }
+
+  /** Join a company from an invitation link (creating the account if needed) and sign in. */
+  async acceptInvitation(token: string, fullName: string, password: string): Promise<void> {
+    const result = await this.api.post<TokenResponse>("/auth/invitations/" + token + "/accept", { full_name: fullName || null, password: password });
     this.tokenStorage.save(result.access_token);
   }
 

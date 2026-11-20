@@ -75,9 +75,12 @@ export class ApiClient {
     return headers;
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  private async request<T>(method: string, path: string, body?: unknown, closingPassword?: string): Promise<T> {
     const headers = this.authHeaders();
     headers["Content-Type"] = "application/json";
+    if (closingPassword) {
+      headers["X-Closing-Password"] = closingPassword;
+    }
 
     let response: Response;
     try {
@@ -97,9 +100,21 @@ export class ApiClient {
     }
 
     if (!response.ok) {
-      throw new ApiError(this.readErrorMessage(data), response.status);
+      const message = this.readErrorMessage(data);
+      // The date is in a closed period: ask for the closing password once and try again.
+      if (this.isBooksClosed(data) && !closingPassword && typeof window !== "undefined") {
+        const typed = window.prompt(message + " Closing password:");
+        if (typed) {
+          return this.request<T>(method, path, body, typed);
+        }
+      }
+      throw new ApiError(message, response.status);
     }
     return data as T;
+  }
+
+  private isBooksClosed(data: unknown): boolean {
+    return Boolean(data && typeof data === "object" && "code" in data && (data as { code: string }).code === "BOOKS_CLOSED");
   }
 
   /** FastAPI sends either {detail: "message"} or {detail: [{msg, loc}, ...]} */

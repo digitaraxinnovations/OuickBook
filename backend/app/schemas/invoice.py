@@ -23,6 +23,8 @@ class SalesAmountsInput(TrackingInput, CleanStringsModel):
     """Discount, shipping and sales tax - shared by invoices and other sales forms."""
 
     tax_code_id: int | None = None
+    # Foreign currency customers: home currency per 1 unit. Empty = the latest saved rate.
+    exchange_rate: Decimal | None = Field(default=None, gt=0, max_digits=18, decimal_places=8)
     discount_type: DiscountType | None = None
     discount_value: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
     shipping_amount: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
@@ -82,6 +84,8 @@ class InvoiceRead(TrackingRead, InvoiceSummary):
     shipping_amount: Decimal
     tax_code_id: int | None
     tax_amount: Decimal
+    currency_code: str | None = None
+    exchange_rate: Decimal = Decimal("1")
     estimate_id: int | None
     late_fee_applied_on: date | None
     last_emailed_at: datetime | None

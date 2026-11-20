@@ -1,10 +1,12 @@
 from app.core.exceptions import AuthenticationError, ConflictError
 from app.core.security import PasswordHasher, TokenService
-from app.models import User
+from app.models import CompanyMember, User
+from app.models.enums import UserRole
 from app.repositories.company_repository import UserRepository
 from app.schemas.auth import LoginRequest, SignupRequest
 from app.services.base import BaseService
 from app.services.company_service import CompanyService
+from app.services.integration_service import API_KEY_PREFIX, IntegrationService
 
 
 class AuthService(BaseService):
@@ -36,6 +38,7 @@ class AuthService(BaseService):
             password_hash=self.password_hasher.hash(data.password),
         )
         self.user_repository.add(user)
+        self.session.add(CompanyMember(company_id=company.id, user_id=user.id, role=UserRole.ADMIN, is_primary_admin=True, is_active=True))
         self.commit()
         return self.token_service.create_access_token(user.id)
 
@@ -48,6 +51,8 @@ class AuthService(BaseService):
         return self.token_service.create_access_token(user.id)
 
     def get_user_from_token(self, token: str) -> User:
+        if token.startswith(API_KEY_PREFIX):
+            return IntegrationService(self.session).user_for_key(token)
         user_id = self.token_service.read_user_id(token)
         user = self.user_repository.get(user_id)
         if user is None or not user.is_active:

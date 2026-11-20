@@ -78,7 +78,7 @@ def add_amount_rows(document: PdfDocument, record, currency: str) -> None:
 
 
 def invoice_document(invoice: Invoice, company: Company) -> PdfDocument:
-    currency = company.currency
+    currency = invoice.currency_code or company.currency
     document = PdfDocument("Invoice")
     document.number = invoice.invoice_number
     document.info_rows = [
@@ -102,7 +102,7 @@ def invoice_document(invoice: Invoice, company: Company) -> PdfDocument:
 
 
 def sales_document(record: SalesDocument, company: Company) -> PdfDocument:
-    currency = company.currency
+    currency = record.currency_code or company.currency
     document = PdfDocument(DOCUMENT_TITLES[record.doc_type])
     document.number = record.doc_number
     document.info_rows = [("Date", nice_date(record.doc_date))]

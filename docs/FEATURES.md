@@ -75,21 +75,21 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [x] A/R aging summary/detail, open invoices, collections, customer balance summary/detail
 - [x] A/P aging summary/detail, unpaid bills, vendor balance summary/detail
 - [x] Sales by customer/product, expenses by vendor, inventory valuation
-- [~] Sales tax, 1099, payroll reports (done); audit log comes with Phase 10 (audit log of every change)
+- [x] Sales tax, 1099, payroll reports, audit log (Settings → Audit log)
 - [x] Custom date ranges (presets + custom), accrual vs cash basis, filters, saved/custom reports
 - [x] Export to PDF / Excel / CSV, scheduled email reports (sent by the daily job through the EMAIL_PROVIDER interface)
 
 ## Phase 10 – Company, users & platform
-- [ ] Multiple companies per login, company switcher
-- [ ] Users, roles & permissions, invite users, accountant access
-- [ ] Audit log of every change
-- [ ] Settings: company, sales, expenses, payments, advanced (fiscal year, accounting method, closing date with password, multi-currency)
-- [ ] Multi-currency with exchange rates (EXT for live rates)
-- [ ] Global search, recent transactions, "+ New" quick create menu
-- [ ] Attachments on any transaction
-- [ ] Import/export (customers, vendors, accounts, products, transactions)
-- [ ] Notifications, activity feed
-- [ ] Public REST API + webhooks for integrations
+- [x] Multiple companies per login, company switcher
+- [x] Users, roles & permissions (Admin, Standard, Sales, Purchases, Reports only, Time only, Accountant), invite users by email link, accountant access
+- [x] Audit log of every change (who, when, field old → new)
+- [x] Settings: company, sales, expenses, payments, advanced (fiscal year, accounting method, closing date with password, multi-currency)
+- [~] Multi-currency with exchange rates (EXT for live rates: `EXCHANGE_RATE_PROVIDER`) - customers, invoices, sales forms and payments (with exchange gain/loss) done; vendors, bills and expenses in foreign currency not yet
+- [x] Global search, recent transactions, "+ New" quick create menu
+- [~] Attachments on invoices, sales forms, expenses and vendor forms (not yet on journal entries, payments, deposits)
+- [~] Import/export CSV: customers, vendors, accounts, journal entries (products import not yet)
+- [x] Notifications (bell: overdue invoices, bills due, bank lines, low stock, payroll, sales tax), activity feed on the dashboard
+- [x] Public REST API (API keys) + webhooks (`WEBHOOK_DELIVERY` = log or http, HMAC signed)
 
 ## Out of scope / not copied
 - Intuit name, logo, colors, and proprietary UI artwork (original branding is used instead)

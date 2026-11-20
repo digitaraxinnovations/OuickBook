@@ -22,7 +22,7 @@ router = APIRouter(tags=["Reports & Dashboard"])
 
 
 def report_options(
-    basis: str = "accrual",
+    basis: str | None = None,
     column_by: str | None = None,
     compare: str | None = None,
     class_id: int | None = None,
@@ -33,8 +33,9 @@ def report_options(
     account_id: int | None = None,
 ) -> ReportOptions:
     """Report options from the query string. Only the ones given count as "set" (so defaults still apply)."""
-    given = {"basis": basis}
+    given = {}
     for name, value in (
+        ("basis", basis),
         ("column_by", column_by),
         ("compare", compare),
         ("class_id", class_id),
@@ -76,8 +77,14 @@ def run_report(
     user: User = Depends(get_current_user),
     service: ReportService = Depends(get_report_service),
 ):
-    return service.run(report_key, user.company_id, start_date, end_date, options)
+    return service.run(report_key, user.company_id, start_date, end_date, options, *company_defaults(user))
 
+
+
+def company_defaults(user: User) -> tuple[str, int]:
+    """(default basis, fiscal year start month) from the company's advanced settings."""
+    company = user.company
+    return company.accounting_method.lower(), company.fiscal_year_start_month
 
 
 def file_response(exported: ExportedFile) -> Response:
@@ -101,7 +108,7 @@ def export_report(
     saved: SavedReportService = Depends(get_saved_report_service),
 ):
     """The report as a PDF, CSV or Excel (xlsx) file."""
-    result = service.run(report_key, user.company_id, start_date, end_date, options)
+    result = service.run(report_key, user.company_id, start_date, end_date, options, *company_defaults(user))
     return file_response(saved.export(user.company_id, result, file_format))
 
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ActivityFeed } from "@/components/layout/ActivityFeed";
 import { Card } from "@/components/ui/Card";
 import { DataTable } from "@/components/ui/DataTable";
 import { ErrorMessage, Loading, StatusBadge } from "@/components/ui/Feedback";
@@ -116,6 +117,9 @@ export default function DashboardPage() {
             { header: "Amount", align: "right", render: (row) => formatMoney(row.total, currency) },
           ]}
         />
+      </div>
+      <div className="mt-8">
+        <ActivityFeed />
       </div>
     </div>
   );

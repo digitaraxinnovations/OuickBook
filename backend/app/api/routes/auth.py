@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, status
 
-from app.api.deps import get_auth_service, get_company_service, get_current_user
+from app.api.deps import get_auth_service, get_company_service, get_current_user, get_membership_service
+from app.services.membership_service import MembershipService
 from app.models import User
 from app.schemas.auth import CompanyRead, CompanyUpdate, LoginRequest, MeResponse, SignupRequest, TokenResponse
 from app.schemas.sales_extras import LogoRead, LogoUpload, SalesSettingsRead, SalesSettingsUpdate
@@ -23,8 +24,10 @@ def login(data: LoginRequest, service: AuthService = Depends(get_auth_service)):
 
 
 @router.get("/auth/me", response_model=MeResponse)
-def me(user: User = Depends(get_current_user)):
-    return MeResponse(user=user, company=user.company)
+def me(user: User = Depends(get_current_user), memberships: MembershipService = Depends(get_membership_service)):
+    member = memberships.member(user.company_id, user.id)
+    companies = [item.model_dump() for item in memberships.companies(user)]
+    return MeResponse(user=user, company=user.company, role=member.role.value, companies=companies)
 
 
 @router.put("/company", response_model=CompanyRead)

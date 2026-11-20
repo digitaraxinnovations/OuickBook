@@ -35,9 +35,9 @@ class InvoiceRepository(BaseRepository):
         return list(self.session.scalars(query))
 
     def open_balance_by_customer(self, company_id: int) -> dict[int, Decimal]:
-        """Return {customer_id: amount still owed} for every customer with unpaid invoices."""
+        """Return {customer_id: amount still owed, in the home currency} for every customer with unpaid invoices."""
         query = (
-            select(Invoice.customer_id, func.sum(Invoice.total - Invoice.amount_paid))
+            select(Invoice.customer_id, func.sum((Invoice.total - Invoice.amount_paid) * Invoice.exchange_rate))
             .where(
                 Invoice.company_id == company_id,
                 Invoice.status != InvoiceStatus.VOID,
@@ -46,5 +46,5 @@ class InvoiceRepository(BaseRepository):
         )
         balances = {}
         for customer_id, balance in self.session.execute(query):
-            balances[customer_id] = Decimal(balance or 0)
+            balances[customer_id] = Decimal(balance or 0).quantize(Decimal("0.01"))
         return balances

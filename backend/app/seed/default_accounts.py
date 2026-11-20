@@ -30,6 +30,7 @@ class SystemAccount:
     PAYROLL_LIABILITIES = "payroll_liabilities"
     WAGES = "wages"
     PAYROLL_TAXES = "payroll_taxes"
+    EXCHANGE_GAIN_LOSS = "exchange_gain_loss"
 
 
 class DetailType:
@@ -152,5 +153,6 @@ DEFAULT_ACCOUNTS = [
     {"code": "6700", "name": "Travel", "type": AccountType.EXPENSE, "detail": "Travel", "key": None},
     {"code": "6800", "name": "Utilities", "type": AccountType.EXPENSE, "detail": "Utilities", "key": None},
     {"code": "6900", "name": "Contractors", "type": AccountType.EXPENSE, "detail": "Cost of Labor", "key": None, "box_1099": "NEC_1"},
+    {"code": "7000", "name": "Exchange Gain or Loss", "type": AccountType.EXPENSE, "detail": "Exchange Gain or Loss", "key": SystemAccount.EXCHANGE_GAIN_LOSS},
     {"code": "6999", "name": "Uncategorized Expense", "type": AccountType.EXPENSE, "detail": "Other Miscellaneous Service Cost", "key": SystemAccount.UNCATEGORIZED_EXPENSE},
 ]

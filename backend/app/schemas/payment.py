@@ -28,6 +28,8 @@ class PaymentCreate(CleanStringsModel):
     # When empty, the money goes to "Undeposited Funds".
     deposit_account_id: int | None = None
     memo: str | None = Field(default=None, max_length=500)
+    # Foreign currency customers: home currency per 1 unit on the payment date. Empty = latest saved rate.
+    exchange_rate: Decimal | None = Field(default=None, gt=0, max_digits=18, decimal_places=8)
     applications: list[PaymentApplicationInput] = Field(default_factory=list)
     credits: list[CreditUseInput] = Field(default_factory=list)
 
@@ -56,6 +58,8 @@ class PaymentRead(ORMModel):
     unapplied_amount: Decimal
     payment_method: PaymentMethod
     reference_no: str | None
+    currency_code: str | None = None
+    exchange_rate: Decimal = Decimal("1")
     deposit_account: AccountSummary
     memo: str | None
     deposit_id: int | None

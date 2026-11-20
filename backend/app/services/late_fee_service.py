@@ -74,7 +74,10 @@ class LateFeeService(BaseService):
                 source_type=JournalSource.LATE_FEE,
                 source_id=invoice.id,
                 memo=f"Late fee on invoice {invoice.invoice_number}",
-                lines=[LedgerLine(receivable.id, debit=fee), LedgerLine(income_account.id, credit=fee)],
+                lines=[
+                    LedgerLine(receivable.id, debit=to_money(fee * invoice.exchange_rate)),
+                    LedgerLine(income_account.id, credit=to_money(fee * invoice.exchange_rate)),
+                ],
             )
             details.append(f"Invoice {invoice.invoice_number}: late fee {fee}")
 

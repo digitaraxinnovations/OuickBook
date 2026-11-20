@@ -24,3 +24,6 @@ def get_db():
         yield session
     finally:
         session.close()
+
+# Writes the audit log after every save (see db/audit.py).
+import app.db.audit  # noqa: E402, F401

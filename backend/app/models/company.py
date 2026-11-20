@@ -1,6 +1,8 @@
 from decimal import Decimal
 
-from sqlalchemy import LargeBinary, Numeric, String, Text, text
+from datetime import date
+
+from sqlalchemy import Date, LargeBinary, Numeric, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin
@@ -41,3 +43,18 @@ class Company(TimestampMixin, Base):
     # ---------- mileage ----------
     # Deduction per business mile (the standard mileage rate).
     mileage_rate: Mapped[Decimal] = mapped_column(Numeric(6, 3), server_default=text("0.70"))
+
+    # ---------- expenses ----------
+    # Bills are due this many days after the bill date (unless terms say otherwise).
+    bill_terms_days: Mapped[int] = mapped_column(server_default=text("30"))
+
+    # ---------- advanced ----------
+    # 1 = January. Reports' "this year" starts in this month.
+    fiscal_year_start_month: Mapped[int] = mapped_column(server_default=text("1"))
+    # "ACCRUAL" or "CASH": the basis reports start with.
+    accounting_method: Mapped[str] = mapped_column(String(10), server_default=text("'ACCRUAL'"))
+    # Nothing dated on or before this day can be added or changed without the closing password.
+    closing_date: Mapped[date | None] = mapped_column(Date)
+    closing_password_hash: Mapped[str | None] = mapped_column(String(255))
+    multicurrency_enabled: Mapped[bool] = mapped_column(server_default=text("false"))
+

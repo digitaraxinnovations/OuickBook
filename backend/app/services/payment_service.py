@@ -30,6 +30,7 @@ from app.repositories.sales_repositories import PaymentRepository, SalesDocument
 from app.schemas.payment import CustomerCredit, PaymentCreate
 from app.seed.default_accounts import SystemAccount
 from app.services.base import BaseService
+from app.services.currency_service import CurrencyService
 from app.services.ledger_service import LedgerLine, LedgerService
 from app.services.system_accounts import SystemAccounts
 
@@ -45,6 +46,7 @@ class PaymentService(BaseService):
         account_repository: AccountRepository,
         system_accounts: SystemAccounts,
         ledger: LedgerService,
+        currencies: CurrencyService,
     ):
         super().__init__(session)
         self.payment_repository = payment_repository
@@ -54,6 +56,7 @@ class PaymentService(BaseService):
         self.account_repository = account_repository
         self.system_accounts = system_accounts
         self.ledger = ledger
+        self.currencies = currencies
 
     # ---------- reading ----------
 
@@ -137,6 +140,7 @@ class PaymentService(BaseService):
             )
 
         deposit_account = self.find_deposit_account(company_id, data.deposit_account_id)
+        rate = self.currencies.rate_for(company_id, customer.currency_code, data.payment_date, data.exchange_rate)
         payment = Payment(
             company_id=company_id,
             customer_id=customer.id,
@@ -147,6 +151,8 @@ class PaymentService(BaseService):
             reference_no=data.reference_no,
             deposit_account_id=deposit_account.id,
             memo=data.memo,
+            currency_code=customer.currency_code,
+            exchange_rate=rate,
         )
 
         # Pay the invoices.
@@ -182,23 +188,45 @@ class PaymentService(BaseService):
         self.payment_repository.add(payment)
 
         if amount > 0:
-            receivable = self.system_accounts.get(company_id, SystemAccount.ACCOUNTS_RECEIVABLE)
             entry = self.ledger.post(
                 company_id=company_id,
                 entry_date=data.payment_date,
                 source_type=JournalSource.PAYMENT,
                 source_id=payment.id,
                 memo=f"Payment from {customer.display_name}",
-                lines=[
-                    LedgerLine(deposit_account.id, debit=amount),
-                    LedgerLine(receivable.id, credit=amount),
-                ],
+                lines=self.payment_ledger_lines(company_id, payment, deposit_account.id, money_used_on_invoices, applied_total),
             )
             payment.journal_entry_id = entry.id
 
         if commit:
             self.commit()
         return payment
+
+    def payment_ledger_lines(self, company_id: int, payment: Payment, deposit_account_id: int, money_used_on_invoices, applied_total) -> list[LedgerLine]:
+        """
+            Debit  bank (or Undeposited Funds)   amount x payment rate
+            Credit Accounts Receivable           what the invoices were booked at
+            Exchange gain / loss                 the difference (foreign currency only)
+        """
+        receivable = self.system_accounts.get(company_id, SystemAccount.ACCOUNTS_RECEIVABLE)
+        received_home = to_money(payment.amount * payment.exchange_rate)
+        gain = ZERO
+        if payment.currency_code and applied_total > 0:
+            # Only the money part of the payment (not credits used) settles invoices at a new rate.
+            money_share = money_used_on_invoices / applied_total
+            for application in payment.applications:
+                invoice = self.invoice_repository.get(company_id, application.invoice_id)
+                gain += application.amount * money_share * (payment.exchange_rate - invoice.exchange_rate)
+            gain = to_money(gain)
+
+        lines = [LedgerLine(deposit_account_id, debit=received_home), LedgerLine(receivable.id, credit=received_home - gain)]
+        if gain != 0:
+            exchange = self.system_accounts.get(company_id, SystemAccount.EXCHANGE_GAIN_LOSS)
+            if gain > 0:
+                lines.append(LedgerLine(exchange.id, credit=gain))
+            else:
+                lines.append(LedgerLine(exchange.id, debit=-gain))
+        return lines
 
     def use_credit(self, company_id: int, customer_id: int, source_type: CreditSource, source_id: int, amount) -> None:
         if source_type == CreditSource.CREDIT_MEMO:
