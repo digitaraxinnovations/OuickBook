@@ -81,7 +81,8 @@ export default function ReceivePaymentPage() {
     }
   }, []);
 
-  // When the invoice list arrives, fill in the invoice we came from.
+  // When the customer's invoice list arrives, fill in the invoice we came from.
+  // (An earlier, empty list can arrive first - keep waiting until the invoice is in it.)
   useEffect(() => {
     if (preselectInvoice === null || !openItems.data) {
       return;
@@ -90,8 +91,8 @@ export default function ReceivePaymentPage() {
     if (invoice) {
       setApplied({ [invoice.id]: invoice.balance_due });
       setAmount(invoice.balance_due);
+      setPreselectInvoice(null);
     }
-    setPreselectInvoice(null);
   }, [preselectInvoice, openItems.data]);
 
   if (customers.loading || accounts.loading) {
@@ -114,6 +115,7 @@ export default function ReceivePaymentPage() {
 
   function chooseCustomer(value: string) {
     setCustomerId(value);
+    setPreselectInvoice(null);
     setApplied({});
     setCreditsUsed({});
   }

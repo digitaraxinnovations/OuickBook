@@ -20,3 +20,10 @@ next-env.d.ts
 .idea/
 .DS_Store
 Thumbs.db
+
+# End-to-end test results and the recorded demo video
+frontend/e2e-results/
+frontend/playwright-report/
+demo-video/
+e2e-run.log
+demo-record.log
