@@ -123,6 +123,8 @@ export default function NewInvoicePage() {
     }
   }
   const chosenCustomer = (customers.data || []).find((item) => item.id === Number(customerId));
+  // Amounts on the form are in the customer's currency.
+  const formCurrency = (chosenCustomer && chosenCustomer.currency_code) || currency;
   const taxExempt = chosenCustomer ? chosenCustomer.tax_exempt : false;
   const totals = computeSalesTotals(filledLines, amounts, delayedTotal, taxRatesFor(taxCodes.data || [], amounts.tax_code_id, taxExempt));
 
@@ -144,6 +146,7 @@ export default function NewInvoicePage() {
         ...tracking,
         lines: filledLines,
         tax_code_id: amounts.tax_code_id,
+        exchange_rate: chosenCustomer && chosenCustomer.currency_code && amounts.exchange_rate ? amounts.exchange_rate : null,
         discount_type: amounts.discount_type,
         discount_value: amounts.discount_value || "0",
         shipping_amount: amounts.shipping_amount || "0",
@@ -185,6 +188,18 @@ export default function NewInvoicePage() {
           <Field label="Due date (empty = from terms)">
             <TextInput type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </Field>
+          {chosenCustomer && chosenCustomer.currency_code && (
+            <Field label={"Exchange rate (1 " + chosenCustomer.currency_code + " = ? " + currency + ")"}>
+              <TextInput
+                type="number"
+                step="0.00000001"
+                min="0"
+                value={amounts.exchange_rate || ""}
+                onChange={(e) => setAmounts({ ...amounts, exchange_rate: e.target.value })}
+                placeholder="Latest saved rate"
+              />
+            </Field>
+          )}
         </div>
         <div className="mt-4">
           <TrackingFields value={tracking} onChange={setTracking} customerId={customerId ? Number(customerId) : null} />
@@ -217,7 +232,7 @@ export default function NewInvoicePage() {
         )}
 
         <div className="mt-6">
-          <SalesLinesEditor lines={lines} onChange={setLines} products={products.data || []} prices={prices.data || []} currency={currency} />
+          <SalesLinesEditor lines={lines} onChange={setLines} products={products.data || []} prices={prices.data || []} currency={formCurrency} />
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -246,7 +261,7 @@ export default function NewInvoicePage() {
               onChange={setAmounts}
               taxCodes={taxCodes.data || []}
               taxExempt={taxExempt}
-              currency={currency}
+              currency={formCurrency}
               extraLinesTotal={delayedTotal}
             />
             {toNumber(depositAmount) > 0 && (

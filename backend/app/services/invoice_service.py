@@ -25,6 +25,7 @@ from app.schemas.invoice import InvoiceCreate, InvoiceLineCreate
 from app.schemas.payment import PaymentApplicationInput, PaymentCreate
 from app.seed.default_accounts import SystemAccount
 from app.services.base import BaseService
+from app.services.currency_service import CurrencyService
 from app.services.inventory_service import InventoryService, StockSource
 from app.services.ledger_service import LedgerLine, LedgerService
 from app.services.payment_service import PaymentService
@@ -60,6 +61,7 @@ class InvoiceService(BaseService):
         ledger: LedgerService,
         payment_service: PaymentService,
         tax_calculator: SalesTaxCalculator,
+        currencies: CurrencyService,
         inventory: InventoryService,
         time_repository: TimeEntryRepository,
         tracking: TrackingService,
@@ -76,6 +78,7 @@ class InvoiceService(BaseService):
         self.ledger = ledger
         self.payment_service = payment_service
         self.tax_calculator = tax_calculator
+        self.currencies = currencies
         self.inventory = inventory
         self.time_repository = time_repository
         self.tracking = tracking
@@ -99,6 +102,7 @@ class InvoiceService(BaseService):
             raise BusinessRuleError("Please choose an active customer.")
 
         tracking = self.tracking.check(company_id, data, customer_id=customer.id)
+        rate = self.currencies.rate_for(company_id, customer.currency_code, data.invoice_date, data.exchange_rate)
         company = self.company_repository.get(company_id)
         if data.due_date is not None:
             due_date = data.due_date
@@ -144,6 +148,8 @@ class InvoiceService(BaseService):
             total=totals.total,
             amount_paid=ZERO,
             estimate_id=estimate.id if estimate else None,
+            currency_code=customer.currency_code,
+            exchange_rate=rate,
         )
         for values in line_values:
             invoice.lines.append(InvoiceLine(**values.as_dict()))
@@ -154,6 +160,8 @@ class InvoiceService(BaseService):
         receivable = self.system_accounts.get(company_id, SystemAccount.ACCOUNTS_RECEIVABLE)
         ledger_lines = [LedgerLine(receivable.id, debit=totals.total)]
         ledger_lines.extend(income_ledger_lines(company_id, invoice.lines, totals, self.system_accounts, is_return=False))
+        # A foreign currency invoice is kept in the books in the home currency.
+        ledger_lines = self.currencies.to_home(ledger_lines, rate, balancing_index=0)
         label = f"Invoice {invoice.invoice_number} - {customer.display_name}"
         stock = StockSource(TAX_SOURCE, invoice.id, invoice.invoice_date, label)
         ledger_lines.extend(self.inventory.cost_of_sales_lines(company_id, invoice.lines, stock, is_return=False))
@@ -167,7 +175,7 @@ class InvoiceService(BaseService):
             tracking=tracking,
         )
         invoice.journal_entry_id = entry.id
-        self.tax_calculator.record(company_id, TAX_SOURCE, invoice.id, invoice.invoice_date, totals.tax, is_return=False)
+        self.tax_calculator.record(company_id, TAX_SOURCE, invoice.id, invoice.invoice_date, totals.tax, is_return=False, rate=rate)
 
         for document in delayed_documents:
             document.status = SalesDocStatus.CLOSED
@@ -180,6 +188,7 @@ class InvoiceService(BaseService):
                 company_id,
                 PaymentCreate(
                     customer_id=customer.id,
+                    exchange_rate=rate if customer.currency_code else None,
                     payment_date=data.invoice_date,
                     amount=data.deposit_amount,
                     deposit_account_id=data.deposit_account_id,

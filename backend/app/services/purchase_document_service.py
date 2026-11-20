@@ -166,7 +166,7 @@ class PurchaseDocumentService(BaseService):
             due_date = data.doc_date + timedelta(days=term.due_days)
         else:
             company = self.company_repository.get(company_id)
-            due_date = data.doc_date + timedelta(days=company.payment_terms_days)
+            due_date = data.doc_date + timedelta(days=company.bill_terms_days)
         if due_date < data.doc_date:
             raise BusinessRuleError("The due date cannot be before the bill date.")
         return due_date, terms_id

@@ -16,6 +16,7 @@ import { openBlobInNewTab } from "@/lib/files";
 import { formatDate, formatLabel, formatMoney, toNumber } from "@/lib/format";
 import { invoiceService } from "@/services";
 import { EmailInput } from "@/types/inputs";
+import { AttachmentsPanel } from "@/components/ui/AttachmentsPanel";
 
 function TotalRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
@@ -30,9 +31,10 @@ export default function InvoiceDetailPage() {
   const params = useParams<{ id: string }>();
   const invoiceId = Number(params.id);
   const { company } = useAuth();
-  const currency = company?.currency;
 
   const invoice = useLoad(() => invoiceService.get(invoiceId), [invoiceId]);
+  // A foreign currency invoice shows its own currency.
+  const currency = invoice.data?.currency_code || company?.currency;
   const payments = useLoad(() => invoiceService.listPayments(invoiceId), [invoiceId]);
   const [emailOpen, setEmailOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -220,6 +222,14 @@ export default function InvoiceDetailPage() {
         />
       </div>
 
+      {data.currency_code && (
+        <p className="mt-4 text-sm text-gray-500">
+          In {data.currency_code} at 1 {data.currency_code} = {toNumber(data.exchange_rate)} {company?.currency}
+        </p>
+      )}
+      <div className="mt-6">
+        <AttachmentsPanel entityType="INVOICE" entityId={data.id} />
+      </div>
       <EmailDialog
         key={emailOpen ? "open" : "closed"}
         title={"Email invoice " + data.invoice_number}

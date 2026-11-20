@@ -49,6 +49,8 @@ class SalesDocumentRead(TrackingRead, SalesDocumentSummary):
     shipping_amount: Decimal
     tax_code_id: int | None
     tax_amount: Decimal
+    currency_code: str | None = None
+    exchange_rate: Decimal = Decimal("1")
     money_account: AccountSummary | None
     payment_method: PaymentMethod | None
     reference_no: str | None

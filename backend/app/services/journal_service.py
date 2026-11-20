@@ -27,7 +27,7 @@ class JournalService(BaseService):
             raise NotFoundError("Journal entry not found.")
         return entry
 
-    def create_manual(self, company_id: int, data: JournalEntryCreate) -> JournalEntry:
+    def create_manual(self, company_id: int, data: JournalEntryCreate, commit: bool = True) -> JournalEntry:
         tags = self.tracking.check(company_id, TrackingInput(tag_ids=data.tag_ids))
         lines = []
         for line in data.lines:
@@ -55,5 +55,6 @@ class JournalService(BaseService):
             lines=lines,
             tracking=tags,
         )
-        self.commit()
+        if commit:
+            self.commit()
         return entry

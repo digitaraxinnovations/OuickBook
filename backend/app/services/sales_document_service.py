@@ -15,6 +15,7 @@ from app.repositories.journal_repository import JournalRepository
 from app.repositories.sales_repositories import SalesDocumentRepository
 from app.schemas.sales_document import SalesDocumentCreate
 from app.services.base import BaseService
+from app.services.currency_service import CurrencyService
 from app.services.inventory_service import InventoryService, StockSource
 from app.services.ledger_service import LedgerService
 from app.services.numbering import DocumentNumberService
@@ -42,6 +43,7 @@ class SalesDocumentService(BaseService):
         ledger: LedgerService,
         kinds: list[SalesDocumentKind],
         tax_calculator: SalesTaxCalculator,
+        currencies: CurrencyService,
         inventory: InventoryService,
         tracking: TrackingService,
     ):
@@ -55,6 +57,7 @@ class SalesDocumentService(BaseService):
         self.numbering = numbering
         self.ledger = ledger
         self.tax_calculator = tax_calculator
+        self.currencies = currencies
         self.inventory = inventory
         self.tracking = tracking
         self.kinds = {}
@@ -86,6 +89,7 @@ class SalesDocumentService(BaseService):
         if data.expiration_date is not None and data.expiration_date < data.doc_date:
             raise BusinessRuleError("The expiration date cannot be before the date.")
         tracking = self.tracking.check(company_id, data, customer_id=customer.id)
+        rate = self.currencies.rate_for(company_id, customer.currency_code, data.doc_date, data.exchange_rate)
 
         line_values = self.line_builder.build(company_id, data.lines)
         totals = calculate_totals(line_values, data.discount_type, data.discount_value, data.shipping_amount)
@@ -115,6 +119,8 @@ class SalesDocumentService(BaseService):
             money_account_id=money_account.id if money_account else None,
             payment_method=data.payment_method,
             reference_no=data.reference_no,
+            currency_code=customer.currency_code,
+            exchange_rate=rate,
         )
         for values in line_values:
             document.lines.append(SalesDocumentLine(**values.as_dict()))
@@ -124,6 +130,7 @@ class SalesDocumentService(BaseService):
         if kind.journal_source is not None:
             ledger_lines = income_ledger_lines(company_id, document.lines, totals, self.system_accounts, kind.is_return)
             ledger_lines.extend(kind.other_side(company_id, document, self.system_accounts))
+            ledger_lines = self.currencies.to_home(ledger_lines, rate, balancing_index=len(ledger_lines) - 1)
             label = f"{kind.label} {document.doc_number} - {customer.display_name}"
             stock = StockSource(TAX_SOURCE, document.id, document.doc_date, label)
             ledger_lines.extend(self.inventory.cost_of_sales_lines(company_id, document.lines, stock, kind.is_return))
@@ -138,7 +145,7 @@ class SalesDocumentService(BaseService):
             )
             document.journal_entry_id = entry.id
             # Only forms that post are real sales (estimates and delayed forms are not yet).
-            self.tax_calculator.record(company_id, TAX_SOURCE, document.id, document.doc_date, totals.tax, kind.is_return)
+            self.tax_calculator.record(company_id, TAX_SOURCE, document.id, document.doc_date, totals.tax, kind.is_return, rate=rate)
 
         self.commit()
         return document

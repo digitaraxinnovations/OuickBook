@@ -9,7 +9,7 @@ paying invoices stays with the customer as a credit (unapplied_amount).
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Date, Enum, ForeignKey, Numeric, String
+from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
@@ -31,6 +31,10 @@ class Payment(CompanyOwnedMixin, TimestampMixin, Base):
     unapplied_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     payment_method: Mapped[PaymentMethod] = mapped_column(Enum(PaymentMethod, native_enum=False, length=20))
     reference_no: Mapped[str | None] = mapped_column(String(100))
+    # Foreign currency customers: the amounts are in `currency_code`;
+    # home amount = amount x exchange_rate (the rate on the payment date).
+    currency_code: Mapped[str | None] = mapped_column(String(3))
+    exchange_rate: Mapped[Decimal] = mapped_column(Numeric(18, 8), server_default=text("1"))
     deposit_account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
     memo: Mapped[str | None] = mapped_column(String(500))
     journal_entry_id: Mapped[int | None] = mapped_column(ForeignKey("journal_entries.id"))

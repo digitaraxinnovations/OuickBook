@@ -112,6 +112,17 @@ class Settings(BaseSettings):
     payroll_provider: str = "none"
     payroll_provider_api_key: str = ""
 
+    # ---------- Exchange rates (EXT) ----------
+    # "none" = rates are typed in on Settings -> Currencies.
+    # A rates service can be added in app/integrations/exchange_rates.py.
+    exchange_rate_provider: str = "none"
+    exchange_rate_api_key: str = ""
+
+    # ---------- Webhooks (EXT) ----------
+    # "log" = record what would be sent, send nothing. "http" = really POST to each webhook URL.
+    webhook_delivery: str = "log"
+    webhook_timeout_seconds: int = 5
+
     def get_database_url(self) -> str:
         """Return the SQLAlchemy connection URL for PostgreSQL."""
         if self.database_url:

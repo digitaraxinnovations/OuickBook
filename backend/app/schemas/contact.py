@@ -15,6 +15,8 @@ class ContactWrite(CleanStringsModel):
     address: str | None = Field(default=None, max_length=500)
     notes: str | None = None
     is_active: bool = True
+    # Customers: empty = the home currency. Vendors: kept for reference.
+    currency_code: str | None = Field(default=None, min_length=3, max_length=3)
 
 
 class ContactRead(ORMModel):
@@ -26,6 +28,7 @@ class ContactRead(ORMModel):
     address: str | None
     notes: str | None
     is_active: bool
+    currency_code: str | None = None
 
 
 class CustomerWrite(ContactWrite):

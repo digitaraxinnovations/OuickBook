@@ -6,10 +6,11 @@ import { ErrorMessage } from "@/components/ui/Feedback";
 import { Field, Select, TextArea, TextInput } from "@/components/ui/FormFields";
 import { useFormState } from "@/hooks/useFormState";
 import { ContactInput } from "@/types/inputs";
-import { Contact, PaymentTerm, TaxCode } from "@/types/models";
+import { Contact, CurrencyItem, PaymentTerm, TaxCode } from "@/types/models";
 
 interface ContactExtras {
   terms_id?: number | null;
+  currency_code?: string | null;
   tax_exempt?: boolean;
   exemption_reason?: string | null;
   default_tax_code_id?: number | null;
@@ -27,6 +28,7 @@ export function contactToInput(contact: (Contact & ContactExtras) | null): Conta
     notes: contact?.notes || "",
     is_active: contact ? contact.is_active : true,
     terms_id: contact?.terms_id ?? null,
+    currency_code: contact?.currency_code ?? null,
     tax_exempt: contact?.tax_exempt ?? false,
     exemption_reason: contact?.exemption_reason || "",
     default_tax_code_id: contact?.default_tax_code_id ?? null,
@@ -41,6 +43,8 @@ interface ContactFormProps {
   terms?: PaymentTerm[];
   /** Customers only: show the sales tax fields. */
   taxCodes?: TaxCode[];
+  /** Customers only (multicurrency): currencies they can use. */
+  currencies?: CurrencyItem[];
   /** Vendors only: show the 1099 contractor fields. */
   vendorFields?: boolean;
   onSave: (input: ContactInput) => Promise<void>;
@@ -48,7 +52,7 @@ interface ContactFormProps {
 }
 
 /** Form used for both customers and vendors. */
-export function ContactForm({ initial, terms, taxCodes, vendorFields, onSave, onCancel }: ContactFormProps) {
+export function ContactForm({ initial, terms, taxCodes, currencies, vendorFields, onSave, onCancel }: ContactFormProps) {
   const form = useFormState<ContactInput>(contactToInput(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -92,6 +96,16 @@ export function ContactForm({ initial, terms, taxCodes, vendorFields, onSave, on
             onChange={(e) => form.setField("terms_id", e.target.value ? Number(e.target.value) : null)}
             placeholder="Company default"
             options={terms.filter((term) => term.is_active).map((term) => ({ value: term.id, label: term.name }))}
+          />
+        </Field>
+      )}
+      {currencies && currencies.length > 0 && (
+        <Field label="Currency">
+          <Select
+            value={form.values.currency_code ?? ""}
+            onChange={(e) => form.setField("currency_code", e.target.value || null)}
+            placeholder="Home currency"
+            options={currencies.map((item) => ({ value: item.code, label: item.code + " - " + item.name }))}
           />
         </Field>
       )}

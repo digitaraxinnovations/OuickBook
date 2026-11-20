@@ -19,6 +19,7 @@ import { formatDate, formatLabel, formatMoney, todayString, toNumber } from "@/l
 import { salesDocumentService } from "@/services";
 import { EmailInput } from "@/types/inputs";
 import { SalesDocStatus } from "@/types/models";
+import { AttachmentsPanel } from "@/components/ui/AttachmentsPanel";
 
 /** Detail page shared by every sales form type. */
 export default function SalesFormDetailPage() {
@@ -27,9 +28,9 @@ export default function SalesFormDetailPage() {
   const documentId = Number(params.id);
   const router = useRouter();
   const { company } = useAuth();
-  const currency = company?.currency;
 
   const document = useLoad(() => salesDocumentService.get(documentId), [documentId]);
+  const currency = document.data?.currency_code || company?.currency;
   const [emailOpen, setEmailOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
   const [percent, setPercent] = useState("100");
@@ -244,6 +245,9 @@ export default function SalesFormDetailPage() {
         onSend={sendEmail}
       />
 
+      <div className="mt-6">
+        <AttachmentsPanel entityType="SALES_DOCUMENT" entityId={data.id} />
+      </div>
       <Modal title="Create invoice from estimate" open={convertOpen} onClose={() => setConvertOpen(false)}>
         <div className="space-y-4">
           <p className="text-sm text-gray-600">

@@ -95,6 +95,7 @@ export interface Contact {
 }
 
 export interface Customer extends Contact {
+  currency_code: string | null;
   terms_id: number | null;
   tax_exempt: boolean;
   exemption_reason: string | null;
@@ -170,6 +171,8 @@ export interface Invoice extends TrackingFields, InvoiceSummary {
   late_fee_applied_on: string | null;
   last_emailed_at: string | null;
   lines: SalesLine[];
+  currency_code: string | null;
+  exchange_rate: string;
 }
 
 export interface InvoicePayment {
@@ -210,6 +213,8 @@ export interface SalesDocument extends TrackingFields, SalesDocumentSummary {
   deposit_id: number | null;
   last_emailed_at: string | null;
   lines: SalesLine[];
+  currency_code: string | null;
+  exchange_rate: string;
 }
 
 export interface Payment {
@@ -1007,4 +1012,135 @@ export interface BudgetVsActual {
   }[];
   budget_net_income: string;
   actual_net_income: string;
+}
+
+// ---------- companies, users, settings, currencies, search ----------
+
+export type UserRole = "ADMIN" | "STANDARD" | "SALES" | "PURCHASES" | "REPORTS_ONLY" | "TIME_ONLY" | "ACCOUNTANT";
+
+export interface CompanyMembership {
+  company_id: number;
+  company_name: string;
+  role: UserRole;
+  is_current: boolean;
+}
+
+export interface Member {
+  user_id: number;
+  full_name: string;
+  email: string;
+  role: UserRole;
+  is_primary_admin: boolean;
+  is_active: boolean;
+}
+
+export interface Invitation {
+  id: number;
+  email: string;
+  role: UserRole;
+  expires_at: string;
+  accepted_at: string | null;
+}
+
+export interface InvitationInfo {
+  company_name: string;
+  email: string;
+  role: UserRole;
+  has_account: boolean;
+}
+
+export interface RoleInfo {
+  role: UserRole;
+  label: string;
+}
+
+export interface AuditEntry {
+  id: number;
+  user_name: string;
+  action: "CREATED" | "CHANGED" | "DELETED";
+  entity_type: string;
+  entity_id: number | null;
+  summary: string;
+  changes: Record<string, [unknown, unknown]> | null;
+  created_at: string;
+}
+
+export interface AdvancedSettings {
+  fiscal_year_start_month: number;
+  accounting_method: "ACCRUAL" | "CASH";
+  closing_date: string | null;
+  has_closing_password: boolean;
+  multicurrency_enabled: boolean;
+  currency: string;
+  bill_terms_days: number;
+}
+
+export interface CurrencyItem {
+  id: number;
+  code: string;
+  name: string;
+  latest_rate: string | null;
+  latest_rate_date: string | null;
+}
+
+export interface ExchangeRateItem {
+  id: number;
+  currency_code: string;
+  rate_date: string;
+  rate: string;
+}
+
+export interface SearchResult {
+  kind: string;
+  title: string;
+  subtitle: string;
+  href: string;
+}
+
+export interface RecentTransaction {
+  entry_date: string;
+  type_label: string;
+  number: string;
+  name: string;
+  amount: string;
+  href: string | null;
+}
+
+export interface ImportResult {
+  created: number;
+  updated: number;
+  errors: string[];
+}
+
+export interface AppNotification {
+  kind: string;
+  level: "info" | "warning";
+  message: string;
+  href: string;
+}
+
+export interface ApiKeyItem {
+  id: number;
+  name: string;
+  prefix: string;
+  last_used_at: string | null;
+  is_active: boolean;
+}
+
+export interface WebhookItem {
+  id: number;
+  url: string;
+  events: string[];
+  secret: string;
+  is_active: boolean;
+}
+
+export interface WebhookDeliveryItem {
+  id: number;
+  webhook_id: number;
+  event: string;
+  status: string;
+  response_code: number | null;
+  error: string | null;
+  created_at: string;
 }

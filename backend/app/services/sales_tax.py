@@ -103,8 +103,10 @@ class SalesTaxCalculator:
         tax_date: date,
         result: SalesTaxResult,
         is_return: bool,
+        rate: Decimal = Decimal("1"),
     ) -> None:
-        sign = Decimal("-1") if is_return else Decimal("1")
+        """`rate` converts a foreign currency sale's tax to the home currency."""
+        sign = (Decimal("-1") if is_return else Decimal("1")) * rate
         for component in result.components:
             self.tax_line_repository.add(
                 SalesTaxLine(
@@ -114,8 +116,8 @@ class SalesTaxCalculator:
                     tax_date=tax_date,
                     agency_id=component.tax_rate.agency_id,
                     tax_rate_id=component.tax_rate.id,
-                    taxable_amount=component.taxable_amount * sign,
-                    tax_amount=component.tax_amount * sign,
+                    taxable_amount=to_money(component.taxable_amount * sign),
+                    tax_amount=to_money(component.tax_amount * sign),
                     is_void=False,
                 )
             )

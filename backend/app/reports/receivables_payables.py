@@ -12,7 +12,7 @@ Aging uses the report date: days past due = report date - due date.
 from datetime import date
 from decimal import Decimal
 
-from app.core.money import ZERO
+from app.core.money import ZERO, to_money
 from app.reports.base import Report
 from app.repositories.invoice_repository import InvoiceRepository
 from app.repositories.purchase_repositories import PurchaseDocumentRepository
@@ -65,8 +65,20 @@ class OpenItems:
                 continue
             customer = invoice.customer
             contact = " / ".join(part for part in (customer.phone, customer.email) if part)
+            # Foreign currency invoices are shown in the home currency.
+            rate = invoice.exchange_rate
             items.append(
-                OpenItem("Invoice", invoice.invoice_number, customer.id, customer.display_name, invoice.invoice_date, invoice.due_date, invoice.total, invoice.balance_due, contact)
+                OpenItem(
+                    "Invoice",
+                    invoice.invoice_number,
+                    customer.id,
+                    customer.display_name,
+                    invoice.invoice_date,
+                    invoice.due_date,
+                    to_money(invoice.total * rate),
+                    to_money(invoice.balance_due * rate),
+                    contact,
+                )
             )
         items.sort(key=lambda item: (item.party_name, item.due_date))
         return items

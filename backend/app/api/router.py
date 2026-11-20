@@ -12,6 +12,7 @@ from app.api.routes import (
     inventory,
     payroll,
     tracking,
+    platform,
     taxes,
     checks,
     customers,
@@ -46,6 +47,7 @@ api_router.include_router(banking.router)
 api_router.include_router(inventory.router)
 api_router.include_router(payroll.router)
 api_router.include_router(tracking.router)
+api_router.include_router(platform.router)
 api_router.include_router(taxes.router)
 api_router.include_router(expenses.router)
 api_router.include_router(purchases.router)

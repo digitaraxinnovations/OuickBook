@@ -10,6 +10,7 @@ from app.models.contact import Customer, Vendor
 from app.models.deposit import BankDeposit, DepositLine
 from app.models.email_log import EmailLog
 from app.models.expense import Expense, ExpenseLine
+from app.models.integration import ApiKey, Webhook, WebhookDelivery
 from app.models.inventory import (
     BundleComponent,
     InventoryAdjustment,
@@ -35,6 +36,7 @@ from app.models.payroll import (
     PayrollRun,
     TimeEntry,
 )
+from app.models.platform import AuditLog, CompanyMember, Currency, ExchangeRate, Invitation
 from app.models.product import Product
 from app.models.purchase import (
     BillPayment,
@@ -52,6 +54,14 @@ from app.models.terms import NumberSequence, PaymentTerm
 from app.models.user import User
 
 __all__ = [
+    "ApiKey",
+    "Webhook",
+    "WebhookDelivery",
+    "AuditLog",
+    "CompanyMember",
+    "Currency",
+    "ExchangeRate",
+    "Invitation",
     "ReportSchedule",
     "SavedReport",
     "Budget",

@@ -137,6 +137,15 @@ export default function ReportsPage() {
           </div>
         ))
       )}
+      {!term && (
+        <p className="text-sm text-gray-500">
+          Looking for who changed what? See the{" "}
+          <Link href="/settings/audit-log" className="text-brand-700 hover:underline">
+            audit log
+          </Link>
+          .
+        </p>
+      )}
       {scheduling && (
         <ScheduleDialog
           saved={scheduling}

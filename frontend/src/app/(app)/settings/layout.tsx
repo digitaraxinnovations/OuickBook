@@ -7,7 +7,13 @@ import { ReactNode } from "react";
 const tabs = [
   { label: "Company", href: "/settings" },
   { label: "Sales", href: "/settings/sales" },
+  { label: "Expenses & advanced", href: "/settings/advanced" },
+  { label: "Users", href: "/settings/users" },
+  { label: "Currencies", href: "/settings/currencies" },
   { label: "Payment terms", href: "/settings/terms" },
+  { label: "Import & export", href: "/settings/data" },
+  { label: "Audit log", href: "/settings/audit-log" },
+  { label: "API & webhooks", href: "/settings/integrations" },
   { label: "Email log", href: "/settings/email-log" },
 ];
 
@@ -16,7 +22,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
     <div>
       <h1 className="mb-4 text-2xl font-semibold text-gray-900">Settings</h1>
-      <div className="mb-6 flex gap-1 border-b border-gray-200">
+      <div className="mb-6 flex flex-wrap gap-1 border-b border-gray-200">
         {tabs.map((tab) => {
           const active = pathname === tab.href;
           return (

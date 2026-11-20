@@ -63,6 +63,7 @@ export default function ReceivePaymentPage() {
   const [referenceNo, setReferenceNo] = useState("");
   const [depositAccountId, setDepositAccountId] = useState("");
   const [memo, setMemo] = useState("");
+  const [exchangeRate, setExchangeRate] = useState("");
   const [applied, setApplied] = useState<Record<number, string>>({});
   const [creditsUsed, setCreditsUsed] = useState<Record<string, string>>({});
   const [preselectInvoice, setPreselectInvoice] = useState<number | null>(null);
@@ -151,6 +152,7 @@ export default function ReceivePaymentPage() {
         reference_no: referenceNo,
         deposit_account_id: depositAccountId ? Number(depositAccountId) : null,
         memo: memo,
+        exchange_rate: foreignCurrency && exchangeRate ? exchangeRate : null,
         applications: applications,
         credits: creditList,
       });
@@ -160,6 +162,9 @@ export default function ReceivePaymentPage() {
       setSaving(false);
     }
   }
+
+  const chosen = (customers.data || []).find((customer) => customer.id === Number(customerId));
+  const foreignCurrency = chosen ? chosen.currency_code : null;
 
   const depositAccounts = (accounts.data || []).filter(
     (account) => account.account_type === "ASSET" && account.system_key !== "accounts_receivable",
@@ -187,6 +192,11 @@ export default function ReceivePaymentPage() {
           <Field label="Amount received">
             <TextInput type="number" step="0.01" min="0" value={amount} onChange={(e) => changeAmount(e.target.value)} placeholder="0.00" />
           </Field>
+          {foreignCurrency && (
+            <Field label={"Exchange rate (1 " + foreignCurrency + " = ? " + company?.currency + ")"}>
+              <TextInput type="number" step="0.00000001" min="0" value={exchangeRate} onChange={(e) => setExchangeRate(e.target.value)} placeholder="Latest saved rate" />
+            </Field>
+          )}
           <Field label="Payment method">
             <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)} options={paymentMethodOptions} />
           </Field>
