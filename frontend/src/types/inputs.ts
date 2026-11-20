@@ -50,6 +50,10 @@ export interface ContactInput {
   is_active: boolean;
   /** Customers and vendors: default payment terms. */
   terms_id?: number | null;
+  /** Customers only: sales tax. */
+  tax_exempt?: boolean;
+  exemption_reason?: string;
+  default_tax_code_id?: number | null;
   /** Vendors only: 1099 contractor details. */
   track_1099?: boolean;
   tax_id?: string;
@@ -63,6 +67,7 @@ export interface ProductInput {
   sales_price: string;
   income_account_id: number | null;
   is_active: boolean;
+  taxable: boolean;
 }
 
 export interface AccountInput {
@@ -73,6 +78,7 @@ export interface AccountInput {
   description: string;
   parent_id: number | null;
   box_1099: string | null;
+  tax_line: string | null;
   is_active: boolean;
 }
 
@@ -98,10 +104,12 @@ export interface SalesLineInput {
   description: string;
   quantity: string;
   rate: string;
+  taxable: boolean;
 }
 
-/** Discount and shipping - shared by invoices and other sales forms. */
+/** Discount, shipping and sales tax - shared by invoices and other sales forms. */
 export interface SalesAmountsInput {
+  tax_code_id: number | null;
   discount_type: DiscountType | null;
   discount_value: string;
   shipping_amount: string;
@@ -283,4 +291,45 @@ export interface BankRuleInput {
   vendor_id: number | null;
   auto_add: boolean;
   is_active: boolean;
+}
+
+// ---------- sales tax ----------
+
+export interface TaxAgencyInput {
+  name: string;
+  filing_frequency: string;
+  start_date: string;
+  is_active: boolean;
+}
+
+export interface TaxRateInput {
+  name: string;
+  agency_id: number;
+  rate: string;
+  is_active: boolean;
+  create_code: boolean;
+}
+
+export interface TaxCodeInput {
+  name: string;
+  rate_ids: number[];
+  is_active: boolean;
+}
+
+export interface SalesTaxPaymentInput {
+  agency_id: number;
+  payment_date: string;
+  period_start: string;
+  period_end: string;
+  amount: string;
+  payment_account_id: number;
+  memo: string;
+}
+
+export interface SalesTaxAdjustmentInput {
+  agency_id: number;
+  adjustment_date: string;
+  amount: string;
+  account_id: number;
+  reason: string;
 }

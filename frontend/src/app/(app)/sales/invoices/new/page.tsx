@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { emptySalesLine, SalesLinesEditor } from "@/components/sales/SalesLinesEditor";
-import { computeSalesTotals, emptySalesAmounts, SalesTotals } from "@/components/sales/SalesTotals";
+import { computeSalesTotals, emptySalesAmounts, SalesTotals, taxRatesFor } from "@/components/sales/SalesTotals";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorMessage, Loading } from "@/components/ui/Feedback";
@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
 import { formatMoney, todayString, toNumber } from "@/lib/format";
-import { accountService, customerService, invoiceService, productService, salesDocumentService, termsService } from "@/services";
+import { accountService, customerService, invoiceService, productService, salesDocumentService, taxService, termsService } from "@/services";
 import { SalesAmountsInput, SalesLineInput } from "@/types/inputs";
 import { SalesDocumentSummary } from "@/types/models";
 
@@ -39,6 +39,7 @@ export default function NewInvoicePage() {
   const products = useLoad(() => productService.list({ active_only: true }));
   const terms = useLoad(() => termsService.list());
   const accounts = useLoad(() => accountService.list({ active_only: true }));
+  const taxCodes = useLoad(() => taxService.codes(true));
 
   const [customerId, setCustomerId] = useState("");
   const [termsId, setTermsId] = useState("");
@@ -55,7 +56,7 @@ export default function NewInvoicePage() {
 
   const delayedItems = useLoad(() => loadDelayedItems(customerId), [customerId]);
 
-  if (customers.loading || products.loading || terms.loading || accounts.loading) {
+  if (customers.loading || products.loading || terms.loading || accounts.loading || taxCodes.loading) {
     return <Loading />;
   }
 
@@ -65,6 +66,7 @@ export default function NewInvoicePage() {
     // Use the customer's default terms, like the original product does.
     const customer = (customers.data || []).find((item) => item.id === Number(value));
     setTermsId(customer && customer.terms_id ? String(customer.terms_id) : "");
+    setAmounts({ ...amounts, tax_code_id: customer ? customer.default_tax_code_id : null });
   }
 
   function toggleDelayed(id: number) {
@@ -83,7 +85,9 @@ export default function NewInvoicePage() {
       delayedTotal += signedTotal(item);
     }
   }
-  const totals = computeSalesTotals(filledLines, amounts, delayedTotal);
+  const chosenCustomer = (customers.data || []).find((item) => item.id === Number(customerId));
+  const taxExempt = chosenCustomer ? chosenCustomer.tax_exempt : false;
+  const totals = computeSalesTotals(filledLines, amounts, delayedTotal, taxRatesFor(taxCodes.data || [], amounts.tax_code_id, taxExempt));
 
   const depositAccounts = (accounts.data || []).filter(
     (account) => account.account_type === "ASSET" && account.system_key !== "accounts_receivable",
@@ -101,6 +105,7 @@ export default function NewInvoicePage() {
         terms_id: termsId ? Number(termsId) : null,
         memo: memo,
         lines: filledLines,
+        tax_code_id: amounts.tax_code_id,
         discount_type: amounts.discount_type,
         discount_value: amounts.discount_value || "0",
         shipping_amount: amounts.shipping_amount || "0",
@@ -180,7 +185,15 @@ export default function NewInvoicePage() {
             </div>
           </div>
           <div className="flex flex-col items-end gap-3">
-            <SalesTotals lines={filledLines} amounts={amounts} onChange={setAmounts} currency={currency} extraLinesTotal={delayedTotal} />
+            <SalesTotals
+              lines={filledLines}
+              amounts={amounts}
+              onChange={setAmounts}
+              taxCodes={taxCodes.data || []}
+              taxExempt={taxExempt}
+              currency={currency}
+              extraLinesTotal={delayedTotal}
+            />
             {toNumber(depositAmount) > 0 && (
               <div className="w-full max-w-sm text-right text-sm">
                 Balance due after deposit: <strong>{formatMoney(totals.total - toNumber(depositAmount), currency)}</strong>

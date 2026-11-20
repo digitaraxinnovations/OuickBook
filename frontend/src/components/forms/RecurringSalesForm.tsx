@@ -8,6 +8,8 @@ import { emptySalesAmounts, SalesTotals } from "@/components/sales/SalesTotals";
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/Feedback";
 import { Field, Select, TextInput } from "@/components/ui/FormFields";
+import { useLoad } from "@/hooks/useLoad";
+import { taxService } from "@/services";
 import { RecurringScheduleInput, SalesAmountsInput, SalesLineInput } from "@/types/inputs";
 import { Account, Customer, Product, RecurringSchedule } from "@/types/models";
 
@@ -16,6 +18,7 @@ interface SavedLine {
   description: string | null;
   quantity: string;
   rate: string;
+  taxable?: boolean | null;
 }
 
 function templateLines(schedule: RecurringSchedule | null): SalesLineInput[] {
@@ -28,6 +31,7 @@ function templateLines(schedule: RecurringSchedule | null): SalesLineInput[] {
     description: line.description || "",
     quantity: String(line.quantity),
     rate: String(line.rate),
+    taxable: line.taxable !== false,
   }));
 }
 
@@ -37,6 +41,7 @@ function templateAmounts(schedule: RecurringSchedule | null): SalesAmountsInput 
   }
   const template = schedule.template;
   return {
+    tax_code_id: template.tax_code_id ? Number(template.tax_code_id) : null,
     discount_type: (template.discount_type as SalesAmountsInput["discount_type"]) || null,
     discount_value: String(template.discount_value || "0"),
     shipping_amount: String(template.shipping_amount || "0"),
@@ -65,6 +70,8 @@ export function RecurringSalesForm({ type, initial, customers, products, deposit
   const [amounts, setAmounts] = useState<SalesAmountsInput>(templateAmounts(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const taxCodes = useLoad(() => taxService.codes(true));
+  const chosenCustomer = customers.find((item) => item.id === Number(customerId));
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -74,6 +81,7 @@ export function RecurringSalesForm({ type, initial, customers, products, deposit
       customer_id: Number(customerId),
       memo: memo,
       lines: lines,
+      tax_code_id: amounts.tax_code_id,
       discount_type: amounts.discount_type,
       discount_value: amounts.discount_value || "0",
       shipping_amount: amounts.shipping_amount || "0",
@@ -120,7 +128,14 @@ export function RecurringSalesForm({ type, initial, customers, products, deposit
       </div>
       <SalesLinesEditor lines={lines} onChange={setLines} products={products} currency={currency} />
       <div className="flex justify-end">
-        <SalesTotals lines={lines} amounts={amounts} onChange={setAmounts} currency={currency} />
+        <SalesTotals
+          lines={lines}
+          amounts={amounts}
+          onChange={setAmounts}
+          taxCodes={taxCodes.data || []}
+          taxExempt={chosenCustomer ? chosenCustomer.tax_exempt : false}
+          currency={currency}
+        />
       </div>
       {initial && (
         <label className="flex items-center gap-2 text-sm">

@@ -15,6 +15,7 @@ class SystemAccount:
     ACCOUNTS_RECEIVABLE = "accounts_receivable"
     UNDEPOSITED_FUNDS = "undeposited_funds"
     ACCOUNTS_PAYABLE = "accounts_payable"
+    SALES_TAX_PAYABLE = "sales_tax_payable"
     OWNERS_EQUITY = "owners_equity"
     RETAINED_EARNINGS = "retained_earnings"
     SALES = "sales"
@@ -42,6 +43,55 @@ FORM_1099_BOXES = {
 }
 
 
+# Income tax categories (US Schedule C lines). An account mapped to one of
+# these appears on that line of the Tax Schedule Summary report.
+TAX_LINES = {
+    "SCHC_1": "Line 1 - Gross receipts or sales",
+    "SCHC_2": "Line 2 - Returns and allowances",
+    "SCHC_4": "Line 4 - Cost of goods sold",
+    "SCHC_6": "Line 6 - Other income",
+    "SCHC_8": "Line 8 - Advertising",
+    "SCHC_9": "Line 9 - Car and truck expenses",
+    "SCHC_11": "Line 11 - Contract labor",
+    "SCHC_13": "Line 13 - Depreciation",
+    "SCHC_15": "Line 15 - Insurance (other than health)",
+    "SCHC_16B": "Line 16b - Interest (other)",
+    "SCHC_17": "Line 17 - Legal and professional services",
+    "SCHC_18": "Line 18 - Office expense",
+    "SCHC_20B": "Line 20b - Rent or lease (other business property)",
+    "SCHC_21": "Line 21 - Repairs and maintenance",
+    "SCHC_22": "Line 22 - Supplies",
+    "SCHC_23": "Line 23 - Taxes and licenses",
+    "SCHC_24A": "Line 24a - Travel",
+    "SCHC_24B": "Line 24b - Deductible meals",
+    "SCHC_25": "Line 25 - Utilities",
+    "SCHC_26": "Line 26 - Wages",
+    "SCHC_27A": "Line 27a - Other expenses",
+}
+
+# Default income tax category for the starting chart of accounts (by account code).
+DEFAULT_TAX_LINES = {
+    "4000": "SCHC_1",
+    "4100": "SCHC_1",
+    "4500": "SCHC_1",
+    "4600": "SCHC_6",
+    "4800": "SCHC_2",
+    "4900": "SCHC_6",
+    "5000": "SCHC_4",
+    "6000": "SCHC_8",
+    "6100": "SCHC_27A",
+    "6200": "SCHC_15",
+    "6300": "SCHC_24B",
+    "6400": "SCHC_18",
+    "6500": "SCHC_20B",
+    "6600": "SCHC_21",
+    "6700": "SCHC_24A",
+    "6800": "SCHC_25",
+    "6900": "SCHC_11",
+    "6999": "SCHC_27A",
+}
+
+
 DEFAULT_PAYMENT_TERMS = [
     {"name": "Due on receipt", "due_days": 0},
     {"name": "Net 15", "due_days": 15},
@@ -60,7 +110,7 @@ DEFAULT_ACCOUNTS = [
     # ---------- Liabilities ----------
     {"code": "2000", "name": "Accounts Payable (A/P)", "type": AccountType.LIABILITY, "detail": "Accounts Payable", "key": SystemAccount.ACCOUNTS_PAYABLE},
     {"code": "2100", "name": "Credit Card", "type": AccountType.LIABILITY, "detail": DetailType.CREDIT_CARD, "key": None},
-    {"code": "2200", "name": "Sales Tax Payable", "type": AccountType.LIABILITY, "detail": "Other Current Liabilities", "key": None},
+    {"code": "2200", "name": "Sales Tax Payable", "type": AccountType.LIABILITY, "detail": "Sales Tax Payable", "key": SystemAccount.SALES_TAX_PAYABLE},
     {"code": "2500", "name": "Loan Payable", "type": AccountType.LIABILITY, "detail": "Long Term Liabilities", "key": None},
     # ---------- Equity ----------
     {"code": "3000", "name": "Owner's Investment", "type": AccountType.EQUITY, "detail": "Owner's Equity", "key": SystemAccount.OWNERS_EQUITY},

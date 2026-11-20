@@ -5,6 +5,7 @@ Creating an invoice records the sale in the ledger:
     Debit  Accounts Receivable          (the customer now owes you)
     Credit Income account(s)            (you earned the money)
     Debit  Discounts Given / Credit Shipping Income   (when used)
+    Credit Sales tax agency liability   (when a tax rate is chosen)
 """
 
 from datetime import date
@@ -25,12 +26,20 @@ from app.seed.default_accounts import SystemAccount
 from app.services.base import BaseService
 from app.services.ledger_service import LedgerLine, LedgerService
 from app.services.payment_service import PaymentService
-from app.services.sales_common import SalesLineBuilder, SalesLineValues, calculate_totals, income_ledger_lines
+from app.services.sales_common import (
+    SalesLineBuilder,
+    SalesLineValues,
+    SalesTotals,
+    calculate_totals,
+    income_ledger_lines,
+)
+from app.services.sales_tax import SalesTaxCalculator
 from app.services.system_accounts import SystemAccounts
 from app.services.terms_service import TermsService
 
 # Rounding can leave a few cents when an estimate is invoiced in parts.
 ROUNDING_TOLERANCE = Decimal("0.05")
+TAX_SOURCE = "INVOICE"
 
 
 class InvoiceService(BaseService):
@@ -47,6 +56,7 @@ class InvoiceService(BaseService):
         terms_service: TermsService,
         ledger: LedgerService,
         payment_service: PaymentService,
+        tax_calculator: SalesTaxCalculator,
     ):
         super().__init__(session)
         self.invoice_repository = invoice_repository
@@ -59,6 +69,7 @@ class InvoiceService(BaseService):
         self.terms_service = terms_service
         self.ledger = ledger
         self.payment_service = payment_service
+        self.tax_calculator = tax_calculator
 
     # ---------- reading ----------
 
@@ -94,7 +105,7 @@ class InvoiceService(BaseService):
         if len(line_values) == 0:
             raise BusinessRuleError("Add at least one line to the invoice.")
 
-        totals = calculate_totals(line_values, data.discount_type, data.discount_value, data.shipping_amount)
+        totals = self.work_out_totals(company_id, customer, line_values, data)
         if totals.total <= 0:
             raise BusinessRuleError("The invoice total must be more than zero.")
         if data.deposit_amount > totals.total:
@@ -114,6 +125,8 @@ class InvoiceService(BaseService):
             discount_value=data.discount_value,
             discount_amount=totals.discount_amount,
             shipping_amount=totals.shipping_amount,
+            tax_code_id=totals.tax.tax_code_id,
+            tax_amount=totals.tax_amount,
             total=totals.total,
             amount_paid=ZERO,
             estimate_id=estimate.id if estimate else None,
@@ -135,6 +148,7 @@ class InvoiceService(BaseService):
             lines=ledger_lines,
         )
         invoice.journal_entry_id = entry.id
+        self.tax_calculator.record(company_id, TAX_SOURCE, invoice.id, invoice.invoice_date, totals.tax, is_return=False)
 
         for document in delayed_documents:
             document.status = SalesDocStatus.CLOSED
@@ -156,6 +170,12 @@ class InvoiceService(BaseService):
 
         self.commit()
         return invoice
+
+    def work_out_totals(self, company_id: int, customer, line_values: list, data: InvoiceCreate) -> SalesTotals:
+        totals = calculate_totals(line_values, data.discount_type, data.discount_value, data.shipping_amount)
+        tax = self.tax_calculator.calculate(company_id, customer, data.tax_code_id, line_values, totals)
+        totals.add_tax(tax)
+        return totals
 
     def collect_delayed_documents(self, company_id: int, customer_id: int, document_ids: list[int]) -> list[SalesDocument]:
         documents = []
@@ -187,6 +207,7 @@ class InvoiceService(BaseService):
                     quantity=line.quantity,
                     rate=line.rate * sign,
                     amount=line.amount * sign,
+                    taxable=line.taxable,
                 )
             )
         return result
@@ -209,6 +230,7 @@ class InvoiceService(BaseService):
                     description=line.description,
                     quantity=line.quantity,
                     rate=to_money(line.rate * factor),
+                    taxable=line.taxable,
                 )
             )
 
@@ -224,12 +246,11 @@ class InvoiceService(BaseService):
             discount_type=estimate.discount_type,
             discount_value=discount_value,
             shipping_amount=to_money(estimate.shipping_amount * factor),
+            tax_code_id=estimate.tax_code_id,
         )
 
         # Check before saving that we do not invoice more than the estimate.
-        preview = calculate_totals(
-            self.line_builder.build(company_id, lines), data.discount_type, data.discount_value, data.shipping_amount
-        )
+        preview = self.work_out_totals(company_id, estimate.customer, self.line_builder.build(company_id, lines), data)
         if estimate.amount_applied + preview.total > estimate.total + ROUNDING_TOLERANCE:
             raise BusinessRuleError(
                 f"Only {estimate.remaining} of this estimate is left to invoice; this invoice would be {preview.total}."
@@ -259,6 +280,7 @@ class InvoiceService(BaseService):
             source_type=JournalSource.INVOICE_VOID,
             memo=f"Void of invoice {invoice.invoice_number}",
         )
+        self.tax_calculator.void(company_id, TAX_SOURCE, invoice.id)
         # Late fees were posted as separate entries - reverse those too.
         for entry in self.journal_repository.list_for_source(company_id, JournalSource.LATE_FEE, invoice.id):
             self.ledger.reverse(company_id, entry, date.today(), JournalSource.INVOICE_VOID, "Void of late fee")

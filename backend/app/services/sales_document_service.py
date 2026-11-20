@@ -19,9 +19,11 @@ from app.services.ledger_service import LedgerService
 from app.services.numbering import DocumentNumberService
 from app.services.sales_common import SalesLineBuilder, calculate_totals, income_ledger_lines
 from app.services.sales_document_kinds import SalesDocumentKind
+from app.services.sales_tax import SalesTaxCalculator
 from app.services.system_accounts import SystemAccounts
 
 ESTIMATE_STATUSES_USERS_CAN_SET = (SalesDocStatus.PENDING, SalesDocStatus.ACCEPTED, SalesDocStatus.REJECTED)
+TAX_SOURCE = "SALES_DOCUMENT"
 
 
 class SalesDocumentService(BaseService):
@@ -37,6 +39,7 @@ class SalesDocumentService(BaseService):
         numbering: DocumentNumberService,
         ledger: LedgerService,
         kinds: list[SalesDocumentKind],
+        tax_calculator: SalesTaxCalculator,
     ):
         super().__init__(session)
         self.repository = repository
@@ -47,6 +50,7 @@ class SalesDocumentService(BaseService):
         self.system_accounts = system_accounts
         self.numbering = numbering
         self.ledger = ledger
+        self.tax_calculator = tax_calculator
         self.kinds = {}
         for kind in kinds:
             self.kinds[kind.doc_type] = kind
@@ -78,6 +82,7 @@ class SalesDocumentService(BaseService):
 
         line_values = self.line_builder.build(company_id, data.lines)
         totals = calculate_totals(line_values, data.discount_type, data.discount_value, data.shipping_amount)
+        totals.add_tax(self.tax_calculator.calculate(company_id, customer, data.tax_code_id, line_values, totals))
         if totals.total <= 0:
             raise BusinessRuleError("The total must be more than zero.")
 
@@ -97,6 +102,8 @@ class SalesDocumentService(BaseService):
             discount_value=data.discount_value,
             discount_amount=totals.discount_amount,
             shipping_amount=totals.shipping_amount,
+            tax_code_id=totals.tax.tax_code_id,
+            tax_amount=totals.tax_amount,
             total=totals.total,
             money_account_id=money_account.id if money_account else None,
             payment_method=data.payment_method,
@@ -118,6 +125,8 @@ class SalesDocumentService(BaseService):
                 lines=ledger_lines,
             )
             document.journal_entry_id = entry.id
+            # Only forms that post are real sales (estimates and delayed forms are not yet).
+            self.tax_calculator.record(company_id, TAX_SOURCE, document.id, document.doc_date, totals.tax, kind.is_return)
 
         self.commit()
         return document
@@ -154,6 +163,7 @@ class SalesDocumentService(BaseService):
             original = self.journal_repository.get(company_id, document.journal_entry_id)
             memo = f"Void of {kind.label.lower()} {document.doc_number}"
             self.ledger.reverse(company_id, original, date.today(), JournalSource.SALES_DOC_VOID, memo)
+            self.tax_calculator.void(company_id, TAX_SOURCE, document.id)
 
         document.status = SalesDocStatus.VOID
         self.commit()

@@ -15,6 +15,7 @@ class ProductWrite(CleanStringsModel):
     # When empty, the company's default "Sales" income account is used.
     income_account_id: int | None = None
     is_active: bool = True
+    taxable: bool = True
 
 
 class ProductRead(ORMModel):
@@ -26,3 +27,4 @@ class ProductRead(ORMModel):
     sales_price: Decimal
     income_account: AccountSummary
     is_active: bool
+    taxable: bool

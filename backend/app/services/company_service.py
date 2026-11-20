@@ -7,7 +7,7 @@ from app.repositories.account_repository import AccountRepository
 from app.repositories.company_repository import CompanyRepository
 from app.schemas.auth import CompanyUpdate
 from app.schemas.sales_extras import LogoUpload, SalesSettingsUpdate
-from app.seed.default_accounts import DEFAULT_ACCOUNTS, DEFAULT_PAYMENT_TERMS
+from app.seed.default_accounts import DEFAULT_ACCOUNTS, DEFAULT_PAYMENT_TERMS, DEFAULT_TAX_LINES
 from app.services.base import BaseService
 
 
@@ -51,6 +51,7 @@ class CompanyService(BaseService):
                 detail_type=template["detail"],
                 system_key=template["key"],
                 box_1099=template.get("box_1099"),
+                tax_line=DEFAULT_TAX_LINES.get(template["code"]),
             )
             self.account_repository.add(account)
 

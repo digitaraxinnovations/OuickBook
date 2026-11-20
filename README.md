@@ -43,6 +43,7 @@ switch on with settings in `.env` - no code changes:
 | Sending email | `EMAIL_PROVIDER` = `log` or `smtp` (+ `SMTP_*`) | `log`: emails are saved in **Settings → Email log** instead of being sent |
 | "Pay now" on invoices | `PAYMENT_PROVIDER` | `none`: button hidden. Add a class in `backend/app/integrations/payments.py` |
 | Live bank feeds | `BANK_FEED_PROVIDER` | `none`: upload statements instead. Add a class in `backend/app/integrations/bank_feeds.py` |
+| Sales tax rate lookup / e-filing | `TAX_RATE_PROVIDER` | `none`: enter rates by hand on Taxes → Sales tax settings. Add a class in `backend/app/integrations/tax_rates.py` |
 | Links in emails | `PUBLIC_APP_URL` | `http://localhost:3000` |
 
 ---

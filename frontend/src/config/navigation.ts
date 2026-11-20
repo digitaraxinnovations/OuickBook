@@ -10,7 +10,7 @@ export interface NavLink {
 
 export interface NavGroup {
   label: string;
-  icon: "home" | "sales" | "expenses" | "banking" | "accounting" | "reports" | "settings";
+  icon: "home" | "sales" | "expenses" | "banking" | "taxes" | "accounting" | "reports" | "settings";
   href?: string;
   links?: NavLink[];
 }
@@ -61,6 +61,14 @@ export const sidebarMenu: NavGroup[] = [
     ],
   },
   {
+    label: "Taxes",
+    icon: "taxes",
+    links: [
+      { label: "Sales tax", href: "/taxes" },
+      { label: "Sales tax settings", href: "/taxes/settings" },
+    ],
+  },
+  {
     label: "Accounting",
     icon: "accounting",
     links: [
@@ -108,6 +116,7 @@ export const newMenuGroups: { title: string; links: NavLink[] }[] = [
       { label: "Transfer", href: "/banking/transfers?new=1" },
       { label: "Credit card credit", href: "/expenses/new?kind=CARD_CREDIT" },
       { label: "Journal entry", href: "/accounting/journal-entries/new" },
+      { label: "Pay sales tax", href: "/taxes?pay=1" },
       { label: "Customer", href: "/sales/customers?new=1" },
       { label: "Vendor", href: "/expenses/vendors?new=1" },
       { label: "Product or service", href: "/sales/products?new=1" },

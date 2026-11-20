@@ -215,6 +215,12 @@ export default function SalesFormDetailPage() {
                 <span>{formatMoney(data.shipping_amount, currency)}</span>
               </div>
             )}
+            {data.tax_code_id !== null && (
+              <div className="flex justify-between">
+                <span>Sales tax</span>
+                <span>{formatMoney(data.tax_amount, currency)}</span>
+              </div>
+            )}
             <div className="flex justify-between border-t border-gray-200 pt-2 text-base font-semibold">
               <span>Total</span>
               <span>{formatMoney(data.total, currency)}</span>

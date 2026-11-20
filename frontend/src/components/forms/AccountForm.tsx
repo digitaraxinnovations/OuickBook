@@ -25,6 +25,7 @@ function accountToInput(account: Account | null): AccountInput {
     description: account?.description || "",
     parent_id: account ? account.parent_id : null,
     box_1099: account ? account.box_1099 : null,
+    tax_line: account ? account.tax_line : null,
     is_active: account ? account.is_active : true,
   };
 }
@@ -34,11 +35,13 @@ interface AccountFormProps {
   allAccounts: Account[];
   /** {"NEC_1": "1099-NEC Box 1: ..."} */
   boxes1099: Record<string, string>;
+  /** {"SCHC_18": "Line 18 - Office expense"} */
+  taxLines: Record<string, string>;
   onSave: (input: AccountInput) => Promise<void>;
   onCancel: () => void;
 }
 
-export function AccountForm({ initial, allAccounts, boxes1099, onSave, onCancel }: AccountFormProps) {
+export function AccountForm({ initial, allAccounts, boxes1099, taxLines, onSave, onCancel }: AccountFormProps) {
   const form = useFormState<AccountInput>(accountToInput(initial));
 
   // A sub-account's parent must have the same type, and cannot be the account itself.
@@ -109,6 +112,16 @@ export function AccountForm({ initial, allAccounts, boxes1099, onSave, onCancel 
             onChange={(e) => form.setField("box_1099", e.target.value || null)}
             placeholder="Not reported on a 1099"
             options={Object.keys(boxes1099).map((key) => ({ value: key, label: boxes1099[key] }))}
+          />
+        </Field>
+      )}
+      {(form.values.account_type === "INCOME" || form.values.account_type === "EXPENSE") && (
+        <Field label="Income tax category">
+          <Select
+            value={form.values.tax_line ?? ""}
+            onChange={(e) => form.setField("tax_line", e.target.value || null)}
+            placeholder="Not assigned"
+            options={Object.keys(taxLines).map((key) => ({ value: key, label: taxLines[key] }))}
           />
         </Field>
       )}

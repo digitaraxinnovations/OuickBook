@@ -7,6 +7,7 @@ from app.repositories.contact_repository import CustomerRepository, VendorReposi
 from app.repositories.invoice_repository import InvoiceRepository
 from app.repositories.purchase_repositories import PurchaseDocumentRepository
 from app.repositories.sales_repositories import PaymentRepository, PaymentTermRepository, SalesDocumentRepository
+from app.repositories.tax_repositories import TaxCodeRepository
 from app.schemas.contact import CustomerWrite, VendorWrite
 from app.services.base import CrudService
 
@@ -23,8 +24,10 @@ class CustomerService(CrudService):
         sales_document_repository: SalesDocumentRepository,
         payment_repository: PaymentRepository,
         terms_repository: PaymentTermRepository,
+        tax_code_repository: TaxCodeRepository,
     ):
         super().__init__(session, repository)
+        self.tax_code_repository = tax_code_repository
         self.invoice_repository = invoice_repository
         self.sales_document_repository = sales_document_repository
         self.payment_repository = payment_repository
@@ -33,6 +36,8 @@ class CustomerService(CrudService):
     def validate(self, company_id: int, data: CustomerWrite) -> None:
         if data.terms_id is not None and self.terms_repository.get(company_id, data.terms_id) is None:
             raise BusinessRuleError("Those payment terms do not exist.")
+        if data.default_tax_code_id is not None and self.tax_code_repository.get(company_id, data.default_tax_code_id) is None:
+            raise BusinessRuleError("That sales tax rate does not exist.")
 
     def open_balances(self, company_id: int) -> dict[int, Decimal]:
         """What each customer owes: unpaid invoices minus credit memos and overpayments not used yet."""

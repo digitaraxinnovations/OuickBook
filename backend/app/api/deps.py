@@ -20,6 +20,7 @@ from app.db.session import get_db
 from app.integrations.bank_feeds import build_bank_feed_provider
 from app.integrations.email import build_email_sender
 from app.integrations.payments import build_payment_processor
+from app.integrations.tax_rates import TaxRateProvider, build_tax_rate_provider
 from app.models import User
 from app.recurring.base import RecurringHandler
 from app.recurring.journal_entry_handler import JournalEntryRecurringHandler
@@ -30,6 +31,8 @@ from app.reports.base import Report
 from app.reports.payables_aging import PayablesAgingReport
 from app.reports.profit_and_loss import ProfitAndLossReport
 from app.reports.receivables_aging import ReceivablesAgingReport
+from app.reports.sales_tax_liability import SalesTaxLiabilityReport
+from app.reports.tax_schedule import TaxScheduleReport
 from app.reports.trial_balance import TrialBalanceReport
 from app.reports.vendor_1099 import Vendor1099Report
 from app.repositories.account_repository import AccountRepository
@@ -54,6 +57,14 @@ from app.repositories.purchase_repositories import (
     TripRepository,
 )
 from app.repositories.recurring_repository import RecurringRepository
+from app.repositories.tax_repositories import (
+    SalesTaxAdjustmentRepository,
+    SalesTaxLineRepository,
+    SalesTaxPaymentRepository,
+    TaxAgencyRepository,
+    TaxCodeRepository,
+    TaxRateRepository,
+)
 from app.repositories.sales_repositories import (
     DepositRepository,
     EmailLogRepository,
@@ -92,6 +103,8 @@ from app.services.reconciliation_service import ReconciliationService
 from app.services.recurring_service import RecurringService
 from app.services.report_service import ReportService
 from app.services.sales_common import SalesLineBuilder
+from app.services.sales_tax import SalesTaxCalculator
+from app.services.tax_service import TaxService
 from app.services.sales_document_kinds import ALL_KINDS
 from app.services.sales_document_service import SalesDocumentService
 from app.services.statement_service import StatementService
@@ -116,6 +129,25 @@ def build_system_accounts(db: Session) -> SystemAccounts:
 
 def build_line_builder(db: Session) -> SalesLineBuilder:
     return SalesLineBuilder(ProductRepository(db), build_system_accounts(db))
+
+
+def build_tax_calculator(db: Session) -> SalesTaxCalculator:
+    return SalesTaxCalculator(TaxCodeRepository(db), SalesTaxLineRepository(db))
+
+
+def build_tax_service(db: Session) -> TaxService:
+    return TaxService(
+        db,
+        TaxAgencyRepository(db),
+        TaxRateRepository(db),
+        TaxCodeRepository(db),
+        SalesTaxLineRepository(db),
+        SalesTaxPaymentRepository(db),
+        SalesTaxAdjustmentRepository(db),
+        AccountRepository(db),
+        build_system_accounts(db),
+        build_ledger(db),
+    )
 
 
 def build_company_service(db: Session) -> CompanyService:
@@ -152,6 +184,7 @@ def build_invoice_service(db: Session) -> InvoiceService:
         build_terms_service(db),
         build_ledger(db),
         build_payment_service(db),
+        build_tax_calculator(db),
     )
 
 
@@ -167,6 +200,7 @@ def build_sales_document_service(db: Session) -> SalesDocumentService:
         DocumentNumberService(db, settings.invoice_number_start),
         build_ledger(db),
         ALL_KINDS,
+        build_tax_calculator(db),
     )
 
 
@@ -263,6 +297,10 @@ def build_reports(db: Session) -> list[Report]:
         ReceivablesAgingReport(InvoiceRepository(db)),
         PayablesAgingReport(PurchaseDocumentRepository(db)),
         Vendor1099Report(VendorRepository(db), ExpenseQueries(db), BillPaymentRepository(db), settings.form_1099_threshold),
+        SalesTaxLiabilityReport(
+            TaxAgencyRepository(db), SalesTaxLineRepository(db), SalesTaxPaymentRepository(db), SalesTaxAdjustmentRepository(db)
+        ),
+        TaxScheduleReport(JournalRepository(db)),
     ]
 
 
@@ -329,6 +367,7 @@ def get_customer_service(db: Session = Depends(get_db)) -> CustomerService:
         SalesDocumentRepository(db),
         PaymentRepository(db),
         PaymentTermRepository(db),
+        TaxCodeRepository(db),
     )
 
 
@@ -446,6 +485,14 @@ def get_recurring_service(db: Session = Depends(get_db)) -> RecurringService:
 # =====================================================================
 # Banking
 # =====================================================================
+
+def get_tax_service(db: Session = Depends(get_db)) -> TaxService:
+    return build_tax_service(db)
+
+
+def get_tax_rate_provider() -> TaxRateProvider:
+    return build_tax_rate_provider(settings)
+
 
 def get_transfer_service(db: Session = Depends(get_db)) -> TransferService:
     return build_transfer_service(db)

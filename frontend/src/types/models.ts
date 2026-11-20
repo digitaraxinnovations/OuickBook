@@ -71,6 +71,7 @@ export interface Account extends AccountSummary {
   is_active: boolean;
   parent_id: number | null;
   box_1099: string | null;
+  tax_line: string | null;
   full_name: string;
   depth: number;
   balance: string;
@@ -95,6 +96,9 @@ export interface Contact {
 
 export interface Customer extends Contact {
   terms_id: number | null;
+  tax_exempt: boolean;
+  exemption_reason: string | null;
+  default_tax_code_id: number | null;
   open_balance: string;
 }
 
@@ -114,6 +118,7 @@ export interface Product {
   sales_price: string;
   income_account: AccountSummary;
   is_active: boolean;
+  taxable: boolean;
 }
 
 export interface SalesLine {
@@ -123,6 +128,7 @@ export interface SalesLine {
   description: string | null;
   quantity: string;
   rate: string;
+  taxable: boolean;
   amount: string;
   is_late_fee: boolean;
 }
@@ -148,6 +154,8 @@ export interface Invoice extends InvoiceSummary {
   discount_value: string;
   discount_amount: string;
   shipping_amount: string;
+  tax_code_id: number | null;
+  tax_amount: string;
   estimate_id: number | null;
   late_fee_applied_on: string | null;
   last_emailed_at: string | null;
@@ -183,6 +191,8 @@ export interface SalesDocument extends SalesDocumentSummary {
   discount_value: string;
   discount_amount: string;
   shipping_amount: string;
+  tax_code_id: number | null;
+  tax_amount: string;
   money_account: AccountSummary | null;
   payment_method: PaymentMethod | null;
   reference_no: string | null;
@@ -287,6 +297,7 @@ export interface PublicInvoice {
   subtotal: string;
   discount_amount: string;
   shipping_amount: string;
+  tax_amount: string;
   total: string;
   amount_paid: string;
   balance_due: string;
@@ -613,4 +624,66 @@ export interface DiscrepancyItem {
   amount: string;
   changed_on: string;
   change: string;
+}
+
+// ---------- sales tax ----------
+
+export type FilingFrequency = "MONTHLY" | "QUARTERLY" | "YEARLY";
+export type TaxPeriodStatus = "OPEN" | "DUE" | "PAID" | "NOTHING_DUE";
+
+export interface TaxAgency {
+  id: number;
+  name: string;
+  filing_frequency: FilingFrequency;
+  start_date: string;
+  liability_account: AccountSummary;
+  is_active: boolean;
+}
+
+export interface TaxRate {
+  id: number;
+  name: string;
+  agency_id: number;
+  rate: string;
+  is_active: boolean;
+}
+
+export interface TaxCode {
+  id: number;
+  name: string;
+  is_active: boolean;
+  total_rate: string;
+  components: { tax_rate_id: number; name: string; rate: string; agency_id: number }[];
+}
+
+export interface TaxPeriod {
+  agency_id: number;
+  agency_name: string;
+  period_start: string;
+  period_end: string;
+  tax_collected: string;
+  adjustments: string;
+  payments: string;
+  balance: string;
+  status: TaxPeriodStatus;
+}
+
+export interface SalesTaxPayment {
+  id: number;
+  agency_id: number;
+  payment_date: string;
+  period_start: string;
+  period_end: string;
+  amount: string;
+  payment_account: AccountSummary;
+  memo: string | null;
+}
+
+export interface SalesTaxAdjustment {
+  id: number;
+  agency_id: number;
+  adjustment_date: string;
+  amount: string;
+  account: AccountSummary;
+  reason: string;
 }

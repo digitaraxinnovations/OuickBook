@@ -46,10 +46,10 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [x] Undo reconciliation (latest first), reconciliation discrepancy report (reconciled items voided afterwards)
 
 ## Phase 5 – Taxes
-- [ ] Sales tax: tax rates, agencies, combined rates, taxable items/customers
-- [ ] Sales tax liability report, file/record sales tax payments, adjustments
-- [ ] Tax categories mapping for income tax prep (Schedule C style)
-- [ ] (EXT) automated tax rate lookup / e-filing
+- [x] Sales tax: tax rates, agencies, combined rates, taxable items/customers (exempt customers, per-line taxable flag)
+- [x] Sales tax liability report, filing periods, record sales tax payments, adjustments
+- [x] Tax categories mapping for income tax prep (Schedule C style) + Tax Schedule Summary report
+- [~] (EXT) automated tax rate lookup / e-filing - TaxRateProvider interface, TAX_RATE_PROVIDER=none (no provider connected)
 
 ## Phase 6 – Inventory & products
 - [ ] Inventory items (qty on hand, reorder point, FIFO cost), inventory adjustments

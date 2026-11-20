@@ -4,13 +4,21 @@ from pydantic import Field, field_validator
 
 from app.models.enums import AccountType
 from app.schemas.common import CleanStringsModel, ORMModel
-from app.seed.default_accounts import FORM_1099_BOXES
+from app.seed.default_accounts import FORM_1099_BOXES, TAX_LINES
 
 
 class AccountWriteBase(CleanStringsModel):
     """Fields shared by create and update."""
 
     box_1099: str | None = None
+    tax_line: str | None = None
+
+    @field_validator("tax_line")
+    @classmethod
+    def check_tax_line(cls, value: str | None) -> str | None:
+        if value is not None and value not in TAX_LINES:
+            raise ValueError("Unknown tax category.")
+        return value
 
     @field_validator("box_1099")
     @classmethod
@@ -50,6 +58,7 @@ class AccountRead(ORMModel):
     is_active: bool
     parent_id: int | None
     box_1099: str | None
+    tax_line: str | None
     # "Parent:Child" style name, filled in by AccountService
     full_name: str = ""
     # How many parents above this account (0 = top level)

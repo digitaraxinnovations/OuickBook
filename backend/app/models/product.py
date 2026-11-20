@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from sqlalchemy import Enum, ForeignKey, Numeric, String, Text
+from sqlalchemy import Enum, ForeignKey, Numeric, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
@@ -22,5 +22,7 @@ class Product(CompanyOwnedMixin, TimestampMixin, Base):
     # Sales of this item are recorded in this income account.
     income_account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
     is_active: Mapped[bool] = mapped_column(default=True)
+    # Sales tax is charged on this item (unless the customer is exempt).
+    taxable: Mapped[bool] = mapped_column(server_default=text("true"))
 
     income_account: Mapped[Account] = relationship()

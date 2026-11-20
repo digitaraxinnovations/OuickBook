@@ -79,6 +79,7 @@ class AccountService(BaseService):
             description=data.description,
             parent_id=data.parent_id,
             box_1099=data.box_1099,
+            tax_line=data.tax_line,
         )
         self.account_repository.add(account)
         self.commit()
@@ -98,6 +99,7 @@ class AccountService(BaseService):
         account.description = data.description
         account.parent_id = data.parent_id
         account.box_1099 = data.box_1099
+        account.tax_line = data.tax_line
         account.is_active = data.is_active
         self.commit()
         return account

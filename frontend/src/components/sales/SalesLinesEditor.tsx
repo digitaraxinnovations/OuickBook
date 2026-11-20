@@ -8,7 +8,7 @@ import { SalesLineInput } from "@/types/inputs";
 import { Product } from "@/types/models";
 
 export function emptySalesLine(): SalesLineInput {
-  return { product_id: null, description: "", quantity: "1", rate: "" };
+  return { product_id: null, description: "", quantity: "1", rate: "", taxable: true };
 }
 
 export function salesLineAmount(line: SalesLineInput): number {
@@ -38,7 +38,12 @@ export function SalesLinesEditor({ lines, onChange, products, currency }: SalesL
     }
     const product = products.find((item) => item.id === Number(productId));
     if (product) {
-      updateLine(index, { product_id: product.id, description: product.description || product.name, rate: product.sales_price });
+      updateLine(index, {
+        product_id: product.id,
+        description: product.description || product.name,
+        rate: product.sales_price,
+        taxable: product.taxable,
+      });
     }
   }
 
@@ -54,6 +59,7 @@ export function SalesLinesEditor({ lines, onChange, products, currency }: SalesL
               <th className="w-24 py-2">Qty</th>
               <th className="w-32 py-2">Rate</th>
               <th className="w-32 py-2 text-right">Amount</th>
+              <th className="w-12 py-2 text-center">Tax</th>
               <th className="w-10"></th>
             </tr>
           </thead>
@@ -74,6 +80,9 @@ export function SalesLinesEditor({ lines, onChange, products, currency }: SalesL
                   <TextInput type="number" step="0.01" required value={line.rate} onChange={(e) => updateLine(index, { rate: e.target.value })} />
                 </td>
                 <td className="py-2 pt-4 text-right font-medium">{formatMoney(salesLineAmount(line), currency)}</td>
+                <td className="py-2 pt-4 text-center">
+                  <input type="checkbox" aria-label="Taxable" checked={line.taxable} onChange={(e) => updateLine(index, { taxable: e.target.checked })} />
+                </td>
                 <td className="py-2 pl-2">
                   {lines.length > 1 && (
                     <button type="button" onClick={() => onChange(lines.filter((_, i) => i !== index))} className="mt-2 text-gray-400 hover:text-red-600" aria-label="Remove line">
