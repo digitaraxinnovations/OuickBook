@@ -53,6 +53,7 @@ class PortalService:
             subtotal=invoice.subtotal,
             discount_amount=invoice.discount_amount,
             shipping_amount=invoice.shipping_amount,
+            tax_amount=invoice.tax_amount,
             total=invoice.total,
             amount_paid=invoice.amount_paid,
             balance_due=invoice.balance_due,

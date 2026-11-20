@@ -9,7 +9,7 @@ so they share one table. `doc_type` says which form it is.
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, Enum, ForeignKey, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, Numeric, String, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
@@ -38,6 +38,8 @@ class SalesDocument(CompanyOwnedMixin, TimestampMixin, Base):
     discount_value: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     discount_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     shipping_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
+    tax_code_id: Mapped[int | None] = mapped_column(ForeignKey("tax_codes.id"))
+    tax_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default=text("0"))
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     # Estimates: how much has been invoiced so far (progress invoicing).
     # Credit memos: how much of the credit has been used.
@@ -82,6 +84,7 @@ class SalesDocumentLine(Base):
     quantity: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     rate: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    taxable: Mapped[bool] = mapped_column(server_default=text("false"))
 
     document: Mapped[SalesDocument] = relationship(back_populates="lines")
     product: Mapped[Product | None] = relationship()

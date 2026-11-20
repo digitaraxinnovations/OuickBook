@@ -63,8 +63,8 @@ def bill_to(customer) -> list[str]:
 
 
 def add_amount_rows(document: PdfDocument, record, currency: str) -> None:
-    """Subtotal, discount and shipping rows (only when used)."""
-    if record.discount_amount > 0 or record.shipping_amount > 0:
+    """Subtotal, discount, shipping and tax rows (only when used)."""
+    if record.discount_amount > 0 or record.shipping_amount > 0 or record.tax_amount != 0:
         document.total_rows.append(("Subtotal", money(record.subtotal, currency), False))
     if record.discount_amount > 0:
         label = "Discount"
@@ -73,6 +73,8 @@ def add_amount_rows(document: PdfDocument, record, currency: str) -> None:
         document.total_rows.append((label, money(-record.discount_amount, currency), False))
     if record.shipping_amount > 0:
         document.total_rows.append(("Shipping", money(record.shipping_amount, currency), False))
+    if record.tax_code_id is not None:
+        document.total_rows.append(("Sales tax", money(record.tax_amount, currency), False))
 
 
 def invoice_document(invoice: Invoice, company: Company) -> PdfDocument:

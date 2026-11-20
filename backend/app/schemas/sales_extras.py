@@ -198,6 +198,7 @@ class PublicInvoice(BaseModel):
     subtotal: Decimal
     discount_amount: Decimal
     shipping_amount: Decimal
+    tax_amount: Decimal = Decimal("0.00")
     total: Decimal
     amount_paid: Decimal
     balance_due: Decimal

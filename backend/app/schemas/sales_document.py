@@ -46,6 +46,8 @@ class SalesDocumentRead(SalesDocumentSummary):
     discount_value: Decimal
     discount_amount: Decimal
     shipping_amount: Decimal
+    tax_code_id: int | None
+    tax_amount: Decimal
     money_account: AccountSummary | None
     payment_method: PaymentMethod | None
     reference_no: str | None

@@ -29,6 +29,8 @@ class Invoice(CompanyOwnedMixin, TimestampMixin, Base):
     discount_value: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default=text("0"))
     discount_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default=text("0"))
     shipping_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default=text("0"))
+    tax_code_id: Mapped[int | None] = mapped_column(ForeignKey("tax_codes.id"))
+    tax_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), server_default=text("0"))
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     amount_paid: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     journal_entry_id: Mapped[int | None] = mapped_column(ForeignKey("journal_entries.id"))
@@ -74,6 +76,7 @@ class InvoiceLine(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     # Late-fee lines are added after the invoice was created.
     is_late_fee: Mapped[bool] = mapped_column(server_default=text("false"))
+    taxable: Mapped[bool] = mapped_column(server_default=text("false"))
 
     invoice: Mapped[Invoice] = relationship(back_populates="lines")
     product: Mapped[Product | None] = relationship()

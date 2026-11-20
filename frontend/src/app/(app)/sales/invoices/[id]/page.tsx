@@ -186,7 +186,7 @@ export default function InvoiceDetailPage() {
         <div className="mt-6 flex flex-wrap justify-between gap-6">
           <div className="max-w-md whitespace-pre-line text-sm text-gray-600">{data.memo}</div>
           <div className="w-72 space-y-1 text-sm">
-            {(toNumber(data.discount_amount) > 0 || toNumber(data.shipping_amount) > 0) && (
+            {(toNumber(data.discount_amount) > 0 || toNumber(data.shipping_amount) > 0 || data.tax_code_id !== null) && (
               <TotalRow label="Subtotal" value={formatMoney(data.subtotal, currency)} />
             )}
             {toNumber(data.discount_amount) > 0 && (
@@ -196,6 +196,7 @@ export default function InvoiceDetailPage() {
               />
             )}
             {toNumber(data.shipping_amount) > 0 && <TotalRow label="Shipping" value={formatMoney(data.shipping_amount, currency)} />}
+            {data.tax_code_id !== null && <TotalRow label="Sales tax" value={formatMoney(data.tax_amount, currency)} />}
             <TotalRow label="Total" value={formatMoney(data.total, currency)} />
             <TotalRow label="Amount paid" value={formatMoney(data.amount_paid, currency)} />
             <TotalRow label="Balance due" value={formatMoney(data.balance_due, currency)} bold />

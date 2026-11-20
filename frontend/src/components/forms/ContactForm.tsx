@@ -6,10 +6,13 @@ import { ErrorMessage } from "@/components/ui/Feedback";
 import { Field, Select, TextArea, TextInput } from "@/components/ui/FormFields";
 import { useFormState } from "@/hooks/useFormState";
 import { ContactInput } from "@/types/inputs";
-import { Contact, PaymentTerm } from "@/types/models";
+import { Contact, PaymentTerm, TaxCode } from "@/types/models";
 
 interface ContactExtras {
   terms_id?: number | null;
+  tax_exempt?: boolean;
+  exemption_reason?: string | null;
+  default_tax_code_id?: number | null;
   track_1099?: boolean;
   tax_id?: string | null;
 }
@@ -24,6 +27,9 @@ export function contactToInput(contact: (Contact & ContactExtras) | null): Conta
     notes: contact?.notes || "",
     is_active: contact ? contact.is_active : true,
     terms_id: contact?.terms_id ?? null,
+    tax_exempt: contact?.tax_exempt ?? false,
+    exemption_reason: contact?.exemption_reason || "",
+    default_tax_code_id: contact?.default_tax_code_id ?? null,
     track_1099: contact?.track_1099 ?? false,
     tax_id: contact?.tax_id || "",
   };
@@ -33,6 +39,8 @@ interface ContactFormProps {
   initial: (Contact & ContactExtras) | null;
   /** Shows the default payment terms field. */
   terms?: PaymentTerm[];
+  /** Customers only: show the sales tax fields. */
+  taxCodes?: TaxCode[];
   /** Vendors only: show the 1099 contractor fields. */
   vendorFields?: boolean;
   onSave: (input: ContactInput) => Promise<void>;
@@ -40,7 +48,7 @@ interface ContactFormProps {
 }
 
 /** Form used for both customers and vendors. */
-export function ContactForm({ initial, terms, vendorFields, onSave, onCancel }: ContactFormProps) {
+export function ContactForm({ initial, terms, taxCodes, vendorFields, onSave, onCancel }: ContactFormProps) {
   const form = useFormState<ContactInput>(contactToInput(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -86,6 +94,27 @@ export function ContactForm({ initial, terms, vendorFields, onSave, onCancel }: 
             options={terms.filter((term) => term.is_active).map((term) => ({ value: term.id, label: term.name }))}
           />
         </Field>
+      )}
+      {taxCodes && (
+        <div className="space-y-3 rounded-md border border-gray-200 p-3">
+          <Field label="Default sales tax rate">
+            <Select
+              value={form.values.default_tax_code_id ?? ""}
+              onChange={(e) => form.setField("default_tax_code_id", e.target.value ? Number(e.target.value) : null)}
+              placeholder="None"
+              options={taxCodes.map((code) => ({ value: code.id, label: code.name }))}
+            />
+          </Field>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={form.values.tax_exempt || false} onChange={(e) => form.setField("tax_exempt", e.target.checked)} />
+            This customer is tax exempt
+          </label>
+          {form.values.tax_exempt && (
+            <Field label="Exemption reason">
+              <TextInput value={form.values.exemption_reason || ""} onChange={(e) => form.setField("exemption_reason", e.target.value)} placeholder="e.g. Resale, Non-profit" />
+            </Field>
+          )}
+        </div>
       )}
       {vendorFields && (
         <div className="grid grid-cols-2 items-end gap-4">

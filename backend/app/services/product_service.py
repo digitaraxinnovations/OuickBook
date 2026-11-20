@@ -32,6 +32,7 @@ class ProductService(CrudService):
         record.description = data.description
         record.sales_price = data.sales_price
         record.is_active = data.is_active
+        record.taxable = data.taxable
 
         if data.income_account_id is not None:
             record.income_account_id = data.income_account_id

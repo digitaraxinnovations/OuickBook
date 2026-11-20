@@ -17,6 +17,7 @@ function productToInput(product: Product | null): ProductInput {
     sales_price: product?.sales_price || "0.00",
     income_account_id: product ? product.income_account.id : null,
     is_active: product ? product.is_active : true,
+    taxable: product ? product.taxable : true,
   };
 }
 
@@ -81,6 +82,10 @@ export function ProductForm({ initial, incomeAccounts, onSave, onCancel }: Produ
           />
         </Field>
       </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={form.values.taxable} onChange={(e) => form.setField("taxable", e.target.checked)} />
+        Charge sales tax on this item
+      </label>
       {initial && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={form.values.is_active} onChange={(e) => form.setField("is_active", e.target.checked)} />

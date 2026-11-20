@@ -31,10 +31,16 @@ class ContactRead(ORMModel):
 class CustomerWrite(ContactWrite):
     # Default payment terms for this customer's invoices.
     terms_id: int | None = None
+    tax_exempt: bool = False
+    exemption_reason: str | None = Field(default=None, max_length=200)
+    default_tax_code_id: int | None = None
 
 
 class CustomerRead(ContactRead):
     terms_id: int | None
+    tax_exempt: bool
+    exemption_reason: str | None
+    default_tax_code_id: int | None
     # Unpaid invoices minus unused credits.
     open_balance: Decimal = Decimal("0.00")
 

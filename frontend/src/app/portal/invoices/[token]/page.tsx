@@ -141,6 +141,12 @@ export default function CustomerInvoicePage() {
                 <span>{formatMoney(data.shipping_amount, currency)}</span>
               </div>
             )}
+            {toNumber(data.tax_amount) !== 0 && (
+              <div className="flex justify-between">
+                <span>Sales tax</span>
+                <span>{formatMoney(data.tax_amount, currency)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span>Total</span>
               <span>{formatMoney(data.total, currency)}</span>

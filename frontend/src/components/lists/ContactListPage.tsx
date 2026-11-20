@@ -13,7 +13,7 @@ import { useLoad } from "@/hooks/useLoad";
 import { useQueryFlag } from "@/hooks/useQueryFlag";
 import { ResourceService } from "@/services/resource.service";
 import { ContactInput } from "@/types/inputs";
-import { Contact, PaymentTerm } from "@/types/models";
+import { Contact, PaymentTerm, TaxCode } from "@/types/models";
 
 interface ContactListPageProps<T extends Contact> {
   title: string;
@@ -27,6 +27,8 @@ interface ContactListPageProps<T extends Contact> {
   detailHref?: (row: T) => string;
   /** Vendors: show the 1099 fields on the form. */
   vendorFields?: boolean;
+  /** Customers: show the sales tax fields on the form. */
+  taxCodes?: TaxCode[];
 }
 
 /** Shared page for Customers and Vendors: a table plus a create/edit form. */
@@ -39,6 +41,7 @@ export function ContactListPage<T extends Contact>({
   terms,
   detailHref,
   vendorFields,
+  taxCodes,
 }: ContactListPageProps<T>) {
   const router = useRouter();
   const contacts = useLoad(() => service.list());
@@ -110,7 +113,7 @@ export function ContactListPage<T extends Contact>({
         <DataTable rows={contacts.data || []} rowKey={(row) => row.id} columns={columns} onRowClick={openEdit} />
       )}
       <Modal title={editing ? "Edit " + itemName.toLowerCase() : "New " + itemName.toLowerCase()} open={formOpen} onClose={() => setFormOpen(false)}>
-        <ContactForm key={editing ? editing.id : "new"} initial={editing} terms={terms} vendorFields={vendorFields} onSave={save} onCancel={() => setFormOpen(false)} />
+        <ContactForm key={editing ? editing.id : "new"} initial={editing} terms={terms} taxCodes={taxCodes} vendorFields={vendorFields} onSave={save} onCancel={() => setFormOpen(false)} />
       </Modal>
     </div>
   );

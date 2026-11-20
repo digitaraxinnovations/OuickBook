@@ -14,11 +14,14 @@ class InvoiceLineCreate(CleanStringsModel):
     description: str | None = Field(default=None, max_length=500)
     quantity: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
     rate: Decimal = Field(max_digits=12, decimal_places=2)
+    # Empty = use the product's setting (lines without a product are taxable).
+    taxable: bool | None = None
 
 
 class SalesAmountsInput(CleanStringsModel):
-    """Discount and shipping - shared by invoices and other sales forms."""
+    """Discount, shipping and sales tax - shared by invoices and other sales forms."""
 
+    tax_code_id: int | None = None
     discount_type: DiscountType | None = None
     discount_value: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
     shipping_amount: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
@@ -48,6 +51,7 @@ class InvoiceLineRead(ORMModel):
     rate: Decimal
     amount: Decimal
     is_late_fee: bool = False
+    taxable: bool = False
 
 
 class InvoiceSummary(ORMModel):
@@ -73,6 +77,8 @@ class InvoiceRead(InvoiceSummary):
     discount_value: Decimal
     discount_amount: Decimal
     shipping_amount: Decimal
+    tax_code_id: int | None
+    tax_amount: Decimal
     estimate_id: int | None
     late_fee_applied_on: date | None
     last_emailed_at: datetime | None

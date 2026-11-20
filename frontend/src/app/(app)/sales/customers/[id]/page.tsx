@@ -17,7 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
 import { openBlobInNewTab } from "@/lib/files";
 import { formatDate, formatLabel, formatMoney, todayString } from "@/lib/format";
-import { customerService, invoiceService, salesDocumentService, termsService } from "@/services";
+import { customerService, invoiceService, salesDocumentService, taxService, termsService } from "@/services";
 import { ContactInput, EmailInput } from "@/types/inputs";
 import { StatementType } from "@/types/models";
 
@@ -86,6 +86,7 @@ export default function CustomerDetailPage() {
   const customer = useLoad(() => customerService.get(customerId), [customerId]);
   const activity = useLoad(() => loadActivity(customerId), [customerId]);
   const terms = useLoad(() => termsService.list());
+  const taxCodes = useLoad(() => taxService.codes(true));
 
   const [statementType, setStatementType] = useState<StatementType>("BALANCE_FORWARD");
   const [startDate, setStartDate] = useState(firstOfMonth());
@@ -257,7 +258,7 @@ export default function CustomerDetailPage() {
       </Card>
 
       <Modal title="Edit customer" open={editOpen} onClose={() => setEditOpen(false)}>
-        <ContactForm key={data.id + "-" + editOpen} initial={data} terms={terms.data || []} onSave={saveCustomer} onCancel={() => setEditOpen(false)} />
+        <ContactForm key={data.id + "-" + editOpen} initial={data} terms={terms.data || []} taxCodes={taxCodes.data || []} onSave={saveCustomer} onCancel={() => setEditOpen(false)} />
       </Modal>
       <EmailDialog
         key={emailOpen ? "open" : "closed"}

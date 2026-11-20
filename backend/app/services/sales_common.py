@@ -2,7 +2,7 @@
 Code shared by every sales form (invoice, estimate, sales receipt, credit memo...):
 
 - SalesLineBuilder   turns the lines the user typed into database line values
-- calculate_totals   subtotal, discount, shipping and total
+- calculate_totals   subtotal, discount, shipping and total (tax is added with add_tax)
 - income_ledger_lines the "income side" of the journal entry
 """
 
@@ -15,19 +15,21 @@ from app.repositories.product_repository import ProductRepository
 from app.schemas.invoice import InvoiceLineCreate
 from app.seed.default_accounts import SystemAccount
 from app.services.ledger_service import LedgerLine
+from app.services.sales_tax import SalesTaxResult
 from app.services.system_accounts import SystemAccounts
 
 
 class SalesLineValues:
     """The values of one line, ready to copy onto InvoiceLine or SalesDocumentLine."""
 
-    def __init__(self, product_id, income_account_id, description, quantity, rate, amount):
+    def __init__(self, product_id, income_account_id, description, quantity, rate, amount, taxable=False):
         self.product_id = product_id
         self.income_account_id = income_account_id
         self.description = description
         self.quantity = quantity
         self.rate = rate
         self.amount = amount
+        self.taxable = taxable
 
     def as_dict(self) -> dict:
         return {
@@ -37,6 +39,7 @@ class SalesLineValues:
             "quantity": self.quantity,
             "rate": self.rate,
             "amount": self.amount,
+            "taxable": self.taxable,
         }
 
 
@@ -51,12 +54,15 @@ class SalesLineBuilder:
         for data in line_inputs:
             description = data.description
             income_account_id = sales_account.id
+            # Lines without a product are taxable unless the user says otherwise.
+            taxable = True
 
             if data.product_id is not None:
                 product = self.product_repository.get(company_id, data.product_id)
                 if product is None:
                     raise BusinessRuleError(f"Product {data.product_id} does not exist.")
                 income_account_id = product.income_account_id
+                taxable = product.taxable
                 if description is None:
                     description = product.description or product.name
 
@@ -68,6 +74,7 @@ class SalesLineBuilder:
                     quantity=data.quantity,
                     rate=data.rate,
                     amount=to_money(data.quantity * data.rate),
+                    taxable=data.taxable if data.taxable is not None else taxable,
                 )
             )
         return result
@@ -78,7 +85,16 @@ class SalesTotals:
         self.subtotal = subtotal
         self.discount_amount = discount_amount
         self.shipping_amount = shipping_amount
+        self.tax = SalesTaxResult()
         self.total = subtotal - discount_amount + shipping_amount
+
+    @property
+    def tax_amount(self) -> Decimal:
+        return self.tax.total
+
+    def add_tax(self, tax: SalesTaxResult) -> None:
+        self.tax = tax
+        self.total = self.subtotal - self.discount_amount + self.shipping_amount + tax.total
 
 
 def calculate_totals(
@@ -116,7 +132,8 @@ def income_ledger_lines(
     """
     The income side of a sales journal entry.
 
-    For a sale:   credit income, debit Discounts Given, credit Shipping Income.
+    For a sale:   credit income, debit Discounts Given, credit Shipping Income,
+                  credit each tax agency's liability account.
     For a return (credit memo, refund): exactly the opposite.
     The caller adds the other side (Accounts Receivable, bank...).
     """
@@ -136,6 +153,9 @@ def income_ledger_lines(
     if totals.shipping_amount > 0:
         shipping_account = system_accounts.get(company_id, SystemAccount.SHIPPING_INCOME)
         signed_amounts.append((shipping_account.id, totals.shipping_amount))
+    for component in totals.tax.components:
+        if component.tax_amount > 0:
+            signed_amounts.append((component.liability_account_id, component.tax_amount))
 
     ledger_lines = []
     for account_id, amount in signed_amounts:

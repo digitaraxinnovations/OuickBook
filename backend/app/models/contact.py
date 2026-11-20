@@ -25,6 +25,10 @@ class Customer(ContactMixin, CompanyOwnedMixin, TimestampMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     # Default payment terms for this customer's invoices (e.g. Net 15).
     terms_id: Mapped[int | None] = mapped_column(ForeignKey("payment_terms.id"))
+    # Sales tax
+    tax_exempt: Mapped[bool] = mapped_column(server_default=text("false"))
+    exemption_reason: Mapped[str | None] = mapped_column(String(200))
+    default_tax_code_id: Mapped[int | None] = mapped_column(ForeignKey("tax_codes.id"))
 
 
 class Vendor(ContactMixin, CompanyOwnedMixin, TimestampMixin, Base):

@@ -97,6 +97,12 @@ class Settings(BaseSettings):
     # How many days apart a bank line and a book transaction can be and still be suggested as a match.
     bank_match_days: int = 14
 
+    # ---------- Sales tax rates / e-filing (EXT) ----------
+    # "none" = rates are entered by hand on the Sales tax page.
+    # A provider such as Avalara can be added in app/integrations/tax_rates.py.
+    tax_rate_provider: str = "none"
+    tax_rate_api_key: str = ""
+
     def get_database_url(self) -> str:
         """Return the SQLAlchemy connection URL for PostgreSQL."""
         if self.database_url:

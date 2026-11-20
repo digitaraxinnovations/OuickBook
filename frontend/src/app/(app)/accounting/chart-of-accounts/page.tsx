@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
 import { formatLabel, formatMoney } from "@/lib/format";
-import { accountService } from "@/services";
+import { accountService, taxService } from "@/services";
 import { AccountInput } from "@/types/inputs";
 import { Account } from "@/types/models";
 
@@ -19,6 +19,7 @@ export default function ChartOfAccountsPage() {
   const { company } = useAuth();
   const accounts = useLoad(() => accountService.list());
   const boxes = useLoad(() => accountService.boxes1099());
+  const taxLines = useLoad(() => taxService.taxLines());
   const [editing, setEditing] = useState<Account | null>(null);
   const [formOpen, setFormOpen] = useState(false);
 
@@ -86,6 +87,7 @@ export default function ChartOfAccountsPage() {
           initial={editing}
           allAccounts={accounts.data || []}
           boxes1099={boxes.data || {}}
+          taxLines={taxLines.data || {}}
           onSave={save}
           onCancel={() => setFormOpen(false)}
         />
