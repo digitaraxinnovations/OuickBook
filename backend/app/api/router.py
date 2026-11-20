@@ -6,15 +6,19 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     accounts,
+    attachments,
     auth,
+    checks,
     customers,
     deposits,
     expenses,
     invoices,
     journal_entries,
+    mileage,
     payments,
     products,
     public,
+    purchases,
     recurring,
     reports,
     sales_documents,
@@ -34,6 +38,10 @@ api_router.include_router(sales_documents.router)
 api_router.include_router(payments.router)
 api_router.include_router(deposits.router)
 api_router.include_router(expenses.router)
+api_router.include_router(purchases.router)
+api_router.include_router(checks.router)
+api_router.include_router(attachments.router)
+api_router.include_router(mileage.router)
 api_router.include_router(journal_entries.router)
 api_router.include_router(recurring.router)
 api_router.include_router(reports.router)

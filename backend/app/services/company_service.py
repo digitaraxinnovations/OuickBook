@@ -50,6 +50,7 @@ class CompanyService(BaseService):
                 account_type=template["type"],
                 detail_type=template["detail"],
                 system_key=template["key"],
+                box_1099=template.get("box_1099"),
             )
             self.account_repository.add(account)
 

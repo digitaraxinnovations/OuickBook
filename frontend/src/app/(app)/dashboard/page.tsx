@@ -51,7 +51,7 @@ export default function DashboardPage() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         <Card title="Profit & loss">
           <div className="space-y-4">
             <BigNumber label="Net income" value={formatMoney(data.net_income, currency)} tone={toNumber(data.net_income) >= 0 ? "good" : "bad"} />
@@ -69,6 +69,17 @@ export default function DashboardPage() {
               label={"Overdue (" + data.overdue_invoice_count + ")"}
               value={formatMoney(data.overdue_invoices_total, currency)}
               tone={data.overdue_invoice_count > 0 ? "bad" : undefined}
+            />
+          </div>
+        </Card>
+
+        <Card title="Bills to pay">
+          <div className="space-y-4">
+            <BigNumber label="Unpaid" value={formatMoney(data.unpaid_bills_total, currency)} />
+            <BigNumber
+              label={"Overdue (" + data.overdue_bill_count + ")"}
+              value={formatMoney(data.overdue_bills_total, currency)}
+              tone={data.overdue_bill_count > 0 ? "bad" : undefined}
             />
           </div>
         </Card>

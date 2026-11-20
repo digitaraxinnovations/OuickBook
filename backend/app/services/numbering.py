@@ -15,6 +15,29 @@ class DocumentNumberService:
 
     def next_number(self, company_id: int, sequence_key: str) -> str:
         """Return the next free number and move the counter on. Does not commit."""
+        sequence = self.find_or_create(company_id, sequence_key)
+        number = sequence.next_number
+        sequence.next_number = number + 1
+        return str(number)
+
+    def peek(self, company_id: int, sequence_key: str) -> int:
+        """The number the next document will get, without using it up."""
+        return self.find_or_create(company_id, sequence_key).next_number
+
+    def move_past(self, company_id: int, sequence_key: str, used_number: str | int) -> None:
+        """
+        Someone typed a number by hand (e.g. check 2050). Make sure the next
+        automatic number comes after it. Non-numeric numbers are ignored.
+        """
+        try:
+            used = int(used_number)
+        except (TypeError, ValueError):
+            return
+        sequence = self.find_or_create(company_id, sequence_key)
+        if used + 1 > sequence.next_number:
+            sequence.next_number = used + 1
+
+    def find_or_create(self, company_id: int, sequence_key: str) -> NumberSequence:
         query = (
             select(NumberSequence)
             .where(NumberSequence.company_id == company_id, NumberSequence.sequence_key == sequence_key)
@@ -25,7 +48,4 @@ class DocumentNumberService:
             sequence = NumberSequence(company_id=company_id, sequence_key=sequence_key, next_number=self.first_number)
             self.session.add(sequence)
             self.session.flush()
-
-        number = sequence.next_number
-        sequence.next_number = number + 1
-        return str(number)
+        return sequence

@@ -50,6 +50,36 @@ class RecurringType(str, Enum):
     JOURNAL_ENTRY = "JOURNAL_ENTRY"
     INVOICE = "INVOICE"
     SALES_RECEIPT = "SALES_RECEIPT"
+    BILL = "BILL"
+    EXPENSE = "EXPENSE"
+
+
+class ExpenseKind(str, Enum):
+    """An expense paid right away. A check is an expense with a check number."""
+
+    EXPENSE = "EXPENSE"
+    CHECK = "CHECK"
+
+
+class PurchaseDocType(str, Enum):
+    """Vendor forms that share one table."""
+
+    BILL = "BILL"
+    VENDOR_CREDIT = "VENDOR_CREDIT"
+    PURCHASE_ORDER = "PURCHASE_ORDER"
+
+
+class PurchaseDocStatus(str, Enum):
+    OPEN = "OPEN"
+    PARTIALLY_PAID = "PARTIALLY_PAID"
+    PAID = "PAID"
+    CLOSED = "CLOSED"
+    VOID = "VOID"
+
+
+class TripPurpose(str, Enum):
+    BUSINESS = "BUSINESS"
+    PERSONAL = "PERSONAL"
 
 
 class SalesDocType(str, Enum):
@@ -111,3 +141,9 @@ class JournalSource(str, Enum):
     SALES_DOC_VOID = "SALES_DOC_VOID"
     DEPOSIT = "DEPOSIT"
     LATE_FEE = "LATE_FEE"
+    CHECK = "CHECK"
+    EXPENSE_VOID = "EXPENSE_VOID"
+    BILL = "BILL"
+    VENDOR_CREDIT = "VENDOR_CREDIT"
+    BILL_PAYMENT = "BILL_PAYMENT"
+    PURCHASE_VOID = "PURCHASE_VOID"

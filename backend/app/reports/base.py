@@ -3,7 +3,7 @@ Base class for reports.
 
 To add a new report:
   1. Create a class that inherits from Report and implements generate().
-  2. Register it in services/report_service.py (build_default_reports).
+  2. Add it to build_reports() in api/deps.py.
 No other code has to change (Open/Closed principle).
 """
 

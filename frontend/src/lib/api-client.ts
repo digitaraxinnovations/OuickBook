@@ -41,10 +41,21 @@ export class ApiClient {
   }
 
   /** Downloads a file (e.g. a PDF) with the login token attached. */
-  async getBlob(path: string, query?: QueryParams): Promise<Blob> {
+  getBlob(path: string, query?: QueryParams): Promise<Blob> {
+    return this.fetchBlob(path + this.buildQuery(query), { headers: this.authHeaders() });
+  }
+
+  /** Sends data and gets a file back (e.g. "print these checks" returns a PDF). */
+  postForBlob(path: string, body: unknown): Promise<Blob> {
+    const headers = this.authHeaders();
+    headers["Content-Type"] = "application/json";
+    return this.fetchBlob(path, { method: "POST", headers: headers, body: JSON.stringify(body) });
+  }
+
+  private async fetchBlob(path: string, options: RequestInit): Promise<Blob> {
     let response: Response;
     try {
-      response = await fetch(this.baseUrl + path + this.buildQuery(query), { headers: this.authHeaders() });
+      response = await fetch(this.baseUrl + path, options);
     } catch {
       throw new ApiError("Cannot reach the server. Is the backend running?", 0);
     }

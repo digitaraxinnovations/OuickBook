@@ -1,24 +1,8 @@
 from datetime import date
 
 from app.core.exceptions import BusinessRuleError, NotFoundError
-from app.reports.balance_sheet import BalanceSheetReport
 from app.reports.base import Report
-from app.reports.profit_and_loss import ProfitAndLossReport
-from app.reports.receivables_aging import ReceivablesAgingReport
-from app.reports.trial_balance import TrialBalanceReport
-from app.repositories.invoice_repository import InvoiceRepository
-from app.repositories.journal_repository import JournalRepository
 from app.schemas.report import ReportInfo, ReportResult
-
-
-def build_default_reports(journal_repository: JournalRepository, invoice_repository: InvoiceRepository) -> list[Report]:
-    """The list of available reports. Add new reports here."""
-    return [
-        ProfitAndLossReport(journal_repository),
-        BalanceSheetReport(journal_repository),
-        TrialBalanceReport(journal_repository),
-        ReceivablesAgingReport(invoice_repository),
-    ]
 
 
 class ReportService:

@@ -13,6 +13,10 @@ export type SalesDocStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "OPEN" | "CLO
 export type CreditSource = "CREDIT_MEMO" | "PAYMENT";
 export type DepositLineSource = "PAYMENT" | "SALES_RECEIPT" | "OTHER";
 export type StatementType = "BALANCE_FORWARD" | "OPEN_ITEM" | "TRANSACTION";
+export type ExpenseKind = "EXPENSE" | "CHECK";
+export type PurchaseDocType = "BILL" | "VENDOR_CREDIT" | "PURCHASE_ORDER";
+export type PurchaseDocStatus = "OPEN" | "PARTIALLY_PAID" | "PAID" | "CLOSED" | "VOID";
+export type TripPurpose = "BUSINESS" | "PERSONAL";
 
 export interface User {
   id: number;
@@ -66,6 +70,7 @@ export interface Account extends AccountSummary {
   system_key: string | null;
   is_active: boolean;
   parent_id: number | null;
+  box_1099: string | null;
   full_name: string;
   depth: number;
   balance: string;
@@ -93,7 +98,12 @@ export interface Customer extends Contact {
   open_balance: string;
 }
 
-export type Vendor = Contact;
+export interface Vendor extends Contact {
+  terms_id: number | null;
+  track_1099: boolean;
+  tax_id: string | null;
+  open_balance: string;
+}
 
 export interface Product {
   id: number;
@@ -291,18 +301,116 @@ export interface ExpenseLine {
   account: AccountSummary;
   description: string | null;
   amount: string;
+  customer_id: number | null;
 }
 
 export interface Expense {
   id: number;
+  kind: ExpenseKind;
   vendor: ContactSummary | null;
   payment_account: AccountSummary;
   expense_date: string;
   payment_method: PaymentMethod;
   reference_no: string | null;
+  check_number: string | null;
+  print_later: boolean;
   memo: string | null;
   total: string;
+  is_void: boolean;
   lines: ExpenseLine[];
+}
+
+export interface PurchaseLine {
+  id: number;
+  account: AccountSummary;
+  description: string | null;
+  quantity: string;
+  rate: string;
+  amount: string;
+  customer_id: number | null;
+}
+
+export interface PurchaseDocumentSummary {
+  id: number;
+  doc_type: PurchaseDocType;
+  doc_number: string | null;
+  vendor: ContactSummary;
+  doc_date: string;
+  due_date: string | null;
+  status: PurchaseDocStatus;
+  total: string;
+  amount_applied: string;
+  balance: string;
+  is_overdue: boolean;
+}
+
+export interface PurchaseDocument extends PurchaseDocumentSummary {
+  memo: string | null;
+  terms_id: number | null;
+  purchase_order_id: number | null;
+  lines: PurchaseLine[];
+}
+
+export interface BillPayment {
+  id: number;
+  vendor: ContactSummary;
+  payment_date: string;
+  payment_account: AccountSummary;
+  payment_method: PaymentMethod;
+  check_number: string | null;
+  print_later: boolean;
+  amount: string;
+  memo: string | null;
+  applications: { bill: { id: number; doc_number: string | null }; amount: string }[];
+  credits_used: { vendor_credit_id: number; amount: string }[];
+}
+
+export interface BillPaymentForBill {
+  payment_id: number;
+  payment_date: string;
+  payment_method: PaymentMethod;
+  check_number: string | null;
+  payment_account: AccountSummary;
+  amount: string;
+}
+
+export interface CheckToPrint {
+  source_type: "EXPENSE" | "BILL_PAYMENT";
+  source_id: number;
+  check_date: string;
+  payee: string;
+  bank_account: AccountSummary;
+  amount: string;
+}
+
+export interface Attachment {
+  id: number;
+  entity_type: string;
+  entity_id: number | null;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  note: string | null;
+  created_at: string;
+}
+
+export interface Trip {
+  id: number;
+  trip_date: string;
+  vehicle: string | null;
+  start_location: string | null;
+  end_location: string | null;
+  miles: string;
+  purpose: TripPurpose;
+  notes: string | null;
+}
+
+export interface MileageSummary {
+  year: number;
+  business_miles: string;
+  personal_miles: string;
+  rate: string;
+  deduction: string;
 }
 
 export interface JournalLine {
@@ -323,7 +431,7 @@ export interface JournalEntry {
 }
 
 export type RecurringFrequency = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
-export type RecurringType = "JOURNAL_ENTRY" | "INVOICE" | "SALES_RECEIPT";
+export type RecurringType = "JOURNAL_ENTRY" | "INVOICE" | "SALES_RECEIPT" | "BILL" | "EXPENSE";
 
 export interface RecurringSchedule {
   id: number;
@@ -383,4 +491,7 @@ export interface DashboardSummary {
   overdue_invoices_total: string;
   overdue_invoice_count: number;
   bank_accounts: { account_id: number; name: string; balance: string }[];
+  unpaid_bills_total: string;
+  overdue_bills_total: string;
+  overdue_bill_count: number;
 }

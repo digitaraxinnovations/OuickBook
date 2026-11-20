@@ -25,6 +25,8 @@ interface ContactListPageProps<T extends Contact> {
   terms?: PaymentTerm[];
   /** When set, clicking a row opens this page instead of the edit form. */
   detailHref?: (row: T) => string;
+  /** Vendors: show the 1099 fields on the form. */
+  vendorFields?: boolean;
 }
 
 /** Shared page for Customers and Vendors: a table plus a create/edit form. */
@@ -36,6 +38,7 @@ export function ContactListPage<T extends Contact>({
   extraColumns = [],
   terms,
   detailHref,
+  vendorFields,
 }: ContactListPageProps<T>) {
   const router = useRouter();
   const contacts = useLoad(() => service.list());
@@ -107,7 +110,7 @@ export function ContactListPage<T extends Contact>({
         <DataTable rows={contacts.data || []} rowKey={(row) => row.id} columns={columns} onRowClick={openEdit} />
       )}
       <Modal title={editing ? "Edit " + itemName.toLowerCase() : "New " + itemName.toLowerCase()} open={formOpen} onClose={() => setFormOpen(false)}>
-        <ContactForm key={editing ? editing.id : "new"} initial={editing} terms={terms} onSave={save} onCancel={() => setFormOpen(false)} />
+        <ContactForm key={editing ? editing.id : "new"} initial={editing} terms={terms} vendorFields={vendorFields} onSave={save} onCancel={() => setFormOpen(false)} />
       </Modal>
     </div>
   );

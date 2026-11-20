@@ -78,6 +78,7 @@ class AccountService(BaseService):
             detail_type=data.detail_type,
             description=data.description,
             parent_id=data.parent_id,
+            box_1099=data.box_1099,
         )
         self.account_repository.add(account)
         self.commit()
@@ -96,6 +97,7 @@ class AccountService(BaseService):
         account.detail_type = data.detail_type
         account.description = data.description
         account.parent_id = data.parent_id
+        account.box_1099 = data.box_1099
         account.is_active = data.is_active
         self.commit()
         return account

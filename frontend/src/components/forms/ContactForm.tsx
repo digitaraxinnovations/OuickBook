@@ -8,7 +8,13 @@ import { useFormState } from "@/hooks/useFormState";
 import { ContactInput } from "@/types/inputs";
 import { Contact, PaymentTerm } from "@/types/models";
 
-export function contactToInput(contact: (Contact & { terms_id?: number | null }) | null): ContactInput {
+interface ContactExtras {
+  terms_id?: number | null;
+  track_1099?: boolean;
+  tax_id?: string | null;
+}
+
+export function contactToInput(contact: (Contact & ContactExtras) | null): ContactInput {
   return {
     display_name: contact?.display_name || "",
     company_name: contact?.company_name || "",
@@ -18,19 +24,23 @@ export function contactToInput(contact: (Contact & { terms_id?: number | null })
     notes: contact?.notes || "",
     is_active: contact ? contact.is_active : true,
     terms_id: contact?.terms_id ?? null,
+    track_1099: contact?.track_1099 ?? false,
+    tax_id: contact?.tax_id || "",
   };
 }
 
 interface ContactFormProps {
-  initial: (Contact & { terms_id?: number | null }) | null;
-  /** Only passed for customers: shows the default payment terms field. */
+  initial: (Contact & ContactExtras) | null;
+  /** Shows the default payment terms field. */
   terms?: PaymentTerm[];
+  /** Vendors only: show the 1099 contractor fields. */
+  vendorFields?: boolean;
   onSave: (input: ContactInput) => Promise<void>;
   onCancel: () => void;
 }
 
 /** Form used for both customers and vendors. */
-export function ContactForm({ initial, terms, onSave, onCancel }: ContactFormProps) {
+export function ContactForm({ initial, terms, vendorFields, onSave, onCancel }: ContactFormProps) {
   const form = useFormState<ContactInput>(contactToInput(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -76,6 +86,17 @@ export function ContactForm({ initial, terms, onSave, onCancel }: ContactFormPro
             options={terms.filter((term) => term.is_active).map((term) => ({ value: term.id, label: term.name }))}
           />
         </Field>
+      )}
+      {vendorFields && (
+        <div className="grid grid-cols-2 items-end gap-4">
+          <label className="flex items-center gap-2 pb-2 text-sm">
+            <input type="checkbox" checked={form.values.track_1099 || false} onChange={(e) => form.setField("track_1099", e.target.checked)} />
+            Track payments for 1099
+          </label>
+          <Field label="Tax ID (SSN / EIN)">
+            <TextInput value={form.values.tax_id || ""} onChange={(e) => form.setField("tax_id", e.target.value)} />
+          </Field>
+        </div>
       )}
       <Field label="Notes">
         <TextArea rows={2} value={form.values.notes} onChange={(e) => form.setField("notes", e.target.value)} />

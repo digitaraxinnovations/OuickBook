@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     invoice_number_start: int = 1001
     # Largest company logo that can be uploaded, in bytes.
     max_logo_bytes: int = 500_000
+    # Largest receipt / attachment file, in bytes.
+    max_attachment_bytes: int = 5_000_000
+    # Vendors paid at least this much in a year get a 1099 form.
+    form_1099_threshold: int = 600
+    # First check number when a bank account has never printed a check.
+    first_check_number: int = 1001
 
     # ---------- Links sent to customers ----------
     # The frontend address customers open (invoice "view and pay" links).

@@ -21,3 +21,6 @@ class DashboardSummary(BaseModel):
     overdue_invoices_total: Decimal
     overdue_invoice_count: int
     bank_accounts: list[AccountBalance]
+    unpaid_bills_total: Decimal
+    overdue_bills_total: Decimal
+    overdue_bill_count: int

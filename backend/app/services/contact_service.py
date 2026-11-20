@@ -5,8 +5,9 @@ from app.core.money import ZERO
 from app.models import Customer, Vendor
 from app.repositories.contact_repository import CustomerRepository, VendorRepository
 from app.repositories.invoice_repository import InvoiceRepository
+from app.repositories.purchase_repositories import PurchaseDocumentRepository
 from app.repositories.sales_repositories import PaymentRepository, PaymentTermRepository, SalesDocumentRepository
-from app.schemas.contact import CustomerWrite
+from app.schemas.contact import CustomerWrite, VendorWrite
 from app.services.base import CrudService
 
 
@@ -65,5 +66,30 @@ class VendorService(CrudService):
     model = Vendor
     item_name = "Vendor"
 
-    def __init__(self, session, repository: VendorRepository):
+    def __init__(
+        self,
+        session,
+        repository: VendorRepository,
+        purchase_repository: PurchaseDocumentRepository,
+        terms_repository: PaymentTermRepository,
+    ):
         super().__init__(session, repository)
+        self.purchase_repository = purchase_repository
+        self.terms_repository = terms_repository
+
+    def validate(self, company_id: int, data: VendorWrite) -> None:
+        if data.terms_id is not None and self.terms_repository.get(company_id, data.terms_id) is None:
+            raise BusinessRuleError("Those payment terms do not exist.")
+
+    def list_with_balances(self, company_id: int, active_only: bool = False) -> list[Vendor]:
+        vendors = self.list(company_id, active_only)
+        balances = self.purchase_repository.open_balance_by_vendor(company_id)
+        for vendor in vendors:
+            # `open_balance` is not a database column - it is added for the response.
+            vendor.open_balance = balances.get(vendor.id, ZERO)
+        return vendors
+
+    def get_with_balance(self, company_id: int, vendor_id: int) -> Vendor:
+        vendor = self.get(company_id, vendor_id)
+        vendor.open_balance = self.purchase_repository.open_balance_by_vendor(company_id).get(vendor.id, ZERO)
+        return vendor

@@ -31,6 +31,17 @@ class DetailType:
     CREDIT_CARD = "Credit Card"
 
 
+# Boxes on the US 1099 forms an expense account can be mapped to.
+FORM_1099_BOXES = {
+    "NEC_1": "1099-NEC Box 1: Nonemployee compensation",
+    "MISC_1": "1099-MISC Box 1: Rents",
+    "MISC_2": "1099-MISC Box 2: Royalties",
+    "MISC_3": "1099-MISC Box 3: Other income",
+    "MISC_6": "1099-MISC Box 6: Medical and health care payments",
+    "MISC_10": "1099-MISC Box 10: Gross proceeds paid to an attorney",
+}
+
+
 DEFAULT_PAYMENT_TERMS = [
     {"name": "Due on receipt", "due_days": 0},
     {"name": "Net 15", "due_days": 15},
@@ -70,10 +81,10 @@ DEFAULT_ACCOUNTS = [
     {"code": "6200", "name": "Insurance", "type": AccountType.EXPENSE, "detail": "Insurance", "key": None},
     {"code": "6300", "name": "Meals & Entertainment", "type": AccountType.EXPENSE, "detail": "Entertainment Meals", "key": None},
     {"code": "6400", "name": "Office Supplies & Software", "type": AccountType.EXPENSE, "detail": "Office/General Administrative Expenses", "key": None},
-    {"code": "6500", "name": "Rent & Lease", "type": AccountType.EXPENSE, "detail": "Rent or Lease of Buildings", "key": None},
+    {"code": "6500", "name": "Rent & Lease", "type": AccountType.EXPENSE, "detail": "Rent or Lease of Buildings", "key": None, "box_1099": "MISC_1"},
     {"code": "6600", "name": "Repairs & Maintenance", "type": AccountType.EXPENSE, "detail": "Repair & Maintenance", "key": None},
     {"code": "6700", "name": "Travel", "type": AccountType.EXPENSE, "detail": "Travel", "key": None},
     {"code": "6800", "name": "Utilities", "type": AccountType.EXPENSE, "detail": "Utilities", "key": None},
-    {"code": "6900", "name": "Contractors", "type": AccountType.EXPENSE, "detail": "Cost of Labor", "key": None},
+    {"code": "6900", "name": "Contractors", "type": AccountType.EXPENSE, "detail": "Cost of Labor", "key": None, "box_1099": "NEC_1"},
     {"code": "6999", "name": "Uncategorized Expense", "type": AccountType.EXPENSE, "detail": "Other Miscellaneous Service Cost", "key": SystemAccount.UNCATEGORIZED_EXPENSE},
 ]

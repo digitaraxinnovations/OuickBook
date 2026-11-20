@@ -24,6 +24,7 @@ function accountToInput(account: Account | null): AccountInput {
     detail_type: account?.detail_type || "",
     description: account?.description || "",
     parent_id: account ? account.parent_id : null,
+    box_1099: account ? account.box_1099 : null,
     is_active: account ? account.is_active : true,
   };
 }
@@ -31,11 +32,13 @@ function accountToInput(account: Account | null): AccountInput {
 interface AccountFormProps {
   initial: Account | null;
   allAccounts: Account[];
+  /** {"NEC_1": "1099-NEC Box 1: ..."} */
+  boxes1099: Record<string, string>;
   onSave: (input: AccountInput) => Promise<void>;
   onCancel: () => void;
 }
 
-export function AccountForm({ initial, allAccounts, onSave, onCancel }: AccountFormProps) {
+export function AccountForm({ initial, allAccounts, boxes1099, onSave, onCancel }: AccountFormProps) {
   const form = useFormState<AccountInput>(accountToInput(initial));
 
   // A sub-account's parent must have the same type, and cannot be the account itself.
@@ -99,6 +102,16 @@ export function AccountForm({ initial, allAccounts, onSave, onCancel }: AccountF
           options={parentOptions}
         />
       </Field>
+      {form.values.account_type === "EXPENSE" && (
+        <Field label="1099 box (payments to contractors from this account)">
+          <Select
+            value={form.values.box_1099 ?? ""}
+            onChange={(e) => form.setField("box_1099", e.target.value || null)}
+            placeholder="Not reported on a 1099"
+            options={Object.keys(boxes1099).map((key) => ({ value: key, label: boxes1099[key] }))}
+          />
+        </Field>
+      )}
       <Field label="Description">
         <TextArea rows={2} value={form.values.description} onChange={(e) => form.setField("description", e.target.value)} />
       </Field>

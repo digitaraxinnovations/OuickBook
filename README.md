@@ -19,10 +19,12 @@ expenses, a chart of accounts, double-entry bookkeeping and financial reports.
   credit memos, refund receipts, delayed charges and credits; payments across several invoices
   using credits and overpayments; PDF, email and a customer "view invoice" link.
 - **Banking** - bank deposits from Undeposited Funds.
-- **Expenses** - vendors, expenses split across several categories, paid from bank or credit card.
+- **Expenses** - vendors (with 1099 tracking), expenses and checks (numbering, batch printing),
+  bills with terms, paying bills one by one or in batches, vendor credits, purchase orders,
+  receipt uploads and attachments, mileage log.
 - **Accounting** - chart of accounts with sub-accounts and live balances, journal entries
-  (automatic + manual), recurring invoices / sales receipts / journal entries.
-- **Reports** - Profit and Loss, Balance Sheet, Trial Balance, Accounts Receivable Aging.
+  (automatic + manual), recurring invoices / sales receipts / bills / expenses / journal entries.
+- **Reports** - Profit and Loss, Balance Sheet, Trial Balance, A/R Aging, A/P Aging, 1099 summary.
 - **Dashboard** - income, expenses, net income, unpaid and overdue invoices, bank balances.
 
 Every money event is posted to the general ledger as a balanced journal entry

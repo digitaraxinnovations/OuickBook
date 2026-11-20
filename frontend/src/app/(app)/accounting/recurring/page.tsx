@@ -3,6 +3,7 @@
 import { Play, Plus } from "lucide-react";
 import { useState } from "react";
 import { RecurringJournalForm } from "@/components/forms/RecurringJournalForm";
+import { RecurringPurchaseForm } from "@/components/forms/RecurringPurchaseForm";
 import { RecurringSalesForm } from "@/components/forms/RecurringSalesForm";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/ui/DataTable";
@@ -13,7 +14,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
 import { formatDate, formatLabel } from "@/lib/format";
-import { accountService, customerService, productService, recurringService } from "@/services";
+import { accountService, customerService, productService, recurringService, vendorService } from "@/services";
 import { RecurringScheduleInput } from "@/types/inputs";
 import { RecurringSchedule, RecurringType } from "@/types/models";
 
@@ -22,6 +23,8 @@ const periodNames: Record<string, string> = { DAILY: "day", WEEKLY: "week", MONT
 const typeOptions = [
   { value: "INVOICE", label: "Invoice" },
   { value: "SALES_RECEIPT", label: "Sales receipt" },
+  { value: "BILL", label: "Bill" },
+  { value: "EXPENSE", label: "Expense" },
   { value: "JOURNAL_ENTRY", label: "Journal entry" },
 ];
 
@@ -39,6 +42,7 @@ export default function RecurringPage() {
   const accounts = useLoad(() => accountService.list({ active_only: true }));
   const customers = useLoad(() => customerService.list({ active_only: true }));
   const products = useLoad(() => productService.list({ active_only: true }));
+  const vendors = useLoad(() => vendorService.list({ active_only: true }));
   const [editing, setEditing] = useState<RecurringSchedule | null>(null);
   const [formType, setFormType] = useState<RecurringType>("INVOICE");
   const [formOpen, setFormOpen] = useState(false);
@@ -91,7 +95,7 @@ export default function RecurringPage() {
     <div>
       <PageHeader
         title="Recurring transactions"
-        subtitle="Templates that create invoices, sales receipts or journal entries on a schedule (when you click Run due, or by the daily job)."
+        subtitle="Templates that create invoices, sales receipts, bills, expenses or journal entries on a schedule (when you click Run due, or by the daily job)."
         actions={
           <>
             <Button variant="secondary" onClick={runDue} disabled={running}>
@@ -131,7 +135,20 @@ export default function RecurringPage() {
             </Field>
           </div>
         )}
-        {formType === "JOURNAL_ENTRY" ? (
+        {(formType === "BILL" || formType === "EXPENSE") && (
+          <RecurringPurchaseForm
+            key={(editing ? editing.id : "new") + formType}
+            type={formType}
+            initial={editing}
+            vendors={vendors.data || []}
+            accounts={allAccounts}
+            customerOptions={(customers.data || []).map((customer) => ({ value: customer.id, label: customer.display_name }))}
+            currency={company?.currency}
+            onSave={save}
+            onCancel={() => setFormOpen(false)}
+          />
+        )}
+        {formType === "JOURNAL_ENTRY" && (
           <RecurringJournalForm
             key={(editing ? editing.id : "new") + formType}
             initial={editing}
@@ -140,7 +157,8 @@ export default function RecurringPage() {
             onSave={save}
             onCancel={() => setFormOpen(false)}
           />
-        ) : (
+        )}
+        {(formType === "INVOICE" || formType === "SALES_RECEIPT") && (
           <RecurringSalesForm
             key={(editing ? editing.id : "new") + formType}
             type={formType}

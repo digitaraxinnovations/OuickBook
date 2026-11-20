@@ -4,6 +4,9 @@
 import {
   AccountType,
   CreditSource,
+  ExpenseKind,
+  PurchaseDocType,
+  TripPurpose,
   DepositLineSource,
   DiscountType,
   PaymentMethod,
@@ -43,8 +46,11 @@ export interface ContactInput {
   address: string;
   notes: string;
   is_active: boolean;
-  /** Customers only: default payment terms. */
+  /** Customers and vendors: default payment terms. */
   terms_id?: number | null;
+  /** Vendors only: 1099 contractor details. */
+  track_1099?: boolean;
+  tax_id?: string;
 }
 
 export interface ProductInput {
@@ -64,6 +70,7 @@ export interface AccountInput {
   detail_type: string;
   description: string;
   parent_id: number | null;
+  box_1099: string | null;
   is_active: boolean;
 }
 
@@ -158,9 +165,13 @@ export interface ExpenseLineInput {
   account_id: number;
   description: string;
   amount: string;
+  customer_id: number | null;
 }
 
 export interface ExpenseInput {
+  kind: ExpenseKind;
+  check_number: string;
+  print_later: boolean;
   vendor_id: number | null;
   payment_account_id: number;
   expense_date: string;
@@ -181,4 +192,53 @@ export interface JournalEntryInput {
   entry_date: string;
   memo: string;
   lines: JournalLineInput[];
+}
+
+export interface PurchaseLineInput {
+  account_id: number;
+  description: string;
+  quantity: string;
+  rate: string;
+  customer_id: number | null;
+}
+
+export interface PurchaseDocumentInput {
+  doc_type: PurchaseDocType;
+  vendor_id: number;
+  doc_date: string;
+  due_date: string;
+  terms_id: number | null;
+  doc_number: string;
+  memo: string;
+  lines: PurchaseLineInput[];
+}
+
+export interface BillPaymentInput {
+  vendor_id: number;
+  payment_date: string;
+  payment_account_id: number;
+  payment_method: PaymentMethod;
+  check_number: string;
+  print_later: boolean;
+  memo: string;
+  applications: { bill_id: number; amount: string }[];
+  credits: { vendor_credit_id: number; amount: string }[];
+}
+
+export interface BatchBillPaymentInput {
+  payment_date: string;
+  payment_account_id: number;
+  payment_method: PaymentMethod;
+  print_later: boolean;
+  bills: { bill_id: number; amount: string }[];
+}
+
+export interface TripInput {
+  trip_date: string;
+  vehicle: string;
+  start_location: string;
+  end_location: string;
+  miles: string;
+  purpose: TripPurpose;
+  notes: string;
 }

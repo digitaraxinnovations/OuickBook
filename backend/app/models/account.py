@@ -24,3 +24,5 @@ class Account(CompanyOwnedMixin, TimestampMixin, Base):
     # Set when this is a sub-account (e.g. "Electric" under "Utilities").
     # A sub-account always has the same account type as its parent.
     parent_id: Mapped[int | None] = mapped_column(ForeignKey("accounts.id"))
+    # Which 1099 box payments to contractors from this account go in (e.g. "NEC_1").
+    box_1099: Mapped[str | None] = mapped_column(String(20))

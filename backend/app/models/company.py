@@ -37,3 +37,7 @@ class Company(TimestampMixin, Base):
     # ---------- overdue reminders ----------
     reminders_enabled: Mapped[bool] = mapped_column(server_default=text("false"))
     reminder_days_after_due: Mapped[int] = mapped_column(server_default=text("3"))
+
+    # ---------- mileage ----------
+    # Deduction per business mile (the standard mileage rate).
+    mileage_rate: Mapped[Decimal] = mapped_column(Numeric(6, 3), server_default=text("0.70"))

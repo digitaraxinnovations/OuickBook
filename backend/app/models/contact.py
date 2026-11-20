@@ -3,7 +3,7 @@ Customers and vendors share the same contact fields,
 so they both use ContactMixin instead of repeating the columns.
 """
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import ForeignKey, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
@@ -31,3 +31,8 @@ class Vendor(ContactMixin, CompanyOwnedMixin, TimestampMixin, Base):
     __tablename__ = "vendors"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Default payment terms for this vendor's bills.
+    terms_id: Mapped[int | None] = mapped_column(ForeignKey("payment_terms.id"))
+    # Contractors you send a 1099 form to at year end.
+    track_1099: Mapped[bool] = mapped_column(server_default=text("false"))
+    tax_id: Mapped[str | None] = mapped_column(String(30))

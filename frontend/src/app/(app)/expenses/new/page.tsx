@@ -2,58 +2,86 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { paymentMethodOptions } from "@/config/options";
+import { FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorMessage, Loading } from "@/components/ui/Feedback";
 import { Field, Select, TextArea, TextInput } from "@/components/ui/FormFields";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { paymentMethodOptions } from "@/config/options";
 import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
 import { formatMoney, todayString, toNumber } from "@/lib/format";
-import { accountService, expenseService, vendorService } from "@/services";
-import { PaymentMethod } from "@/types/models";
+import { accountService, attachmentService, checkService, customerService, expenseService, vendorService } from "@/services";
+import { ExpenseKind, PaymentMethod } from "@/types/models";
 
 interface LineState {
   account_id: string;
   description: string;
   amount: string;
+  customer_id: string;
 }
 
 function emptyLine(): LineState {
-  return { account_id: "", description: "", amount: "" };
+  return { account_id: "", description: "", amount: "", customer_id: "" };
 }
 
+/** New expense, or new check when the URL has ?kind=CHECK. ?receipt=ID attaches an uploaded receipt. */
 export default function NewExpensePage() {
   const { company } = useAuth();
   const router = useRouter();
   const vendors = useLoad(() => vendorService.list({ active_only: true }));
+  const customers = useLoad(() => customerService.list({ active_only: true }));
   const accounts = useLoad(() => accountService.list({ active_only: true }));
 
+  const [kind, setKind] = useState<ExpenseKind>("EXPENSE");
+  const [receiptId, setReceiptId] = useState<number | null>(null);
   const [vendorId, setVendorId] = useState("");
   const [paymentAccountId, setPaymentAccountId] = useState("");
   const [expenseDate, setExpenseDate] = useState(todayString());
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CREDIT_CARD");
   const [referenceNo, setReferenceNo] = useState("");
+  const [checkNumber, setCheckNumber] = useState("");
+  const [printLater, setPrintLater] = useState(false);
   const [memo, setMemo] = useState("");
   const [lines, setLines] = useState<LineState[]>([emptyLine()]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  if (vendors.loading || accounts.loading) {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("kind") === "CHECK") {
+      setKind("CHECK");
+    }
+    if (params.get("receipt")) {
+      setReceiptId(Number(params.get("receipt")));
+    }
+  }, []);
+
+  // Checks: suggest the next check number for the chosen bank account.
+  useEffect(() => {
+    if (kind !== "CHECK" || !paymentAccountId) {
+      return;
+    }
+    checkService
+      .nextNumber(Number(paymentAccountId))
+      .then((result) => setCheckNumber(String(result.next_check_number)))
+      .catch(() => setCheckNumber(""));
+  }, [kind, paymentAccountId]);
+
+  if (vendors.loading || accounts.loading || customers.loading) {
     return <Loading />;
   }
 
+  const isCheck = kind === "CHECK";
   const allAccounts = accounts.data || [];
-  // Pay from a bank account or a credit card.
   const paymentAccounts = allAccounts.filter(
-    (account) => account.detail_type === "Bank" || account.detail_type === "Credit Card",
+    (account) => account.detail_type === "Bank" || (!isCheck && account.detail_type === "Credit Card"),
   );
-  // Categories: expense accounts first, then everything else.
   const expenseAccounts = allAccounts.filter((account) => account.account_type === "EXPENSE");
   const otherAccounts = allAccounts.filter((account) => account.account_type !== "EXPENSE");
-  const categoryOptions = [...expenseAccounts, ...otherAccounts].map((account) => ({ value: account.id, label: account.name }));
+  const categoryOptions = [...expenseAccounts, ...otherAccounts].map((account) => ({ value: account.id, label: account.full_name }));
+  const customerOptions = (customers.data || []).map((customer) => ({ value: customer.id, label: customer.display_name }));
 
   function updateLine(index: number, changes: Partial<LineState>) {
     setLines(lines.map((line, i) => (i === index ? { ...line, ...changes } : line)));
@@ -69,29 +97,39 @@ export default function NewExpensePage() {
     setSaving(true);
     setError(null);
     try {
-      await expenseService.create({
+      const expense = await expenseService.create({
+        kind: kind,
         vendor_id: vendorId ? Number(vendorId) : null,
         payment_account_id: Number(paymentAccountId),
         expense_date: expenseDate,
-        payment_method: paymentMethod,
+        payment_method: isCheck ? "CHECK" : paymentMethod,
         reference_no: referenceNo,
+        check_number: isCheck && !printLater ? checkNumber : "",
+        print_later: isCheck && printLater,
         memo: memo,
         lines: lines.map((line) => ({
           account_id: Number(line.account_id),
           description: line.description,
           amount: line.amount,
+          customer_id: line.customer_id ? Number(line.customer_id) : null,
         })),
       });
-      router.push("/expenses");
+      if (receiptId !== null) {
+        await attachmentService.link(receiptId, "EXPENSE", expense.id);
+      }
+      router.push("/expenses/" + expense.id);
     } catch (problem) {
-      setError(problem instanceof Error ? problem.message : "Could not save the expense.");
+      setError(problem instanceof Error ? problem.message : "Could not save.");
       setSaving(false);
     }
   }
 
   return (
     <form onSubmit={handleSubmit}>
-      <PageHeader title="New expense" />
+      <PageHeader
+        title={isCheck ? "Write check" : "New expense"}
+        subtitle={receiptId !== null ? "The receipt you chose will be attached when you save." : undefined}
+      />
       <ErrorMessage message={error} />
 
       <Card>
@@ -104,68 +142,86 @@ export default function NewExpensePage() {
               options={(vendors.data || []).map((vendor) => ({ value: vendor.id, label: vendor.display_name }))}
             />
           </Field>
-          <Field label="Payment account" required>
+          <Field label={isCheck ? "Bank account" : "Payment account"} required>
             <Select
               required
               value={paymentAccountId}
               onChange={(e) => setPaymentAccountId(e.target.value)}
-              placeholder="Choose bank or card"
-              options={paymentAccounts.map((account) => ({ value: account.id, label: account.name }))}
+              placeholder={isCheck ? "Choose a bank account" : "Choose bank or card"}
+              options={paymentAccounts.map((account) => ({ value: account.id, label: account.full_name }))}
             />
           </Field>
           <Field label="Payment date" required>
             <TextInput type="date" required value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
           </Field>
-          <Field label="Payment method">
-            <Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)} options={paymentMethodOptions} />
-          </Field>
-          <Field label="Ref no.">
-            <TextInput value={referenceNo} onChange={(e) => setReferenceNo(e.target.value)} />
-          </Field>
+          {isCheck ? (
+            <>
+              <Field label="Check no.">
+                <TextInput value={checkNumber} disabled={printLater} onChange={(e) => setCheckNumber(e.target.value)} />
+              </Field>
+              <label className="flex items-center gap-2 pt-6 text-sm">
+                <input type="checkbox" checked={printLater} onChange={(e) => setPrintLater(e.target.checked)} />
+                Print later (number it when printing)
+              </label>
+            </>
+          ) : (
+            <>
+              <Field label="Payment method">
+                <Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)} options={paymentMethodOptions} />
+              </Field>
+              <Field label="Ref no.">
+                <TextInput value={referenceNo} onChange={(e) => setReferenceNo(e.target.value)} />
+              </Field>
+            </>
+          )}
         </div>
 
         <h3 className="mt-6 mb-2 text-sm font-semibold uppercase text-gray-500">Category details</h3>
         <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-sm">
-          <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
-            <tr>
-              <th className="w-8 py-2">#</th>
-              <th className="w-64 py-2">Category</th>
-              <th className="py-2">Description</th>
-              <th className="w-36 py-2">Amount</th>
-              <th className="w-10"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((line, index) => (
-              <tr key={index} className="border-b border-gray-100">
-                <td className="py-2 text-gray-500">{index + 1}</td>
-                <td className="py-2 pr-2">
-                  <Select required value={line.account_id} onChange={(e) => updateLine(index, { account_id: e.target.value })} placeholder="Choose a category" options={categoryOptions} />
-                </td>
-                <td className="py-2 pr-2">
-                  <TextInput value={line.description} onChange={(e) => updateLine(index, { description: e.target.value })} />
-                </td>
-                <td className="py-2 pr-2">
-                  <TextInput type="number" step="0.01" min="0.01" required value={line.amount} onChange={(e) => updateLine(index, { amount: e.target.value })} />
-                </td>
-                <td className="py-2">
-                  {lines.length > 1 && (
-                    <button type="button" onClick={() => setLines(lines.filter((_, i) => i !== index))} className="text-gray-400 hover:text-red-600" aria-label="Remove line">
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                </td>
+          <table className="w-full min-w-[720px] text-sm">
+            <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
+              <tr>
+                <th className="w-8 py-2">#</th>
+                <th className="w-60 py-2">Category</th>
+                <th className="py-2">Description</th>
+                <th className="w-32 py-2">Amount</th>
+                <th className="w-44 py-2 pl-2">Billable to</th>
+                <th className="w-8"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {lines.map((line, index) => (
+                <tr key={index} className="border-b border-gray-100">
+                  <td className="py-2 text-gray-500">{index + 1}</td>
+                  <td className="py-2 pr-2">
+                    <Select required value={line.account_id} onChange={(e) => updateLine(index, { account_id: e.target.value })} placeholder="Choose a category" options={categoryOptions} />
+                  </td>
+                  <td className="py-2 pr-2">
+                    <TextInput value={line.description} onChange={(e) => updateLine(index, { description: e.target.value })} />
+                  </td>
+                  <td className="py-2 pr-2">
+                    <TextInput type="number" step="0.01" min="0.01" required value={line.amount} onChange={(e) => updateLine(index, { amount: e.target.value })} />
+                  </td>
+                  <td className="py-2 pl-2">
+                    <Select value={line.customer_id} onChange={(e) => updateLine(index, { customer_id: e.target.value })} placeholder="-" options={customerOptions} />
+                  </td>
+                  <td className="py-2 pl-2">
+                    {lines.length > 1 && (
+                      <button type="button" onClick={() => setLines(lines.filter((_, i) => i !== index))} className="text-gray-400 hover:text-red-600" aria-label="Remove line">
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         <Button type="button" variant="ghost" className="mt-3" onClick={() => setLines([...lines, emptyLine()])}>
           <Plus size={16} /> Add line
         </Button>
 
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <Field label="Memo">
             <TextArea value={memo} onChange={(e) => setMemo(e.target.value)} />
           </Field>
@@ -181,7 +237,7 @@ export default function NewExpensePage() {
           Cancel
         </Button>
         <Button type="submit" disabled={saving}>
-          {saving ? "Saving..." : "Save expense"}
+          {saving ? "Saving..." : isCheck ? "Save check" : "Save expense"}
         </Button>
       </div>
     </form>

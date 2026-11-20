@@ -26,14 +26,15 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [x] Discounts (% or amount), shipping, deposits on invoices; progress invoicing (% of estimate)
 - [x] Payment terms list (customer default terms); late fees (fixed or %, grace days)
 
-## Phase 3 – Expenses & bills (Pay bills)
-- [ ] Bills, pay bills (single/batch), vendor credits, bill payments by check/card
-- [ ] Checks (write/print), check numbering
-- [ ] Purchase orders → convert to bill
-- [ ] Recurring bills and expenses
-- [ ] Receipt capture/upload with attachments
-- [ ] Mileage tracking
-- [ ] 1099 contractors and 1099 reporting
+## Phase 3 – Expenses & bills (Pay bills) (done)
+- [x] Bills (vendor terms → due date), pay bills (single vendor or batch, one payment per vendor), vendor credits, bill payments by check/bank/card, delete payment
+- [x] Checks (write, print later, print batch on check stock with amount in words, reprint), check numbering per bank account
+- [x] Purchase orders → convert to bill (voiding the bill re-opens the order), close order
+- [x] Recurring bills and expenses
+- [x] Receipt upload inbox → create expense with receipt attached; attachments on expenses, bills, vendor credits, POs — automatic reading of receipt images (OCR) is EXT and not included
+- [x] Mileage tracking (business/personal trips, rate per mile, yearly deduction)
+- [x] 1099 contractors (vendor flag + tax ID, account → 1099 box) and 1099 summary report (card payments excluded, threshold in config)
+- [x] Also: Accounts Payable Aging report, billable-to-customer on expense/bill lines, void expenses, vendor detail page, bills on dashboard
 
 ## Phase 4 – Banking
 - [ ] Bank and credit card accounts, transfers, credit card credits

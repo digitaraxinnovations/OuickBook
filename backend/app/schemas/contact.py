@@ -39,5 +39,15 @@ class CustomerRead(ContactRead):
     open_balance: Decimal = Decimal("0.00")
 
 
+class VendorWrite(ContactWrite):
+    terms_id: int | None = None
+    track_1099: bool = False
+    tax_id: str | None = Field(default=None, max_length=30)
+
+
 class VendorRead(ContactRead):
-    pass
+    terms_id: int | None
+    track_1099: bool
+    tax_id: str | None
+    # Unpaid bills minus unused vendor credits.
+    open_balance: Decimal = Decimal("0.00")

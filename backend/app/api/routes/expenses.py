@@ -5,7 +5,7 @@ from app.models import User
 from app.schemas.expense import ExpenseCreate, ExpenseRead
 from app.services.expense_service import ExpenseService
 
-router = APIRouter(prefix="/expenses", tags=["Expenses"])
+router = APIRouter(prefix="/expenses", tags=["Expenses & Checks"])
 
 
 @router.get("", response_model=list[ExpenseRead])
@@ -31,4 +31,14 @@ def create_expense(
     user: User = Depends(get_current_user),
     service: ExpenseService = Depends(get_expense_service),
 ):
+    """Create an expense, or a check when kind=CHECK."""
     return service.create(user.company_id, data)
+
+
+@router.post("/{expense_id}/void", response_model=ExpenseRead)
+def void_expense(
+    expense_id: int,
+    user: User = Depends(get_current_user),
+    service: ExpenseService = Depends(get_expense_service),
+):
+    return service.void(user.company_id, expense_id)

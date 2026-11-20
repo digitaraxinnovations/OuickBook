@@ -18,6 +18,7 @@ import { Account } from "@/types/models";
 export default function ChartOfAccountsPage() {
   const { company } = useAuth();
   const accounts = useLoad(() => accountService.list());
+  const boxes = useLoad(() => accountService.boxes1099());
   const [editing, setEditing] = useState<Account | null>(null);
   const [formOpen, setFormOpen] = useState(false);
 
@@ -84,6 +85,7 @@ export default function ChartOfAccountsPage() {
           key={editing ? editing.id : "new"}
           initial={editing}
           allAccounts={accounts.data || []}
+          boxes1099={boxes.data || {}}
           onSave={save}
           onCancel={() => setFormOpen(false)}
         />
