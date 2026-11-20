@@ -27,6 +27,9 @@ class SystemAccount:
     COST_OF_GOODS_SOLD = "cost_of_goods_sold"
     INVENTORY_SHRINKAGE = "inventory_shrinkage"
     OPENING_BALANCE_EQUITY = "opening_balance_equity"
+    PAYROLL_LIABILITIES = "payroll_liabilities"
+    WAGES = "wages"
+    PAYROLL_TAXES = "payroll_taxes"
 
 
 class DetailType:
@@ -84,6 +87,8 @@ DEFAULT_TAX_LINES = {
     "5000": "SCHC_4",
     "5100": "SCHC_4",
     "6000": "SCHC_8",
+    "6050": "SCHC_26",
+    "6060": "SCHC_23",
     "6100": "SCHC_27A",
     "6200": "SCHC_15",
     "6300": "SCHC_24B",
@@ -117,6 +122,7 @@ DEFAULT_ACCOUNTS = [
     {"code": "2000", "name": "Accounts Payable (A/P)", "type": AccountType.LIABILITY, "detail": "Accounts Payable", "key": SystemAccount.ACCOUNTS_PAYABLE},
     {"code": "2100", "name": "Credit Card", "type": AccountType.LIABILITY, "detail": DetailType.CREDIT_CARD, "key": None},
     {"code": "2200", "name": "Sales Tax Payable", "type": AccountType.LIABILITY, "detail": "Sales Tax Payable", "key": SystemAccount.SALES_TAX_PAYABLE},
+    {"code": "2300", "name": "Payroll Liabilities", "type": AccountType.LIABILITY, "detail": "Payroll Tax Payable", "key": SystemAccount.PAYROLL_LIABILITIES},
     {"code": "2500", "name": "Loan Payable", "type": AccountType.LIABILITY, "detail": "Long Term Liabilities", "key": None},
     # ---------- Equity ----------
     {"code": "3000", "name": "Owner's Investment", "type": AccountType.EQUITY, "detail": "Owner's Equity", "key": SystemAccount.OWNERS_EQUITY},
@@ -135,6 +141,8 @@ DEFAULT_ACCOUNTS = [
     {"code": "5000", "name": "Cost of Goods Sold", "type": AccountType.EXPENSE, "detail": "Cost of Goods Sold", "key": SystemAccount.COST_OF_GOODS_SOLD},
     {"code": "5100", "name": "Inventory Shrinkage", "type": AccountType.EXPENSE, "detail": "Supplies & Materials - COGS", "key": SystemAccount.INVENTORY_SHRINKAGE},
     {"code": "6000", "name": "Advertising & Marketing", "type": AccountType.EXPENSE, "detail": "Advertising/Promotional", "key": None},
+    {"code": "6050", "name": "Wages & Salaries", "type": AccountType.EXPENSE, "detail": "Payroll Expenses", "key": SystemAccount.WAGES},
+    {"code": "6060", "name": "Payroll Taxes & Benefits", "type": AccountType.EXPENSE, "detail": "Payroll Expenses", "key": SystemAccount.PAYROLL_TAXES},
     {"code": "6100", "name": "Bank Charges & Fees", "type": AccountType.EXPENSE, "detail": "Bank Charges", "key": None},
     {"code": "6200", "name": "Insurance", "type": AccountType.EXPENSE, "detail": "Insurance", "key": None},
     {"code": "6300", "name": "Meals & Entertainment", "type": AccountType.EXPENSE, "detail": "Entertainment Meals", "key": None},

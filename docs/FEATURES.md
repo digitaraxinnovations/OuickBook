@@ -58,10 +58,10 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [x] Product import/export (CSV)
 
 ## Phase 7 – Payroll & time
-- [ ] Employees, pay schedules, pay types, deductions
-- [ ] Payroll runs, paychecks, payroll liabilities
-- [ ] Time tracking (timesheets, billable time → invoice)
-- [ ] (EXT) payroll tax calculation, filing, direct deposit
+- [x] Employees (hourly / salary), pay schedules (weekly, biweekly, semimonthly, monthly), pay items: earnings, deductions, employee and employer taxes, employer contributions
+- [x] Payroll runs (draft → approve → void), paychecks with check numbers, overtime, pay stubs (PDF), payroll liabilities and payments, Payroll Summary report
+- [x] Time tracking (weekly timesheets for employees and contractors, billable time → invoice, hours fill in paychecks)
+- [~] (EXT) payroll tax calculation, filing, direct deposit - PayrollProvider interface, PAYROLL_PROVIDER=none (taxes are pay items; direct deposit recorded, sent by you)
 
 ## Phase 8 – Projects, classes, locations, budgets
 - [ ] Projects with income/cost/profitability

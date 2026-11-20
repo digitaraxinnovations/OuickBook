@@ -752,3 +752,134 @@ export interface ProductImportResult {
   updated: number;
   errors: string[];
 }
+
+// ---------- payroll and time ----------
+
+export type PayFrequency = "WEEKLY" | "BIWEEKLY" | "SEMIMONTHLY" | "MONTHLY";
+export type PayType = "HOURLY" | "SALARY";
+export type PaycheckMethod = "CHECK" | "DIRECT_DEPOSIT";
+export type PayItemKind =
+  | "REGULAR"
+  | "OVERTIME"
+  | "SALARY"
+  | "EARNING"
+  | "DEDUCTION"
+  | "EMPLOYEE_TAX"
+  | "EMPLOYER_TAX"
+  | "EMPLOYER_CONTRIBUTION";
+export type PayCalculation = "FIXED" | "PERCENT";
+export type PayrollRunStatus = "DRAFT" | "APPROVED" | "VOID";
+
+export interface PaySchedule {
+  id: number;
+  name: string;
+  frequency: PayFrequency;
+  next_period_start: string;
+  next_period_end: string;
+  next_pay_date: string;
+  is_active: boolean;
+}
+
+export interface PayItem {
+  id: number;
+  name: string;
+  kind: PayItemKind;
+  calculation: PayCalculation;
+  default_amount: string;
+  expense_account: AccountSummary | null;
+  liability_account: AccountSummary | null;
+  is_active: boolean;
+}
+
+export interface Employee {
+  id: number;
+  display_name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  tax_id: string | null;
+  hire_date: string | null;
+  release_date: string | null;
+  pay_schedule_id: number | null;
+  pay_type: PayType;
+  pay_rate: string;
+  default_hours: string;
+  payment_method: PaycheckMethod;
+  is_active: boolean;
+  pay_items: { pay_item_id: number; amount: string }[];
+}
+
+export interface PaycheckLine {
+  id: number;
+  pay_item_id: number | null;
+  kind: PayItemKind;
+  description: string;
+  hours: string | null;
+  rate: string | null;
+  amount: string;
+}
+
+export interface Paycheck {
+  id: number;
+  employee: { id: number; display_name: string; pay_type: PayType };
+  regular_hours: string;
+  overtime_hours: string;
+  gross_pay: string;
+  employee_deductions: string;
+  employee_taxes: string;
+  net_pay: string;
+  employer_cost: string;
+  payment_method: PaycheckMethod;
+  check_number: string | null;
+  lines: PaycheckLine[];
+}
+
+export interface PayrollRunSummary {
+  id: number;
+  period_start: string;
+  period_end: string;
+  pay_date: string;
+  status: PayrollRunStatus;
+  bank_account: AccountSummary;
+  total_gross: string;
+  total_net: string;
+  total_employer_cost: string;
+}
+
+export interface PayrollRun extends PayrollRunSummary {
+  pay_schedule_id: number | null;
+  paychecks: Paycheck[];
+}
+
+export interface LiabilityBalance {
+  pay_item_id: number;
+  name: string;
+  kind: PayItemKind;
+  accrued: string;
+  paid: string;
+  balance: string;
+}
+
+export interface LiabilityPayment {
+  id: number;
+  pay_item_id: number;
+  payment_date: string;
+  amount: string;
+  bank_account: AccountSummary;
+  memo: string | null;
+  is_void: boolean;
+}
+
+export interface TimeEntry {
+  id: number;
+  employee_id: number | null;
+  vendor_id: number | null;
+  work_date: string;
+  hours: string;
+  customer_id: number | null;
+  product_id: number | null;
+  description: string | null;
+  billable: boolean;
+  bill_rate: string | null;
+  invoice_id: number | null;
+}

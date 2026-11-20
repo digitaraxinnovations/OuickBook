@@ -10,7 +10,7 @@ export interface NavLink {
 
 export interface NavGroup {
   label: string;
-  icon: "home" | "sales" | "expenses" | "banking" | "taxes" | "accounting" | "reports" | "settings";
+  icon: "home" | "sales" | "expenses" | "banking" | "payroll" | "taxes" | "accounting" | "reports" | "settings";
   href?: string;
   links?: NavLink[];
 }
@@ -60,6 +60,17 @@ export const sidebarMenu: NavGroup[] = [
       { label: "Bank rules", href: "/banking/rules" },
       { label: "Transfers", href: "/banking/transfers" },
       { label: "Bank deposits", href: "/banking/deposits" },
+    ],
+  },
+  {
+    label: "Payroll",
+    icon: "payroll",
+    links: [
+      { label: "Employees", href: "/payroll/employees" },
+      { label: "Run payroll", href: "/payroll/runs" },
+      { label: "Payroll liabilities", href: "/payroll/liabilities" },
+      { label: "Time", href: "/payroll/time" },
+      { label: "Payroll settings", href: "/payroll/settings" },
     ],
   },
   {
@@ -119,6 +130,8 @@ export const newMenuGroups: { title: string; links: NavLink[] }[] = [
       { label: "Credit card credit", href: "/expenses/new?kind=CARD_CREDIT" },
       { label: "Journal entry", href: "/accounting/journal-entries/new" },
       { label: "Pay sales tax", href: "/taxes?pay=1" },
+      { label: "Run payroll", href: "/payroll/runs?new=1" },
+      { label: "Weekly timesheet", href: "/payroll/time" },
       { label: "Customer", href: "/sales/customers?new=1" },
       { label: "Vendor", href: "/expenses/vendors?new=1" },
       { label: "Product or service", href: "/sales/products?new=1" },

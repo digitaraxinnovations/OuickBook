@@ -11,6 +11,7 @@ import { AuthService } from "./auth.service";
 import { BankingService } from "./banking.service";
 import { InventoryService } from "./inventory.service";
 import { InvoiceService } from "./invoice.service";
+import { PayrollService } from "./payroll.service";
 import {
   AttachmentService,
   BillPaymentService,
@@ -67,3 +68,4 @@ export const portalService = new PortalService(api);
 export const bankingService = new BankingService(api);
 export const taxService = new TaxService(api);
 export const inventoryService = new InventoryService(api);
+export const payrollService = new PayrollService(api);

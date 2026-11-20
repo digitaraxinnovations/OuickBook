@@ -37,6 +37,8 @@ class InvoiceCreate(SalesAmountsInput):
     lines: list[InvoiceLineCreate] = Field(default_factory=list)
     # Delayed charges/credits to add to this invoice.
     delayed_document_ids: list[int] = Field(default_factory=list)
+    # Billable time to add to this invoice.
+    time_entry_ids: list[int] = Field(default_factory=list)
     # Money the customer pays up front when the invoice is created.
     deposit_amount: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
     deposit_account_id: int | None = None

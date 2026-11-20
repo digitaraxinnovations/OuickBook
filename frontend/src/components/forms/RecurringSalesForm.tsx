@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { scheduleToValues } from "@/components/forms/RecurringJournalForm";
 import { ScheduleFields, ScheduleValues } from "@/components/forms/ScheduleFields";
-import { emptySalesLine, SalesLinesEditor } from "@/components/sales/SalesLinesEditor";
+import { emptySalesLine, isFilled, SalesLinesEditor } from "@/components/sales/SalesLinesEditor";
 import { emptySalesAmounts, SalesTotals } from "@/components/sales/SalesTotals";
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/Feedback";
@@ -80,7 +80,7 @@ export function RecurringSalesForm({ type, initial, customers, products, deposit
     const body: Record<string, unknown> = {
       customer_id: Number(customerId),
       memo: memo,
-      lines: lines,
+      lines: lines.filter(isFilled),
       tax_code_id: amounts.tax_code_id,
       discount_type: amounts.discount_type,
       discount_value: amounts.discount_value || "0",

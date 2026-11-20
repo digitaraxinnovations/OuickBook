@@ -133,6 +133,7 @@ export interface InvoiceInput extends SalesAmountsInput {
   memo: string;
   lines: SalesLineInput[];
   delayed_document_ids: number[];
+  time_entry_ids?: number[];
   deposit_amount: string;
   deposit_account_id: number | null;
 }
@@ -370,4 +371,77 @@ export interface InventoryAdjustmentInput {
   account_id: number | null;
   memo: string;
   lines: { product_id: number; quantity_change: string }[];
+}
+
+// ---------- payroll and time ----------
+
+export interface PayScheduleInput {
+  name: string;
+  frequency: string;
+  next_period_end: string;
+  next_pay_date: string;
+  is_active: boolean;
+}
+
+export interface PayItemInput {
+  name: string;
+  kind: string;
+  calculation: string;
+  default_amount: string;
+  expense_account_id: number | null;
+  liability_account_id: number | null;
+  is_active: boolean;
+}
+
+export interface EmployeeInput {
+  display_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  tax_id: string;
+  hire_date: string | null;
+  release_date: string | null;
+  pay_schedule_id: number | null;
+  pay_type: string;
+  pay_rate: string;
+  default_hours: string;
+  payment_method: string;
+  is_active: boolean;
+  pay_items: { pay_item_id: number; amount: string }[];
+}
+
+export interface PayrollRunInput {
+  pay_schedule_id: number | null;
+  period_start: string | null;
+  period_end: string | null;
+  pay_date: string | null;
+  bank_account_id: number;
+  employee_ids: number[];
+}
+
+export interface PaycheckInput {
+  regular_hours: string;
+  overtime_hours: string;
+  items: { pay_item_id: number; amount: string }[];
+  use_usual_items: boolean;
+}
+
+export interface LiabilityPaymentInput {
+  pay_item_id: number;
+  payment_date: string;
+  amount: string;
+  bank_account_id: number;
+  memo: string;
+}
+
+export interface TimeEntryInput {
+  employee_id: number | null;
+  vendor_id: number | null;
+  work_date: string;
+  hours: string;
+  customer_id: number | null;
+  product_id: number | null;
+  description: string;
+  billable: boolean;
+  bill_rate: string | null;
 }

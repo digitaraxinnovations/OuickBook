@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { emptySalesLine, SalesLinesEditor } from "@/components/sales/SalesLinesEditor";
+import { emptySalesLine, isFilled, SalesLinesEditor } from "@/components/sales/SalesLinesEditor";
 import { emptySalesAmounts, SalesTotals } from "@/components/sales/SalesTotals";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -81,7 +81,7 @@ export default function NewSalesFormPage() {
         doc_date: docDate,
         expiration_date: expirationDate,
         memo: memo,
-        lines: lines,
+        lines: lines.filter(isFilled),
         tax_code_id: amounts.tax_code_id,
         discount_type: amounts.discount_type,
         discount_value: amounts.discount_value || "0",

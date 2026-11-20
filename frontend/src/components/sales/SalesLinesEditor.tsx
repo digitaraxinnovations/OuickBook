@@ -11,6 +11,11 @@ export function emptySalesLine(): SalesLineInput {
   return { product_id: null, description: "", quantity: "1", rate: "", taxable: true };
 }
 
+/** A line the user started filling in. Empty lines are left off the form when it is saved. */
+export function isFilled(line: SalesLineInput): boolean {
+  return Boolean(line.product_id || line.description || toNumber(line.rate) !== 0);
+}
+
 export function salesLineAmount(line: SalesLineInput): number {
   return toNumber(line.quantity) * toNumber(line.rate);
 }
@@ -96,7 +101,13 @@ export function SalesLinesEditor({ lines, onChange, products, prices, currency }
                   <TextInput type="number" step="0.01" min="0.01" required value={line.quantity} onChange={(e) => updateLine(index, { quantity: e.target.value })} />
                 </td>
                 <td className="py-2 pr-2">
-                  <TextInput type="number" step="0.01" required value={line.rate} onChange={(e) => updateLine(index, { rate: e.target.value })} />
+                  <TextInput
+                    type="number"
+                    step="0.01"
+                    required={isFilled(line)}
+                    value={line.rate}
+                    onChange={(e) => updateLine(index, { rate: e.target.value })}
+                  />
                 </td>
                 <td className="py-2 pt-4 text-right font-medium">{formatMoney(salesLineAmount(line), currency)}</td>
                 <td className="py-2 pt-4 text-center">

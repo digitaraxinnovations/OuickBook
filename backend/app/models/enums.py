@@ -179,3 +179,50 @@ class JournalSource(str, Enum):
     BANK_DEPOSIT = "BANK_DEPOSIT"
     INVENTORY_ADJUST = "INVENTORY_ADJUST"
     INVENTORY_START = "INVENTORY_START"
+    PAYROLL = "PAYROLL"
+    PAYROLL_VOID = "PAYROLL_VOID"
+    PAYROLL_LIABILITY = "PAYROLL_LIABILITY"
+
+
+# ---------- payroll ----------
+
+
+class PayFrequency(str, Enum):
+    WEEKLY = "WEEKLY"
+    BIWEEKLY = "BIWEEKLY"
+    SEMIMONTHLY = "SEMIMONTHLY"
+    MONTHLY = "MONTHLY"
+
+
+class PayType(str, Enum):
+    HOURLY = "HOURLY"
+    SALARY = "SALARY"
+
+
+class PaycheckMethod(str, Enum):
+    CHECK = "CHECK"
+    DIRECT_DEPOSIT = "DIRECT_DEPOSIT"
+
+
+class PayItemKind(str, Enum):
+    # Built in: regular, overtime and salary pay.
+    REGULAR = "REGULAR"
+    OVERTIME = "OVERTIME"
+    SALARY = "SALARY"
+    # Pay items you add.
+    EARNING = "EARNING"
+    DEDUCTION = "DEDUCTION"
+    EMPLOYEE_TAX = "EMPLOYEE_TAX"
+    EMPLOYER_TAX = "EMPLOYER_TAX"
+    EMPLOYER_CONTRIBUTION = "EMPLOYER_CONTRIBUTION"
+
+
+class PayCalculation(str, Enum):
+    FIXED = "FIXED"
+    PERCENT = "PERCENT"
+
+
+class PayrollRunStatus(str, Enum):
+    DRAFT = "DRAFT"
+    APPROVED = "APPROVED"
+    VOID = "VOID"

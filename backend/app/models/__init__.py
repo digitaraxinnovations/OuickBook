@@ -24,6 +24,17 @@ from app.models.invoice import Invoice, InvoiceLine
 from app.models.journal import JournalEntry, JournalLine
 from app.models.mileage import Trip
 from app.models.payment import CreditApplication, Payment, PaymentApplication
+from app.models.payroll import (
+    Employee,
+    EmployeePayItem,
+    PayItem,
+    Paycheck,
+    PaycheckLine,
+    PaySchedule,
+    PayrollLiabilityPayment,
+    PayrollRun,
+    TimeEntry,
+)
 from app.models.product import Product
 from app.models.purchase import (
     BillPayment,
@@ -39,6 +50,15 @@ from app.models.terms import NumberSequence, PaymentTerm
 from app.models.user import User
 
 __all__ = [
+    "Employee",
+    "EmployeePayItem",
+    "PayItem",
+    "Paycheck",
+    "PaycheckLine",
+    "PaySchedule",
+    "PayrollLiabilityPayment",
+    "PayrollRun",
+    "TimeEntry",
     "BundleComponent",
     "InventoryAdjustment",
     "InventoryAdjustmentLine",

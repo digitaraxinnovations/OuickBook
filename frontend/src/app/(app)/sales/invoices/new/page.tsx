@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { emptySalesLine, SalesLinesEditor } from "@/components/sales/SalesLinesEditor";
+import { emptySalesLine, isFilled, SalesLinesEditor } from "@/components/sales/SalesLinesEditor";
 import { computeSalesTotals, emptySalesAmounts, SalesTotals, taxRatesFor } from "@/components/sales/SalesTotals";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -11,19 +11,20 @@ import { Field, Select, TextArea, TextInput } from "@/components/ui/FormFields";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
-import { formatMoney, todayString, toNumber } from "@/lib/format";
+import { formatDate, formatMoney, todayString, toNumber } from "@/lib/format";
 import {
   accountService,
   customerService,
   inventoryService,
   invoiceService,
+  payrollService,
   productService,
   salesDocumentService,
   taxService,
   termsService,
 } from "@/services";
 import { SalesAmountsInput, SalesLineInput } from "@/types/inputs";
-import { SalesDocumentSummary } from "@/types/models";
+import { SalesDocumentSummary, TimeEntry } from "@/types/models";
 
 /** Open delayed charges (+) and delayed credits (-) for one customer. */
 async function loadDelayedItems(customerId: string): Promise<SalesDocumentSummary[]> {
@@ -34,6 +35,14 @@ async function loadDelayedItems(customerId: string): Promise<SalesDocumentSummar
   const charges = await salesDocumentService.listByType("DELAYED_CHARGE", query);
   const credits = await salesDocumentService.listByType("DELAYED_CREDIT", query);
   return [...charges, ...credits];
+}
+
+/** The customer's billable time that is not on an invoice yet. */
+async function loadUnbilledTime(customerId: string): Promise<TimeEntry[]> {
+  if (!customerId) {
+    return [];
+  }
+  return payrollService.timeEntries({ customer_id: Number(customerId), unbilled_only: true });
 }
 
 function signedTotal(item: SalesDocumentSummary): number {
@@ -58,12 +67,14 @@ export default function NewInvoicePage() {
   const [lines, setLines] = useState<SalesLineInput[]>([emptySalesLine()]);
   const [amounts, setAmounts] = useState<SalesAmountsInput>(emptySalesAmounts());
   const [selectedDelayed, setSelectedDelayed] = useState<number[]>([]);
+  const [selectedTime, setSelectedTime] = useState<number[]>([]);
   const [depositAmount, setDepositAmount] = useState("");
   const [depositAccountId, setDepositAccountId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const delayedItems = useLoad(() => loadDelayedItems(customerId), [customerId]);
+  const unbilledTime = useLoad(() => loadUnbilledTime(customerId), [customerId]);
   const prices = useLoad(() => inventoryService.prices(customerId ? Number(customerId) : null, invoiceDate), [customerId, invoiceDate]);
 
   if (customers.loading || products.loading || terms.loading || accounts.loading || taxCodes.loading) {
@@ -73,6 +84,7 @@ export default function NewInvoicePage() {
   function chooseCustomer(value: string) {
     setCustomerId(value);
     setSelectedDelayed([]);
+    setSelectedTime([]);
     // Use the customer's default terms, like the original product does.
     const customer = (customers.data || []).find((item) => item.id === Number(value));
     setTermsId(customer && customer.terms_id ? String(customer.terms_id) : "");
@@ -87,12 +99,25 @@ export default function NewInvoicePage() {
     }
   }
 
-  // Lines typed by the user may be left empty when only delayed charges are added.
-  const filledLines = lines.filter((line) => line.description || line.product_id || toNumber(line.rate) !== 0);
+  function toggleTime(id: number) {
+    if (selectedTime.includes(id)) {
+      setSelectedTime(selectedTime.filter((item) => item !== id));
+    } else {
+      setSelectedTime([...selectedTime, id]);
+    }
+  }
+
+  // Lines typed by the user may be left empty when only delayed charges or time are added.
+  const filledLines = lines.filter(isFilled);
   let delayedTotal = 0;
   for (const item of delayedItems.data || []) {
     if (selectedDelayed.includes(item.id)) {
       delayedTotal += signedTotal(item);
+    }
+  }
+  for (const entry of unbilledTime.data || []) {
+    if (selectedTime.includes(entry.id)) {
+      delayedTotal += toNumber(entry.hours) * toNumber(entry.bill_rate);
     }
   }
   const chosenCustomer = (customers.data || []).find((item) => item.id === Number(customerId));
@@ -120,6 +145,7 @@ export default function NewInvoicePage() {
         discount_value: amounts.discount_value || "0",
         shipping_amount: amounts.shipping_amount || "0",
         delayed_document_ids: selectedDelayed,
+        time_entry_ids: selectedTime,
         deposit_amount: depositAmount || "0",
         deposit_account_id: depositAccountId ? Number(depositAccountId) : null,
       });
@@ -166,6 +192,19 @@ export default function NewInvoicePage() {
                 <input type="checkbox" checked={selectedDelayed.includes(item.id)} onChange={() => toggleDelayed(item.id)} />
                 {item.doc_type === "DELAYED_CREDIT" ? "Delayed credit" : "Delayed charge"} {item.doc_number}
                 <span className="ml-auto font-medium">{formatMoney(signedTotal(item), currency)}</span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {(unbilledTime.data || []).length > 0 && (
+          <div className="mt-6 rounded-md border border-blue-200 bg-blue-50 p-4">
+            <div className="mb-2 text-sm font-semibold text-blue-900">Billable time</div>
+            {(unbilledTime.data || []).map((entry) => (
+              <label key={entry.id} className="flex items-center gap-2 py-1 text-sm">
+                <input type="checkbox" checked={selectedTime.includes(entry.id)} onChange={() => toggleTime(entry.id)} />
+                {formatDate(entry.work_date)} - {toNumber(entry.hours)} h {entry.description ? "- " + entry.description : ""}
+                <span className="ml-auto font-medium">{formatMoney(toNumber(entry.hours) * toNumber(entry.bill_rate), currency)}</span>
               </label>
             ))}
           </div>
