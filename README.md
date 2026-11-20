@@ -44,6 +44,7 @@ switch on with settings in `.env` - no code changes:
 | "Pay now" on invoices | `PAYMENT_PROVIDER` | `none`: button hidden. Add a class in `backend/app/integrations/payments.py` |
 | Live bank feeds | `BANK_FEED_PROVIDER` | `none`: upload statements instead. Add a class in `backend/app/integrations/bank_feeds.py` |
 | Sales tax rate lookup / e-filing | `TAX_RATE_PROVIDER` | `none`: enter rates by hand on Taxes → Sales tax settings. Add a class in `backend/app/integrations/tax_rates.py` |
+| Payroll taxes, filing, direct deposit | `PAYROLL_PROVIDER` | `none`: set up taxes as pay items; direct deposit pay is recorded but sent by you. Add a class in `backend/app/integrations/payroll.py` |
 | Links in emails | `PUBLIC_APP_URL` | `http://localhost:3000` |
 
 ---

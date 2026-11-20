@@ -6,6 +6,7 @@ root .env file. The rest of the code must NOT read os.environ directly -
 it should import `settings` from this module instead.
 """
 
+from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 
@@ -102,6 +103,14 @@ class Settings(BaseSettings):
     # A provider such as Avalara can be added in app/integrations/tax_rates.py.
     tax_rate_provider: str = "none"
     tax_rate_api_key: str = ""
+
+    # ---------- Payroll ----------
+    # Overtime pay = hourly rate x this.
+    payroll_overtime_multiplier: Decimal = Decimal("1.5")
+    # (EXT) "none" = taxes are pay items you set up; direct deposit is sent by you.
+    # A payroll service can be added in app/integrations/payroll.py.
+    payroll_provider: str = "none"
+    payroll_provider_api_key: str = ""
 
     def get_database_url(self) -> str:
         """Return the SQLAlchemy connection URL for PostgreSQL."""

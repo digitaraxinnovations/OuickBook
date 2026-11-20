@@ -10,6 +10,7 @@ from app.api.routes import (
     auth,
     banking,
     inventory,
+    payroll,
     taxes,
     checks,
     customers,
@@ -42,6 +43,7 @@ api_router.include_router(payments.router)
 api_router.include_router(deposits.router)
 api_router.include_router(banking.router)
 api_router.include_router(inventory.router)
+api_router.include_router(payroll.router)
 api_router.include_router(taxes.router)
 api_router.include_router(expenses.router)
 api_router.include_router(purchases.router)

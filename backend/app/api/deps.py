@@ -20,6 +20,7 @@ from app.db.session import get_db
 from app.integrations.bank_feeds import build_bank_feed_provider
 from app.integrations.email import build_email_sender
 from app.integrations.payments import build_payment_processor
+from app.integrations.payroll import PayrollProvider, build_payroll_provider
 from app.integrations.tax_rates import TaxRateProvider, build_tax_rate_provider
 from app.models import User
 from app.recurring.base import RecurringHandler
@@ -30,6 +31,7 @@ from app.reports.balance_sheet import BalanceSheetReport
 from app.reports.inventory_valuation import InventoryValuationDetailReport, InventoryValuationSummaryReport
 from app.reports.base import Report
 from app.reports.payables_aging import PayablesAgingReport
+from app.reports.payroll_summary import PayrollSummaryReport
 from app.reports.profit_and_loss import ProfitAndLossReport
 from app.reports.receivables_aging import ReceivablesAgingReport
 from app.reports.sales_tax_liability import SalesTaxLiabilityReport
@@ -64,6 +66,14 @@ from app.repositories.purchase_repositories import (
     ExpenseQueries,
     PurchaseDocumentRepository,
     TripRepository,
+)
+from app.repositories.payroll_repositories import (
+    EmployeeRepository,
+    LiabilityPaymentRepository,
+    PayItemRepository,
+    PayrollRunRepository,
+    PayScheduleRepository,
+    TimeEntryRepository,
 )
 from app.repositories.recurring_repository import RecurringRepository
 from app.repositories.tax_repositories import (
@@ -114,7 +124,12 @@ from app.services.report_service import ReportService
 from app.services.catalog_service import CatalogService
 from app.services.inventory_adjustment_service import InventoryAdjustmentService
 from app.services.inventory_service import InventoryService
+from app.services.paycheck_calculator import PaycheckCalculator
+from app.services.payroll_liability_service import PayrollLiabilityService
+from app.services.payroll_run_service import PayrollRunService
+from app.services.payroll_setup_service import PayrollSetupService
 from app.services.product_import_service import ProductImportService
+from app.services.time_service import TimeService
 from app.services.sales_common import SalesLineBuilder
 from app.services.sales_tax import SalesTaxCalculator
 from app.services.tax_service import TaxService
@@ -226,6 +241,7 @@ def build_invoice_service(db: Session) -> InvoiceService:
         build_payment_service(db),
         build_tax_calculator(db),
         build_inventory(db),
+        TimeEntryRepository(db),
     )
 
 
@@ -347,6 +363,7 @@ def build_reports(db: Session) -> list[Report]:
         TaxScheduleReport(JournalRepository(db)),
         InventoryValuationSummaryReport(ProductRepository(db), InventoryMovementRepository(db)),
         InventoryValuationDetailReport(ProductRepository(db), InventoryMovementRepository(db)),
+        PayrollSummaryReport(PayrollRunRepository(db)),
     ]
 
 
@@ -590,3 +607,53 @@ def get_bank_rule_service(db: Session = Depends(get_db)) -> BankRuleService:
 
 def get_reconciliation_service(db: Session = Depends(get_db)) -> ReconciliationService:
     return ReconciliationService(db, ReconciliationRepository(db), RegisterQueries(db), build_bank_review_service(db))
+
+
+# ---------- payroll and time ----------
+
+
+def get_payroll_provider() -> PayrollProvider:
+    return build_payroll_provider(settings)
+
+
+def get_payroll_setup_service(db: Session = Depends(get_db)) -> PayrollSetupService:
+    return PayrollSetupService(db, PayScheduleRepository(db), PayItemRepository(db), EmployeeRepository(db), AccountRepository(db))
+
+
+def get_payroll_run_service(db: Session = Depends(get_db)) -> PayrollRunService:
+    calculator = PaycheckCalculator(build_payroll_provider(settings), settings.payroll_overtime_multiplier)
+    return PayrollRunService(
+        db,
+        PayrollRunRepository(db),
+        PayScheduleRepository(db),
+        EmployeeRepository(db),
+        PayItemRepository(db),
+        TimeEntryRepository(db),
+        AccountRepository(db),
+        JournalRepository(db),
+        build_system_accounts(db),
+        build_check_numbers(db),
+        calculator,
+        build_ledger(db),
+    )
+
+
+def get_payroll_liability_service(db: Session = Depends(get_db)) -> PayrollLiabilityService:
+    return PayrollLiabilityService(
+        db,
+        LiabilityPaymentRepository(db),
+        PayItemRepository(db),
+        PayrollRunRepository(db),
+        AccountRepository(db),
+        JournalRepository(db),
+        build_system_accounts(db),
+        build_ledger(db),
+    )
+
+
+def get_time_service(db: Session = Depends(get_db)) -> TimeService:
+    return TimeService(db, TimeEntryRepository(db), EmployeeRepository(db), VendorRepository(db), CustomerRepository(db), ProductRepository(db))
+
+
+def get_company_repository(db: Session = Depends(get_db)) -> CompanyRepository:
+    return CompanyRepository(db)

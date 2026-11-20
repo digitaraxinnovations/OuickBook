@@ -19,6 +19,7 @@ from app.repositories.company_repository import CompanyRepository
 from app.repositories.contact_repository import CustomerRepository
 from app.repositories.invoice_repository import InvoiceRepository
 from app.repositories.journal_repository import JournalRepository
+from app.repositories.payroll_repositories import TimeEntryRepository
 from app.repositories.sales_repositories import SalesDocumentRepository
 from app.schemas.invoice import InvoiceCreate, InvoiceLineCreate
 from app.schemas.payment import PaymentApplicationInput, PaymentCreate
@@ -59,6 +60,7 @@ class InvoiceService(BaseService):
         payment_service: PaymentService,
         tax_calculator: SalesTaxCalculator,
         inventory: InventoryService,
+        time_repository: TimeEntryRepository,
     ):
         super().__init__(session)
         self.invoice_repository = invoice_repository
@@ -73,6 +75,7 @@ class InvoiceService(BaseService):
         self.payment_service = payment_service
         self.tax_calculator = tax_calculator
         self.inventory = inventory
+        self.time_repository = time_repository
 
     # ---------- reading ----------
 
@@ -101,7 +104,11 @@ class InvoiceService(BaseService):
         if due_date < data.invoice_date:
             raise BusinessRuleError("The due date cannot be before the invoice date.")
 
-        line_values = self.line_builder.build(company_id, data.lines)
+        time_entries = self.collect_time_entries(company_id, customer.id, data.time_entry_ids)
+        line_inputs = list(data.lines)
+        for entry in time_entries:
+            line_inputs.append(self.line_from_time(entry))
+        line_values = self.line_builder.build(company_id, line_inputs)
         delayed_documents = self.collect_delayed_documents(company_id, customer.id, data.delayed_document_ids)
         for document in delayed_documents:
             line_values.extend(self.lines_from_delayed_document(document))
@@ -159,6 +166,8 @@ class InvoiceService(BaseService):
         for document in delayed_documents:
             document.status = SalesDocStatus.CLOSED
             document.invoice_id = invoice.id
+        for entry in time_entries:
+            entry.invoice_id = invoice.id
 
         if data.deposit_amount > 0:
             self.payment_service.receive(
@@ -182,6 +191,28 @@ class InvoiceService(BaseService):
         tax = self.tax_calculator.calculate(company_id, customer, data.tax_code_id, line_values, totals)
         totals.add_tax(tax)
         return totals
+
+    def collect_time_entries(self, company_id: int, customer_id: int, entry_ids: list[int]) -> list:
+        entries = []
+        for entry_id in entry_ids:
+            entry = self.time_repository.get(company_id, entry_id)
+            if entry is None or not entry.billable or entry.customer_id != customer_id:
+                raise BusinessRuleError("Only this customer's billable time can be added.")
+            if entry.invoice_id is not None:
+                raise BusinessRuleError("Some of this time is already on an invoice.")
+            entries.append(entry)
+        return entries
+
+    def line_from_time(self, entry) -> InvoiceLineCreate:
+        description = f"{entry.work_date:%b %d, %Y} {entry.worker_name}"
+        if entry.description:
+            description = description + ": " + entry.description
+        return InvoiceLineCreate(
+            product_id=entry.product_id,
+            description=description[:500],
+            quantity=entry.hours,
+            rate=entry.bill_rate or 0,
+        )
 
     def collect_delayed_documents(self, company_id: int, customer_id: int, document_ids: list[int]) -> list[SalesDocument]:
         documents = []
@@ -292,7 +323,9 @@ class InvoiceService(BaseService):
         for entry in self.journal_repository.list_for_source(company_id, JournalSource.LATE_FEE, invoice.id):
             self.ledger.reverse(company_id, entry, date.today(), JournalSource.INVOICE_VOID, "Void of late fee")
 
-        # Give back delayed charges/credits and the estimate amount.
+        # Give back billable time, delayed charges/credits and the estimate amount.
+        for entry in self.time_repository.for_invoice(company_id, invoice.id):
+            entry.invoice_id = None
         for document in self.sales_document_repository.list_filtered(company_id, customer_id=invoice.customer_id):
             if document.invoice_id == invoice.id:
                 document.invoice_id = None
