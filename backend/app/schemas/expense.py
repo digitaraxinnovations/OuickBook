@@ -5,6 +5,7 @@ from pydantic import Field
 
 from app.models.enums import ExpenseKind, PaymentMethod
 from app.schemas.common import AccountSummary, CleanStringsModel, ContactSummary, ORMModel
+from app.schemas.tracking import TrackingInput, TrackingRead
 
 
 class ExpenseLineCreate(CleanStringsModel):
@@ -18,7 +19,7 @@ class ExpenseLineCreate(CleanStringsModel):
     customer_id: int | None = None
 
 
-class ExpenseCreate(CleanStringsModel):
+class ExpenseCreate(TrackingInput, CleanStringsModel):
     kind: ExpenseKind = ExpenseKind.EXPENSE
     vendor_id: int | None = None
     payment_account_id: int
@@ -42,7 +43,7 @@ class ExpenseLineRead(ORMModel):
     customer_id: int | None
 
 
-class ExpenseRead(ORMModel):
+class ExpenseRead(TrackingRead, ORMModel):
     id: int
     kind: ExpenseKind
     vendor: ContactSummary | None

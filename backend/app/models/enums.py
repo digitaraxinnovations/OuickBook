@@ -226,3 +226,9 @@ class PayrollRunStatus(str, Enum):
     DRAFT = "DRAFT"
     APPROVED = "APPROVED"
     VOID = "VOID"
+
+
+class ProjectStatus(str, Enum):
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    CANCELED = "CANCELED"

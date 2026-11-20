@@ -10,7 +10,7 @@ import { Select, TextInput } from "@/components/ui/FormFields";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useLoad } from "@/hooks/useLoad";
 import { formatDate, todayString, toNumber } from "@/lib/format";
-import { customerService, payrollService, productService, vendorService } from "@/services";
+import { customerService, payrollService, productService, trackingService, vendorService } from "@/services";
 import { TimeEntry } from "@/types/models";
 
 // ---------- dates (local, no time zones) ----------
@@ -45,6 +45,7 @@ const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 interface SheetRow {
   customerId: string;
+  projectId: string;
   productId: string;
   description: string;
   billable: boolean;
@@ -54,7 +55,7 @@ interface SheetRow {
 }
 
 function emptyRow(): SheetRow {
-  return { customerId: "", productId: "", description: "", billable: false, billRate: "", hours: ["", "", "", "", "", "", ""] };
+  return { customerId: "", projectId: "", productId: "", description: "", billable: false, billRate: "", hours: ["", "", "", "", "", "", ""] };
 }
 
 export default function TimePage() {
@@ -69,6 +70,7 @@ export default function TimePage() {
   const vendors = useLoad(() => vendorService.list({ active_only: true }));
   const customers = useLoad(() => customerService.list({ active_only: true }));
   const products = useLoad(() => productService.list({ active_only: true }));
+  const projects = useLoad(() => trackingService.projects(true));
   const weekEnd = addDays(weekStart, 6);
   const entries = useLoad(() => payrollService.timeEntries({ start_date: weekStart, end_date: weekEnd }), [weekStart]);
 
@@ -90,6 +92,11 @@ export default function TimePage() {
     customerNames[customer.id] = customer.display_name;
   }
   const services = (products.data || []).filter((product) => product.product_type === "SERVICE");
+  const allProjects = projects.data || [];
+
+  function projectOptionsFor(customerId: string) {
+    return allProjects.filter((project) => String(project.customer_id) === customerId).map((project) => ({ value: project.id, label: project.name }));
+  }
 
   function updateRow(index: number, changes: Partial<SheetRow>) {
     setRows(rows.map((row, i) => (i === index ? { ...row, ...changes } : row)));
@@ -135,6 +142,7 @@ export default function TimePage() {
             work_date: addDays(weekStart, dayIndex),
             hours: row.hours[dayIndex],
             customer_id: row.customerId ? Number(row.customerId) : null,
+            project_id: row.projectId ? Number(row.projectId) : null,
             product_id: row.productId ? Number(row.productId) : null,
             description: row.description,
             billable: row.billable,
@@ -200,6 +208,7 @@ export default function TimePage() {
             <thead className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
               <tr>
                 <th className="w-44 py-2">Customer</th>
+                {allProjects.length > 0 && <th className="w-36 py-2">Project</th>}
                 <th className="w-40 py-2">Service</th>
                 <th className="py-2">Description</th>
                 <th className="w-14 py-2 text-center">Bill</th>
@@ -219,11 +228,22 @@ export default function TimePage() {
                   <td className="py-2 pr-2">
                     <Select
                       value={row.customerId}
-                      onChange={(e) => updateRow(rowIndex, { customerId: e.target.value })}
+                      onChange={(e) => updateRow(rowIndex, { customerId: e.target.value, projectId: "" })}
                       placeholder="-"
                       options={(customers.data || []).map((customer) => ({ value: customer.id, label: customer.display_name }))}
                     />
                   </td>
+                  {allProjects.length > 0 && (
+                    <td className="py-2 pr-2">
+                      <Select
+                        value={row.projectId}
+                        onChange={(e) => updateRow(rowIndex, { projectId: e.target.value })}
+                        placeholder="-"
+                        disabled={!row.customerId}
+                        options={projectOptionsFor(row.customerId)}
+                      />
+                    </td>
+                  )}
                   <td className="py-2 pr-2">
                     <Select
                       value={row.productId}

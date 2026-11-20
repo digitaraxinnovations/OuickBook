@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from app.models.enums import DiscountType, PaymentMethod, SalesDocStatus, SalesDocType
 from app.schemas.common import AccountSummary, ContactSummary, ORMModel
 from app.schemas.invoice import InvoiceLineCreate, InvoiceLineRead, SalesAmountsInput
+from app.schemas.tracking import TrackingRead
 
 
 class SalesDocumentCreate(SalesAmountsInput):
@@ -39,7 +40,7 @@ class SalesDocumentSummary(ORMModel):
     remaining: Decimal
 
 
-class SalesDocumentRead(SalesDocumentSummary):
+class SalesDocumentRead(TrackingRead, SalesDocumentSummary):
     memo: str | None
     subtotal: Decimal
     discount_type: DiscountType | None

@@ -13,7 +13,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useLoad } from "@/hooks/useLoad";
 import { formatMoney, todayString } from "@/lib/format";
 import { accountService, customerService, productService, purchaseService, termsService, vendorService } from "@/services";
-import { PurchaseLineInput } from "@/types/inputs";
+import { PurchaseLineInput, TrackingInput } from "@/types/inputs";
+import { emptyTracking, TrackingFields } from "@/components/forms/TrackingFields";
 
 export default function NewPurchaseFormPage() {
   const params = useParams<{ slug: string }>();
@@ -33,6 +34,7 @@ export default function NewPurchaseFormPage() {
   const [termsId, setTermsId] = useState("");
   const [docNumber, setDocNumber] = useState("");
   const [memo, setMemo] = useState("");
+  const [tracking, setTracking] = useState<TrackingInput>(emptyTracking());
   const [lines, setLines] = useState<PurchaseLineInput[]>([emptyPurchaseLine()]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -72,6 +74,7 @@ export default function NewPurchaseFormPage() {
         terms_id: termsId ? Number(termsId) : null,
         doc_number: docNumber,
         memo: memo,
+        ...tracking,
         lines: lines,
       });
       router.push("/expenses/forms/" + config.slug + "/" + document.id);
@@ -121,6 +124,9 @@ export default function NewPurchaseFormPage() {
               </Field>
             </>
           )}
+        </div>
+        <div className="mt-4">
+          <TrackingFields value={tracking} onChange={setTracking} />
         </div>
 
         <div className="mt-6">

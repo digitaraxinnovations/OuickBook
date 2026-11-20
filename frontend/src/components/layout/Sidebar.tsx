@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, BookOpen, Home, Landmark, Percent, Receipt, Settings, ShoppingCart, Users } from "lucide-react";
+import { BarChart3, BookOpen, Briefcase, Home, Landmark, Percent, Receipt, Settings, ShoppingCart, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { appConfig } from "@/config/app.config";
@@ -9,6 +9,7 @@ import { NewMenuButton } from "./NewMenuButton";
 
 const icons = {
   home: Home,
+  projects: Briefcase,
   sales: ShoppingCart,
   expenses: Receipt,
   banking: Landmark,

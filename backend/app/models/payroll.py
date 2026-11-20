@@ -222,6 +222,7 @@ class TimeEntry(CompanyOwnedMixin, TimestampMixin, Base):
     work_date: Mapped[date] = mapped_column(Date, index=True)
     hours: Mapped[Decimal] = mapped_column(Numeric(8, 2))
     customer_id: Mapped[int | None] = mapped_column(ForeignKey("customers.id"), index=True)
+    project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id"), index=True)
     # The service done (fills in the invoice line).
     product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id"))
     description: Mapped[str | None] = mapped_column(String(500))

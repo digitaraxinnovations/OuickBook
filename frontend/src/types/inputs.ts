@@ -125,7 +125,7 @@ export interface SalesAmountsInput {
   shipping_amount: string;
 }
 
-export interface InvoiceInput extends SalesAmountsInput {
+export interface InvoiceInput extends SalesAmountsInput, TrackingInput {
   customer_id: number;
   invoice_date: string;
   due_date: string;
@@ -138,7 +138,7 @@ export interface InvoiceInput extends SalesAmountsInput {
   deposit_account_id: number | null;
 }
 
-export interface SalesDocumentInput extends SalesAmountsInput {
+export interface SalesDocumentInput extends SalesAmountsInput, TrackingInput {
   doc_type: SalesDocType;
   customer_id: number;
   doc_date: string;
@@ -191,7 +191,7 @@ export interface ExpenseLineInput {
   customer_id: number | null;
 }
 
-export interface ExpenseInput {
+export interface ExpenseInput extends TrackingInput {
   kind: ExpenseKind;
   check_number: string;
   print_later: boolean;
@@ -206,6 +206,9 @@ export interface ExpenseInput {
 
 export interface JournalLineInput {
   account_id: number;
+  class_id?: number | null;
+  location_id?: number | null;
+  project_id?: number | null;
   description: string;
   debit: string;
   credit: string;
@@ -214,6 +217,7 @@ export interface JournalLineInput {
 export interface JournalEntryInput {
   entry_date: string;
   memo: string;
+  tag_ids?: number[];
   lines: JournalLineInput[];
 }
 
@@ -226,7 +230,7 @@ export interface PurchaseLineInput {
   customer_id: number | null;
 }
 
-export interface PurchaseDocumentInput {
+export interface PurchaseDocumentInput extends TrackingInput {
   doc_type: PurchaseDocType;
   vendor_id: number;
   doc_date: string;
@@ -440,8 +444,47 @@ export interface TimeEntryInput {
   work_date: string;
   hours: string;
   customer_id: number | null;
+  project_id?: number | null;
   product_id: number | null;
   description: string;
   billable: boolean;
   bill_rate: string | null;
+}
+
+// ---------- classes, locations, projects, tags, budgets ----------
+
+/** Class, location, project and tags of a transaction (all optional). */
+export interface TrackingInput {
+  class_id?: number | null;
+  location_id?: number | null;
+  project_id?: number | null;
+  tag_ids?: number[];
+}
+
+export interface NamedListInput {
+  name: string;
+  parent_id: number | null;
+  is_active: boolean;
+}
+
+export interface TagInput {
+  name: string;
+  group_name: string;
+}
+
+export interface ProjectInput {
+  name: string;
+  customer_id: number;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  description: string;
+}
+
+export interface BudgetInput {
+  name: string;
+  fiscal_year: number;
+  class_id: number | null;
+  location_id: number | null;
+  lines: { account_id: number; months: string[] }[];
 }

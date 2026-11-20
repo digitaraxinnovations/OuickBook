@@ -22,6 +22,7 @@ from app.services.ledger_service import LedgerService
 from app.services.numbering import DocumentNumberService
 from app.services.purchase_kinds import PurchaseKind
 from app.services.system_accounts import SystemAccounts
+from app.services.tracking_service import TrackingService
 
 
 STOCK_SOURCE = "PURCHASE"
@@ -43,6 +44,7 @@ class PurchaseDocumentService(BaseService):
         ledger: LedgerService,
         kinds: list[PurchaseKind],
         inventory: InventoryService,
+        tracking: TrackingService,
     ):
         super().__init__(session)
         self.repository = repository
@@ -56,6 +58,7 @@ class PurchaseDocumentService(BaseService):
         self.numbering = numbering
         self.ledger = ledger
         self.inventory = inventory
+        self.tracking = tracking
         self.kinds = {}
         for kind in kinds:
             self.kinds[kind.doc_type] = kind
@@ -79,6 +82,7 @@ class PurchaseDocumentService(BaseService):
         vendor = self.vendor_repository.get(company_id, data.vendor_id)
         if vendor is None or not vendor.is_active:
             raise BusinessRuleError("Please choose an active vendor.")
+        tracking = self.tracking.check(company_id, data)
 
         document = PurchaseDocument(
             company_id=company_id,
@@ -106,6 +110,7 @@ class PurchaseDocumentService(BaseService):
         if total <= 0:
             raise BusinessRuleError("The total must be more than zero.")
         document.total = total
+        self.tracking.apply(document, tracking)
 
         self.repository.add(document)
 
@@ -122,6 +127,7 @@ class PurchaseDocumentService(BaseService):
                 source_id=document.id,
                 memo=label,
                 lines=ledger_lines,
+                tracking=tracking,
             )
             document.journal_entry_id = entry.id
 
@@ -194,6 +200,10 @@ class PurchaseDocumentService(BaseService):
             doc_number=bill_number,
             memo=order.memo,
             lines=lines,
+            class_id=order.class_id,
+            location_id=order.location_id,
+            project_id=order.project_id,
+            tag_ids=order.tag_ids,
         )
         order.amount_applied = order.total
         order.status = PurchaseDocStatus.CLOSED

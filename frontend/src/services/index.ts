@@ -24,6 +24,7 @@ import { RecurringService } from "./recurring.service";
 import { ReportService } from "./report.service";
 import { ResourceService } from "./resource.service";
 import { TaxService } from "./tax.service";
+import { TrackingService } from "./tracking.service";
 import {
   CompanySettingsService,
   CustomerService,
@@ -69,3 +70,4 @@ export const bankingService = new BankingService(api);
 export const taxService = new TaxService(api);
 export const inventoryService = new InventoryService(api);
 export const payrollService = new PayrollService(api);
+export const trackingService = new TrackingService(api);

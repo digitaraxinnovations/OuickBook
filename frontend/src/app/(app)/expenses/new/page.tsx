@@ -15,6 +15,8 @@ import { formatMoney, todayString, toNumber } from "@/lib/format";
 import { purchasableProducts } from "@/components/purchases/PurchaseLinesEditor";
 import { accountService, attachmentService, checkService, customerService, expenseService, productService, vendorService } from "@/services";
 import { ExpenseKind, PaymentMethod } from "@/types/models";
+import { emptyTracking, TrackingFields } from "@/components/forms/TrackingFields";
+import { TrackingInput } from "@/types/inputs";
 
 interface LineState {
   account_id: string;
@@ -48,6 +50,7 @@ export default function NewExpensePage() {
   const [checkNumber, setCheckNumber] = useState("");
   const [printLater, setPrintLater] = useState(false);
   const [memo, setMemo] = useState("");
+  const [tracking, setTracking] = useState<TrackingInput>(emptyTracking());
   const [lines, setLines] = useState<LineState[]>([emptyLine()]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -143,6 +146,7 @@ export default function NewExpensePage() {
         check_number: isCheck && !printLater ? checkNumber : "",
         print_later: isCheck && printLater,
         memo: memo,
+        ...tracking,
         lines: lines.map((line) => ({
           account_id: line.account_id && !isInventoryLine(line) ? Number(line.account_id) : null,
           product_id: line.product_id ? Number(line.product_id) : null,
@@ -216,6 +220,9 @@ export default function NewExpensePage() {
               </Field>
             </>
           )}
+        </div>
+        <div className="mt-4">
+          <TrackingFields value={tracking} onChange={setTracking} />
         </div>
 
         <h3 className="mt-6 mb-2 text-sm font-semibold uppercase text-gray-500">Category and item details</h3>

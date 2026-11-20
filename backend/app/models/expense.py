@@ -5,12 +5,13 @@ from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
+from app.models.tracking import TrackingMixin
 from app.models.account import Account
 from app.models.contact import Vendor
 from app.models.enums import ExpenseKind, PaymentMethod
 
 
-class Expense(CompanyOwnedMixin, TimestampMixin, Base):
+class Expense(TrackingMixin, CompanyOwnedMixin, TimestampMixin, Base):
     """
     Money paid out right away from a bank or credit card account.
     A check is the same thing with kind=CHECK and a check number.

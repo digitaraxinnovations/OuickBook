@@ -26,6 +26,7 @@ from app.services.base import BaseService
 from app.services.check_numbers import CheckNumberService
 from app.services.inventory_service import InventoryService, StockSource
 from app.services.ledger_service import LedgerLine, LedgerService
+from app.services.tracking_service import TrackingService
 
 
 STOCK_SOURCE = "EXPENSE"
@@ -43,9 +44,11 @@ class ExpenseService(BaseService):
         check_numbers: CheckNumberService,
         ledger: LedgerService,
         inventory: InventoryService,
+        tracking: TrackingService,
     ):
         super().__init__(session)
         self.inventory = inventory
+        self.tracking = tracking
         self.expense_repository = expense_repository
         self.vendor_repository = vendor_repository
         self.customer_repository = customer_repository
@@ -69,6 +72,7 @@ class ExpenseService(BaseService):
             if vendor is None:
                 raise BusinessRuleError("Please choose an existing vendor.")
 
+        tracking = self.tracking.check(company_id, data)
         is_check = data.kind == ExpenseKind.CHECK
         is_card_credit = data.kind == ExpenseKind.CARD_CREDIT
         payment_account = self.get_payment_account(company_id, data.payment_account_id, is_check)
@@ -125,6 +129,7 @@ class ExpenseService(BaseService):
             ledger_lines.append(LedgerLine(payment_account.id, debit=total))
         else:
             ledger_lines.append(LedgerLine(payment_account.id, credit=total))
+        self.tracking.apply(expense, tracking)
         self.expense_repository.add(expense)
         stock = StockSource(STOCK_SOURCE, expense.id, expense.expense_date, expense.memo or "Expense")
         ledger_lines.extend(self.inventory.purchase_lines(company_id, expense.lines, stock, is_return=is_card_credit))
@@ -136,6 +141,7 @@ class ExpenseService(BaseService):
             source_id=expense.id,
             memo=expense.memo or data.kind.value.replace("_", " ").title(),
             lines=ledger_lines,
+            tracking=tracking,
         )
         expense.journal_entry_id = entry.id
 

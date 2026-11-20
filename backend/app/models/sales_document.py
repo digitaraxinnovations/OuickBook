@@ -13,13 +13,14 @@ from sqlalchemy import Date, DateTime, Enum, ForeignKey, Numeric, String, Text, 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
+from app.models.tracking import TrackingMixin
 from app.models.account import Account
 from app.models.contact import Customer
 from app.models.enums import DiscountType, PaymentMethod, SalesDocStatus, SalesDocType
 from app.models.product import Product
 
 
-class SalesDocument(CompanyOwnedMixin, TimestampMixin, Base):
+class SalesDocument(TrackingMixin, CompanyOwnedMixin, TimestampMixin, Base):
     __tablename__ = "sales_documents"
     __table_args__ = (UniqueConstraint("company_id", "doc_type", "doc_number", name="uq_sales_doc_number"),)
 

@@ -17,14 +17,42 @@ from app.repositories.account_repository import AccountRepository
 from app.repositories.journal_repository import JournalRepository
 
 
+class Tracking:
+    """Class, location, project and tags of a transaction (all optional)."""
+
+    def __init__(self, class_id=None, location_id=None, project_id=None, tag_ids=None):
+        self.class_id = class_id
+        self.location_id = location_id
+        self.project_id = project_id
+        self.tag_ids = list(tag_ids or [])
+
+    @classmethod
+    def of(cls, record) -> "Tracking":
+        """The tracking saved on a transaction (anything with TrackingMixin)."""
+        return cls(record.class_id, record.location_id, record.project_id, record.tag_ids)
+
+
 class LedgerLine:
     """One debit or credit to be posted. A plain value object."""
 
-    def __init__(self, account_id: int, debit=ZERO, credit=ZERO, description: str | None = None):
+    def __init__(
+        self,
+        account_id: int,
+        debit=ZERO,
+        credit=ZERO,
+        description: str | None = None,
+        class_id: int | None = None,
+        location_id: int | None = None,
+        project_id: int | None = None,
+    ):
         self.account_id = account_id
         self.debit = to_money(debit)
         self.credit = to_money(credit)
         self.description = description
+        # Set on a line to override the transaction's tracking (manual journal entries).
+        self.class_id = class_id
+        self.location_id = location_id
+        self.project_id = project_id
 
 
 class LedgerService:
@@ -40,9 +68,12 @@ class LedgerService:
         lines: list[LedgerLine],
         memo: str | None = None,
         source_id: int | None = None,
+        tracking: Tracking | None = None,
     ) -> JournalEntry:
         """Check the lines and save them as one journal entry. Does not commit."""
         self.check_lines(company_id, lines)
+        if tracking is None:
+            tracking = Tracking()
 
         entry = JournalEntry(
             company_id=company_id,
@@ -50,6 +81,7 @@ class LedgerService:
             memo=memo,
             source_type=source_type,
             source_id=source_id,
+            tag_ids=list(tracking.tag_ids),
         )
         for line in lines:
             entry.lines.append(
@@ -58,6 +90,9 @@ class LedgerService:
                     description=line.description,
                     debit=line.debit,
                     credit=line.credit,
+                    class_id=line.class_id or tracking.class_id,
+                    location_id=line.location_id or tracking.location_id,
+                    project_id=line.project_id or tracking.project_id,
                 )
             )
         return self.journal_repository.add(entry)
@@ -70,7 +105,7 @@ class LedgerService:
         source_type: JournalSource,
         memo: str | None = None,
     ) -> JournalEntry:
-        """Post a new entry that cancels the original (debits and credits swapped)."""
+        """Post a new entry that cancels the original (debits and credits swapped, same tracking)."""
         reversed_lines = []
         for line in original.lines:
             reversed_lines.append(
@@ -79,9 +114,13 @@ class LedgerService:
                     debit=line.credit,
                     credit=line.debit,
                     description=line.description,
+                    class_id=line.class_id,
+                    location_id=line.location_id,
+                    project_id=line.project_id,
                 )
             )
-        entry = self.post(company_id, entry_date, source_type, reversed_lines, memo, original.source_id)
+        tracking = Tracking(tag_ids=original.tag_ids)
+        entry = self.post(company_id, entry_date, source_type, reversed_lines, memo, original.source_id, tracking)
         entry.reverses_entry_id = original.id
         return entry
 

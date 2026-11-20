@@ -5,12 +5,13 @@ from sqlalchemy import Date, DateTime, Enum, ForeignKey, Numeric, String, Text, 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
+from app.models.tracking import TrackingMixin
 from app.models.contact import Customer
 from app.models.enums import DiscountType, InvoiceStatus
 from app.models.product import Product
 
 
-class Invoice(CompanyOwnedMixin, TimestampMixin, Base):
+class Invoice(TrackingMixin, CompanyOwnedMixin, TimestampMixin, Base):
     __tablename__ = "invoices"
     __table_args__ = (UniqueConstraint("company_id", "invoice_number", name="uq_invoice_company_number"),)
 

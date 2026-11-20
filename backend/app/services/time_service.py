@@ -15,6 +15,7 @@ from app.repositories.payroll_repositories import EmployeeRepository, TimeEntryR
 from app.repositories.product_repository import ProductRepository
 from app.schemas.payroll import TimeEntryWrite
 from app.services.base import BaseService
+from app.repositories.tracking_repositories import ProjectRepository
 
 
 class TimeService(BaseService):
@@ -26,6 +27,7 @@ class TimeService(BaseService):
         vendor_repository: VendorRepository,
         customer_repository: CustomerRepository,
         product_repository: ProductRepository,
+        project_repository: ProjectRepository,
     ):
         super().__init__(session)
         self.repository = repository
@@ -33,6 +35,7 @@ class TimeService(BaseService):
         self.vendor_repository = vendor_repository
         self.customer_repository = customer_repository
         self.product_repository = product_repository
+        self.project_repository = project_repository
 
     def list(self, company_id: int, start: date | None, end: date | None, employee_id: int | None, customer_id: int | None, unbilled_only: bool) -> list[TimeEntry]:
         return self.repository.list_filtered(company_id, start, end, employee_id, customer_id, unbilled_only)
@@ -82,3 +85,9 @@ class TimeService(BaseService):
             raise BusinessRuleError("That service does not exist.")
         if data.billable and data.customer_id is None:
             raise BusinessRuleError("Billable time needs a customer.")
+        if data.project_id is not None:
+            project = self.project_repository.get(company_id, data.project_id)
+            if project is None:
+                raise BusinessRuleError("That project does not exist.")
+            if data.customer_id is not None and project.customer_id != data.customer_id:
+                raise BusinessRuleError("That project belongs to another customer.")

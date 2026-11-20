@@ -23,8 +23,9 @@ import {
   taxService,
   termsService,
 } from "@/services";
-import { SalesAmountsInput, SalesLineInput } from "@/types/inputs";
+import { SalesAmountsInput, SalesLineInput, TrackingInput } from "@/types/inputs";
 import { SalesDocumentSummary, TimeEntry } from "@/types/models";
+import { emptyTracking, TrackingFields } from "@/components/forms/TrackingFields";
 
 /** Open delayed charges (+) and delayed credits (-) for one customer. */
 async function loadDelayedItems(customerId: string): Promise<SalesDocumentSummary[]> {
@@ -64,6 +65,7 @@ export default function NewInvoicePage() {
   const [invoiceDate, setInvoiceDate] = useState(todayString());
   const [dueDate, setDueDate] = useState("");
   const [memo, setMemo] = useState("");
+  const [tracking, setTracking] = useState<TrackingInput>(emptyTracking());
   const [lines, setLines] = useState<SalesLineInput[]>([emptySalesLine()]);
   const [amounts, setAmounts] = useState<SalesAmountsInput>(emptySalesAmounts());
   const [selectedDelayed, setSelectedDelayed] = useState<number[]>([]);
@@ -139,6 +141,7 @@ export default function NewInvoicePage() {
         due_date: dueDate,
         terms_id: termsId ? Number(termsId) : null,
         memo: memo,
+        ...tracking,
         lines: filledLines,
         tax_code_id: amounts.tax_code_id,
         discount_type: amounts.discount_type,
@@ -182,6 +185,9 @@ export default function NewInvoicePage() {
           <Field label="Due date (empty = from terms)">
             <TextInput type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </Field>
+        </div>
+        <div className="mt-4">
+          <TrackingFields value={tracking} onChange={setTracking} customerId={customerId ? Number(customerId) : null} />
         </div>
 
         {(delayedItems.data || []).length > 0 && (
