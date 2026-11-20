@@ -20,6 +20,12 @@ x-backend-settings: &backend-settings
     POSTGRES_HOST: postgres
     POSTGRES_PORT: 5432
     DATABASE_URL: ""
+    # Read here (not only from env_file) so they can be overridden from the shell,
+    # e.g. when running on other ports.
+    CORS_ORIGINS: ${CORS_ORIGINS}
+    PUBLIC_APP_URL: ${PUBLIC_APP_URL}
+    # The business's time zone decides what "today" is (containers are UTC otherwise).
+    TZ: ${TZ:-UTC}
 
 services:
   postgres:

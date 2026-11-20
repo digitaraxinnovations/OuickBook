@@ -11,6 +11,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Time zone data, so TZ (from .env) sets what "today" is for due dates, reports and the daily job.
+RUN apt-get update && apt-get install -y --no-install-recommends tzdata && rm -rf /var/lib/apt/lists/*
+
 # Install packages first so code changes don't reinstall them.
 COPY requirements.txt .
 RUN pip install -r requirements.txt

@@ -144,6 +144,8 @@ Open http://localhost:3000 and create an account.
 Docker settings are in the `# Docker` section of `.env`: the ports (`BACKEND_PORT`, `FRONTEND_PORT`), `PUBLIC_API_URL`, `API_WORKERS` and the scheduler interval.
 `PUBLIC_API_URL` is the API address the browser uses, so it is built into the web app - after changing it run `docker compose build frontend`.
 `CORS_ORIGINS` and `PUBLIC_APP_URL` must include the web app's address (http://localhost:3000 by default).
+Set `TZ` to the business's time zone (e.g. `America/New_York`): containers run on UTC otherwise, so "today" -
+for due dates, reports and the daily job - would change at UTC midnight.
 
 Useful commands:
 
@@ -231,6 +233,30 @@ cd backend
 ```
 
 Frontend type check: `npm run typecheck` (inside `frontend/`).
+
+### End-to-end tour and demo video
+
+`frontend/e2e/` holds a Playwright tour of the whole app, in 13 chapters: sign-up and setup,
+customers and products, sales tax, selling, expenses, banking, payroll, projects and budgets,
+accounting, sales tax filing, reports, multicurrency, and running the company. It creates a new
+company on every run, uses the app the way a person would, and checks each result.
+
+With the app running (for example `docker compose up -d`), inside `frontend/`:
+
+```powershell
+npm run e2e
+```
+
+That runs the tour fast, as a test (about 3-4 minutes). To record the narrated demo video instead:
+
+```powershell
+npm run demo:video
+```
+
+It runs slowly with on-screen captions and saves `demo-video/ledgerly-demo.webm`, a chapter list
+(`ledgerly-demo-chapters.txt`) and subtitles (`ledgerly-demo.vtt`). Settings - the app address
+(`E2E_BASE_URL`, `E2E_API_URL`), speed, screen size - are in `frontend/e2e/demo.config.ts`; the
+demo company's names and amounts are in `frontend/e2e/demo-data.ts`.
 
 ### Local test account
 
