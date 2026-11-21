@@ -1,4 +1,4 @@
-# Ledgerly API (FastAPI). Built by the root docker-compose.yml.
+# DigiBooks API (FastAPI). Built by the root docker-compose.yml.
 # Settings come from environment variables - nothing is baked into the image.
 
 # Same Python version as development and the tests.

@@ -2,6 +2,7 @@ import { expect } from "@playwright/test";
 import { customers, employees, products } from "../demo-data";
 import { isoDate } from "../support/dates";
 import { DemoGuide } from "../support/DemoGuide";
+import { appConfig } from "../../src/config/app.config";
 
 /** Pay schedules and pay items, employees, timesheets, running payroll and paying liabilities. */
 export async function payroll(guide: DemoGuide): Promise<void> {
@@ -89,7 +90,7 @@ export async function payroll(guide: DemoGuide): Promise<void> {
 
   // ----- run payroll -----
   await guide.nav("Payroll", "Run payroll");
-  await guide.say("Run payroll for a pay period. Ledgerly works out every paycheck from salaries, hours and pay items.");
+  await guide.say(`Run payroll for a pay period. ${appConfig.appName} works out every paycheck from salaries, hours and pay items.`);
   await guide.click("Run payroll");
   dialog = guide.dialog();
   await guide.choose("Pay schedule", "Every other Friday", dialog);

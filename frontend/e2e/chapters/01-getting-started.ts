@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { expect } from "@playwright/test";
 import { demoConfig } from "../demo.config";
 import { DemoGuide } from "../support/DemoGuide";
+import { appConfig } from "../../src/config/app.config";
 
 /** Sign up, look around the screen, and fill in the company profile. */
 export async function gettingStarted(guide: DemoGuide): Promise<void> {
@@ -10,14 +11,14 @@ export async function gettingStarted(guide: DemoGuide): Promise<void> {
 
   await guide.open("/signup");
   await guide.chapter("Getting started", "Create your account and set up your company");
-  await guide.say("Welcome to Ledgerly - accounting for small businesses. Let's start by creating an account.");
+  await guide.say(`Welcome to ${appConfig.appName} - accounting for small businesses. Let's start by creating an account.`);
 
   const email = "demo+" + Date.now() + "@" + company.emailDomain;
   await guide.type("Your name", company.owner);
   await guide.type("Business name", company.name);
   await guide.type("Email", email);
   await guide.type("Password (at least 8 characters)", crypto.randomBytes(12).toString("base64url"));
-  await guide.say("Ledgerly creates the company with a ready-made chart of accounts.");
+  await guide.say(`${appConfig.appName} creates the company with a ready-made chart of accounts.`);
   await guide.click("Create account");
   // Creating the company and its chart of accounts can take a while on a busy machine.
   await page.waitForURL("**/dashboard", { timeout: demoConfig.expectTimeoutMs * 8 });

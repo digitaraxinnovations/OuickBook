@@ -15,6 +15,7 @@ import { useQueryFlag } from "@/hooks/useQueryFlag";
 import { formatDate, formatMoney, toNumber } from "@/lib/format";
 import { accountService, taxService } from "@/services";
 import { TaxPeriod, TaxPeriodStatus } from "@/types/models";
+import { appConfig } from "@/config/app.config";
 
 const STATUS_STYLES: Record<TaxPeriodStatus, string> = {
   OPEN: "bg-blue-50 text-blue-700",
@@ -94,7 +95,7 @@ export default function SalesTaxPage() {
         <PageHeader title="Sales tax" />
         <Card>
           <p className="mb-4 text-sm text-gray-600">
-            Add the agency you collect sales tax for and its rates. Then pick a rate on your invoices and Ledgerly keeps track of what you owe.
+            Add the agency you collect sales tax for and its rates. Then pick a rate on your invoices and {appConfig.appName} keeps track of what you owe.
           </p>
           <LinkButton href="/taxes/settings">Set up sales tax</LinkButton>
         </Card>

@@ -3,7 +3,7 @@ import { demoConfig } from "./e2e/demo.config";
 
 /**
  * End-to-end tests. The demo tour (e2e/demo.spec.ts) walks through every
- * part of Ledgerly in a real browser, checks the results, and records a video.
+ * part of the app in a real browser, checks the results, and records a video.
  *
  *   npm run e2e          - run the tour (needs the app running, e.g. docker compose up -d)
  *   npm run demo:video   - same, slowed down with captions, and saves the video

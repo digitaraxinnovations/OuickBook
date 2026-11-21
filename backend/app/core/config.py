@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     )
 
     # ---------- Application ----------
-    app_name: str = "Ledgerly"
+    app_name: str = "DigiBooks"
     app_env: str = "development"
     api_prefix: str = "/api/v1"
     debug: bool = False

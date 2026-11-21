@@ -2,6 +2,7 @@ import { expect } from "@playwright/test";
 import { currency, customers, products } from "../demo-data";
 import { isoDate } from "../support/dates";
 import { DemoGuide } from "../support/DemoGuide";
+import { appConfig } from "../../src/config/app.config";
 
 /** Foreign customers: turn on multicurrency, add a currency and rate, invoice and get paid. */
 export async function multicurrency(guide: DemoGuide): Promise<void> {
@@ -41,7 +42,7 @@ export async function multicurrency(guide: DemoGuide): Promise<void> {
   // ----- invoice in euros -----
   await guide.newMenu("Invoice");
   await guide.choose("Customer", customers.foreign.display_name);
-  await guide.say("The invoice is in euros. Ledgerly uses the saved rate to record it in dollars in your books.");
+  await guide.say(`The invoice is in euros. ${appConfig.appName} uses the saved rate to record it in dollars in your books.`);
   await guide.fillLine(0, products.others[1].name, "5");
   await guide.click("Save invoice");
   await page.waitForURL(/\/sales\/invoices\/\d+$/);

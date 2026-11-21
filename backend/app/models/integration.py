@@ -1,5 +1,5 @@
 """
-Connecting other software to Ledgerly.
+Connecting other software to the app.
 
 - ApiKey:           lets a program use the REST API as a user (sent as the
                     Bearer token). Only a hash is stored; the key is shown once.
@@ -36,7 +36,7 @@ class Webhook(CompanyOwnedMixin, TimestampMixin, Base):
     url: Mapped[str] = mapped_column(String(500))
     # e.g. ["invoice.created", "payment.created"]; ["*"] = everything.
     events: Mapped[list] = mapped_column(JSON)
-    # Used to sign each delivery (X-Ledgerly-Signature) so the receiver can trust it.
+    # Used to sign each delivery (X-<AppName>-Signature header) so the receiver can trust it.
     secret: Mapped[str] = mapped_column(String(64))
     is_active: Mapped[bool] = mapped_column(default=True)
 

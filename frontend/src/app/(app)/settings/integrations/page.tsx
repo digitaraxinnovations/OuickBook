@@ -20,6 +20,7 @@ export default function IntegrationsPage() {
   const [url, setUrl] = useState("");
   const [events, setEvents] = useState("*");
   const [error, setError] = useState<string | null>(null);
+  const signatureHeader = "X-" + appConfig.appName.replace(/[^A-Za-z0-9]/g, "") + "-Signature";
   const docsUrl = appConfig.apiBaseUrl.replace(/\/api\/v\d+$/, "") + "/docs";
 
   async function createKey(event: FormEvent) {
@@ -70,7 +71,7 @@ export default function IntegrationsPage() {
       <ErrorMessage message={error} />
       <Card title="REST API">
         <p className="text-sm text-gray-600">
-          Everything in Ledgerly is available through the REST API. The full reference is at{" "}
+          Everything in {appConfig.appName} is available through the REST API. The full reference is at{" "}
           <a href={docsUrl} target="_blank" rel="noreferrer" className="text-brand-700 hover:underline">
             {docsUrl}
           </a>
@@ -121,8 +122,8 @@ export default function IntegrationsPage() {
 
       <Card title="Webhooks">
         <p className="mb-3 text-sm text-gray-600">
-          Ledgerly sends a POST to each URL when records change, e.g. <code>invoice.created</code>, <code>customer.changed</code>,{" "}
-          <code>payment.created</code> (* = everything). Each delivery is signed with the webhook&apos;s secret in the X-Ledgerly-Signature header.
+          {appConfig.appName} sends a POST to each URL when records change, e.g. <code>invoice.created</code>, <code>customer.changed</code>,{" "}
+          <code>payment.created</code> (* = everything). Each delivery is signed with the webhook&apos;s secret in the {signatureHeader} header.
           With WEBHOOK_DELIVERY=log (the default) deliveries are only recorded below, not sent.
         </p>
         <form onSubmit={addWebhook} className="mb-4 flex flex-wrap items-end gap-3">

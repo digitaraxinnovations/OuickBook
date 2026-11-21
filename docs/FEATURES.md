@@ -1,4 +1,4 @@
-# Ledgerly – Full Feature Roadmap (QuickBooks Online parity)
+# DigiBooks – Full Feature Roadmap (QuickBooks Online parity)
 
 Status: [x] done · [~] in progress · [ ] planned
 Items marked (EXT) need an outside service/account (bank data, card processor, tax authority, email/SMS provider).

@@ -1,12 +1,13 @@
 import { tax } from "../demo-data";
 import { DemoGuide } from "../support/DemoGuide";
+import { appConfig } from "../../src/config/app.config";
 
 /** The tax agency and rate used on the invoices that follow. */
 export async function salesTaxSetup(guide: DemoGuide): Promise<void> {
-  await guide.chapter("Sales tax setup", "Tell Ledgerly who you collect tax for and how much");
+  await guide.chapter("Sales tax setup", `Tell ${appConfig.appName} who you collect tax for and how much`);
 
   await guide.nav("Taxes", "Sales tax");
-  await guide.say("Before sending invoices, set up sales tax. Ledgerly then works out what you owe each agency.");
+  await guide.say(`Before sending invoices, set up sales tax. ${appConfig.appName} then works out what you owe each agency.`);
   await guide.clickLink("Set up sales tax");
 
   await guide.click("Add agency");

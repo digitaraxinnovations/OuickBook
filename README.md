@@ -1,4 +1,4 @@
-# Ledgerly
+# DigiBooks
 
 Small-business accounting app modeled on QuickBooks Online: invoices, payments,
 expenses, a chart of accounts, double-entry bookkeeping and financial reports.
@@ -253,8 +253,8 @@ That runs the tour fast, as a test (about 3-4 minutes). To record the narrated d
 npm run demo:video
 ```
 
-It runs slowly with on-screen captions and saves `demo-video/ledgerly-demo.webm`, a chapter list
-(`ledgerly-demo-chapters.txt`) and subtitles (`ledgerly-demo.vtt`). Settings - the app address
+It runs slowly with on-screen captions and saves `demo-video/digibooks-demo.webm`, a chapter list
+(`digibooks-demo-chapters.txt`) and subtitles (`digibooks-demo.vtt`). Settings - the app address
 (`E2E_BASE_URL`, `E2E_API_URL`), speed, screen size - are in `frontend/e2e/demo.config.ts`; the
 demo company's names and amounts are in `frontend/e2e/demo-data.ts`.
 

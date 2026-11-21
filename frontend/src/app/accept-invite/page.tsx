@@ -9,6 +9,7 @@ import { Field, TextInput } from "@/components/ui/FormFields";
 import { useAuth } from "@/context/AuthContext";
 import { authService, platformService } from "@/services";
 import { InvitationInfo } from "@/types/models";
+import { appConfig } from "@/config/app.config";
 
 /** Opened from the invitation email: join the company (with a new or existing account). */
 export default function AcceptInvitePage() {
@@ -57,7 +58,7 @@ export default function AcceptInvitePage() {
         <form onSubmit={accept} className="space-y-4">
           <p className="text-sm text-gray-600">
             You were invited as <strong>{info.email}</strong>.{" "}
-            {info.has_account ? "Enter your Ledgerly password to add this company to your account." : "Choose your name and a password."}
+            {info.has_account ? "Enter your " + appConfig.appName + " password to add this company to your account." : "Choose your name and a password."}
           </p>
           {!info.has_account && (
             <Field label="Your name" required>
