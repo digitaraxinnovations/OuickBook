@@ -4,6 +4,7 @@ import path from "node:path";
 import { expect, Locator } from "@playwright/test";
 import { vendors } from "../demo-data";
 import { DemoGuide } from "../support/DemoGuide";
+import { appConfig } from "../../src/config/app.config";
 
 interface AccountRow {
   id: number;
@@ -28,7 +29,7 @@ function writeStatement(depositTotal: string): string {
     [today(), "MONTHLY SERVICE FEE", "-12.00"],
     [today(), "PERSONAL - CORNER COFFEE", "-6.50"],
   ];
-  const file = path.join(os.tmpdir(), "ledgerly-demo-statement-" + Date.now() + ".csv");
+  const file = path.join(os.tmpdir(), "demo-statement-" + Date.now() + ".csv");
   fs.writeFileSync(file, rows.map((row) => row.join(",")).join("\n"));
   return file;
 }
@@ -54,6 +55,7 @@ export async function banking(guide: DemoGuide): Promise<void> {
   await selectAll.check();
   const totalText = await main.getByText(/Deposit total/i).first().locator("..").innerText().catch(() => "");
   await guide.click("Save deposit");
+  await page.waitForURL(/\/banking\/deposits$/);
   await guide.settle();
 
   const deposits = await guide.api<{ total: string }[]>("GET", "/deposits");
@@ -67,10 +69,10 @@ export async function banking(guide: DemoGuide): Promise<void> {
   await guide.click("Upload statement");
   const upload = guide.dialog();
   await upload.locator('input[type="file"]').setInputFiles(writeStatement(String(depositTotal)));
-  await guide.say("CSV, OFX and QFX files work. Ledgerly finds the date, description and amount columns itself.");
+  await guide.say(`CSV, OFX and QFX files work. ${appConfig.appName} finds the date, description and amount columns itself.`);
   await guide.click("Import", upload);
   await expect(bankRow(main, "MOBILE DEPOSIT")).toBeVisible();
-  await guide.say("Each statement line now waits For review. Ledgerly suggests a match when it finds the same amount in your books.");
+  await guide.say(`Each statement line now waits For review. ${appConfig.appName} suggests a match when it finds the same amount in your books.`);
 
   // ----- match -----
   await bankRow(main, "MOBILE DEPOSIT").getByRole("button", { name: "Match" }).click();

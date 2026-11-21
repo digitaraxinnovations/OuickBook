@@ -244,7 +244,7 @@ def test_api_keys(auth_client):
 
 
 def test_webhooks_are_logged_after_commit(auth_client):
-    hook = post(auth_client, "/company/webhooks", {"url": "https://hooks.example.com/ledgerly", "events": ["customer.created"]})
+    hook = post(auth_client, "/company/webhooks", {"url": "https://hooks.example.com/digibooks", "events": ["customer.created"]})
     assert len(hook["secret"]) == 48
     make_customer(auth_client, "Hooked Customer")
     post(auth_client, "/invoices", invoice_payload(make_customer(auth_client, "Second")))  # invoice.created is not subscribed

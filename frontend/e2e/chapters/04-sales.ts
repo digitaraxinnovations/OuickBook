@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 import { customers, products, tax } from "../demo-data";
 import { DemoGuide } from "../support/DemoGuide";
+import { appConfig } from "../../src/config/app.config";
 
 const taxPattern = new RegExp(tax.rateName);
 
@@ -20,7 +21,7 @@ export async function sales(guide: DemoGuide): Promise<void> {
   await guide.fillLine(1, products.inventory.name, "4");
   await guide.say("Picking a product fills in its description and price. The amounts and totals update as you type.");
   await guide.chooseIn(guide.selectWithOption("No sales tax"), taxPattern);
-  await guide.say("Choose the sales tax rate at the bottom; Ledgerly adds the tax on taxable lines.");
+  await guide.say(`Choose the sales tax rate at the bottom; ${appConfig.appName} adds the tax on taxable lines.`);
   await guide.click("Save estimate");
   await page.waitForURL(/\/sales\/forms\/estimates\/\d+$/);
   await guide.settle();

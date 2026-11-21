@@ -1,4 +1,4 @@
-# Ledgerly web app (Next.js). Built by the root docker-compose.yml.
+# DigiBooks web app (Next.js). Built by the root docker-compose.yml.
 #
 # NEXT_PUBLIC_* values are read by the browser, so Next.js writes them into
 # the build. They are passed as build arguments (see docker-compose.yml);

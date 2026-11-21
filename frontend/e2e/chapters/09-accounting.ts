@@ -1,6 +1,7 @@
 import { customers, products } from "../demo-data";
 import { isoDate } from "../support/dates";
 import { DemoGuide } from "../support/DemoGuide";
+import { appConfig } from "../../src/config/app.config";
 
 /** Chart of accounts, journal entries and recurring transactions. */
 export async function accounting(guide: DemoGuide): Promise<void> {
@@ -11,7 +12,7 @@ export async function accounting(guide: DemoGuide): Promise<void> {
 
   // ----- chart of accounts -----
   await guide.nav("Accounting", "Chart of accounts");
-  await guide.say("The chart of accounts lists every account in your books, with its balance. Ledgerly set up a standard one for you.");
+  await guide.say(`The chart of accounts lists every account in your books, with its balance. ${appConfig.appName} set up a standard one for you.`);
   await guide.scrollPage(600);
   await guide.scrollPage(-600);
   await guide.click("New account");

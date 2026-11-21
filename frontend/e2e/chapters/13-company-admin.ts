@@ -5,6 +5,7 @@ import { expect } from "@playwright/test";
 import { customers, teammate } from "../demo-data";
 import { isoDate } from "../support/dates";
 import { DemoGuide } from "../support/DemoGuide";
+import { appConfig } from "../../src/config/app.config";
 
 /** Users and roles, closing the books, the audit log, import/export, API and webhooks, and everyday tools. */
 export async function companyAdmin(guide: DemoGuide): Promise<void> {
@@ -46,7 +47,7 @@ export async function companyAdmin(guide: DemoGuide): Promise<void> {
   await guide.typeInto(second.locator('input[type="number"]').nth(1), "40");
   await guide.type("Memo", "Late adjustment");
   guide.promptAnswer = password;
-  await guide.say("Ledgerly asks for the closing password. Without it, the change is refused.");
+  await guide.say(`${appConfig.appName} asks for the closing password. Without it, the change is refused.`);
   await guide.click("Save journal entry");
   await page.waitForURL(/\/accounting\/journal-entries$/);
   await guide.settle();
@@ -62,7 +63,7 @@ export async function companyAdmin(guide: DemoGuide): Promise<void> {
   // ----- import / export -----
   await guide.clickLink("Import & export");
   await guide.say("Move customers, vendors, accounts and transactions in and out as CSV files - Excel opens and saves them.");
-  const csv = path.join(os.tmpdir(), "ledgerly-demo-vendors-" + Date.now() + ".csv");
+  const csv = path.join(os.tmpdir(), "demo-vendors-" + Date.now() + ".csv");
   fs.writeFileSync(csv, "Name,Company,Email,Phone\nPrairie Seed Co,Prairie Seed Co,sales@prairieseed.example.com,(555) 700-1100\nAce Tool Rental,Ace Tool Rental,,(555) 700-2200\n");
   await main.locator('input[type="file"]').nth(1).setInputFiles(csv);
   await guide.expectText(/2/);
@@ -78,12 +79,12 @@ export async function companyAdmin(guide: DemoGuide): Promise<void> {
   await guide.click("Create key");
   await guide.expectText(/Copy this key now/);
   await guide.say("Webhooks tell other programs the moment something changes - a new invoice, a payment, a new customer.");
-  await guide.type("URL", "https://hooks.example.com/ledgerly");
+  await guide.type("URL", "https://hooks.example.com/digibooks");
   await guide.click("Add webhook");
-  await guide.expectText("https://hooks.example.com/ledgerly");
+  await guide.expectText("https://hooks.example.com/digibooks");
 
   await guide.clickLink("Email log");
-  await guide.say("The email log keeps every email Ledgerly sent: invoices, reminders, invitations and scheduled reports.");
+  await guide.say(`The email log keeps every email ${appConfig.appName} sent: invoices, reminders, invitations and scheduled reports.`);
 
   // ----- everyday tools: search, recent, notifications -----
   await guide.nav(null, "Dashboard");

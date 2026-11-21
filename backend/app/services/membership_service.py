@@ -165,12 +165,12 @@ class MembershipService(BaseService):
         company = self.company_repository.get(company_id)
         link = f"{self.settings.public_app_url}/accept-invite?token={invitation.token}"
         body = (
-            f"{inviter.full_name} invited you to {company.name} on Ledgerly "
+            f"{inviter.full_name} invited you to {company.name} on {self.settings.app_name} "
             f"({ROLE_LABELS[data.role]}).\n\nAccept the invitation: {link}\n\n"
             f"The link works for {INVITATION_DAYS} days."
         )
         self.email_service.send(
-            company_id, OutgoingEmail(to=email, subject=f"Join {company.name} on Ledgerly", body=body), "INVITATION", invitation.id
+            company_id, OutgoingEmail(to=email, subject=f"Join {company.name} on {self.settings.app_name}", body=body), "INVITATION", invitation.id
         )
         self.commit()
         return invitation

@@ -6,6 +6,7 @@ from datetime import date, timedelta
 
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.core.dates import add_months
 from app.core.exceptions import BusinessRuleError, NotFoundError
 from app.integrations.email import OutgoingEmail
@@ -180,7 +181,7 @@ class SavedReportService(BaseService):
                 email = OutgoingEmail(
                     to=address,
                     subject=result.title,
-                    body=f"Attached is {result.title}, sent automatically by Ledgerly.",
+                    body=f"Attached is {result.title}, sent automatically by {settings.app_name}.",
                     attachment_name=exported.filename,
                     attachment=exported.content,
                 )

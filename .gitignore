@@ -27,3 +27,4 @@ frontend/playwright-report/
 demo-video/
 e2e-run.log
 demo-record.log
+demo-video*.zip
