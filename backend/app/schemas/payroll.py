@@ -153,6 +153,7 @@ class PaycheckRead(ORMModel):
     employer_cost: Decimal
     payment_method: PaycheckMethod
     check_number: str | None
+    deposit_reference: str | None = None
     lines: list[PaycheckLineRead]
 
 

@@ -120,6 +120,8 @@ class SalesTaxPayment(CompanyOwnedMixin, TimestampMixin, Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     payment_account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
     memo: Mapped[str | None] = mapped_column(String(500))
+    # Set when the return was e-filed through the tax provider.
+    confirmation_no: Mapped[str | None] = mapped_column(String(60))
     journal_entry_id: Mapped[int | None] = mapped_column(ForeignKey("journal_entries.id"))
 
     agency: Mapped[TaxAgency] = relationship()

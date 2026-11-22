@@ -10,6 +10,7 @@ import { DataTable } from "@/components/ui/DataTable";
 import { ErrorMessage, Loading } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
+import { useIntegrations } from "@/hooks/useIntegrations";
 import { useLoad } from "@/hooks/useLoad";
 import { useQueryFlag } from "@/hooks/useQueryFlag";
 import { formatDate, formatMoney, toNumber } from "@/lib/format";
@@ -46,6 +47,9 @@ export default function SalesTaxPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [payPeriod, setPayPeriod] = useState<TaxPeriod | null>(null);
   const [adjustOpen, setAdjustOpen] = useState(false);
+  const [fileMode, setFileMode] = useState(false);
+  const integrations = useIntegrations();
+  const canEFile = integrations?.tax_rates.enabled ?? false;
   const openPayFromMenu = useQueryFlag("pay");
 
   useEffect(() => {
@@ -76,8 +80,9 @@ export default function SalesTaxPage() {
     agencyNames[agency.id] = agency.name;
   }
 
-  function startPayment(period: TaxPeriod | null) {
+  function startPayment(period: TaxPeriod | null, eFile = false) {
     setPayPeriod(period);
+    setFileMode(eFile);
     setPayOpen(true);
   }
 
@@ -159,9 +164,16 @@ export default function SalesTaxPage() {
               align: "right",
               render: (row) =>
                 row.status === "DUE" ? (
-                  <button onClick={() => startPayment(row)} className="text-sm font-medium text-brand-700 hover:underline">
-                    Pay
-                  </button>
+                  <span className="flex justify-end gap-3">
+                    {canEFile && (
+                      <button onClick={() => startPayment(row, true)} className="text-sm font-medium text-brand-700 hover:underline">
+                        File return
+                      </button>
+                    )}
+                    <button onClick={() => startPayment(row)} className="text-sm font-medium text-brand-700 hover:underline">
+                      Pay
+                    </button>
+                  </span>
                 ) : null,
             },
           ]}
@@ -178,6 +190,7 @@ export default function SalesTaxPage() {
               { header: "Date", render: (row) => formatDate(row.payment_date) },
               { header: "Agency", render: (row) => agencyNames[row.agency_id] },
               { header: "For period", render: (row) => formatDate(row.period_start) + " - " + formatDate(row.period_end) },
+              { header: "Confirmation", render: (row) => row.confirmation_no || "" },
               { header: "Amount", align: "right", render: (row) => formatMoney(row.amount, currency) },
             ]}
           />
@@ -203,6 +216,8 @@ export default function SalesTaxPage() {
           period={payPeriod}
           duePeriods={duePeriods}
           accounts={accounts.data || []}
+          eFile={fileMode}
+          simulated={integrations?.tax_rates.simulated ?? false}
           onClose={() => setPayOpen(false)}
           onSaved={afterSave}
         />

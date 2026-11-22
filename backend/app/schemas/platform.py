@@ -169,6 +169,20 @@ class ImportResult(BaseModel):
 # ---------- notifications, API keys, webhooks ----------
 
 
+class IntegrationStatus(BaseModel):
+    provider: str
+    enabled: bool
+    # True for the built-in "mock" provider: it works, but nothing real happens (no money, no filings).
+    simulated: bool
+
+
+class IntegrationsRead(BaseModel):
+    payments: IntegrationStatus
+    bank_feed: IntegrationStatus
+    tax_rates: IntegrationStatus
+    payroll: IntegrationStatus
+
+
 class Notification(BaseModel):
     kind: str
     # "info" or "warning"

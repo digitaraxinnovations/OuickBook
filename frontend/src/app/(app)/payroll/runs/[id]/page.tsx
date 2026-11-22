@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DataTable } from "@/components/ui/DataTable";
 import { ErrorMessage, Loading } from "@/components/ui/Feedback";
+import { SimulatedBadge } from "@/components/ui/SimulatedBadge";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
+import { useIntegrations } from "@/hooks/useIntegrations";
 import { useLoad } from "@/hooks/useLoad";
 import { openBlobInNewTab } from "@/lib/files";
 import { formatDate, formatMoney, toNumber } from "@/lib/format";
@@ -30,6 +32,7 @@ export default function PayrollRunPage() {
   const params = useParams();
   const router = useRouter();
   const { company } = useAuth();
+  const integrations = useIntegrations();
   const currency = company?.currency;
   const runId = Number(params.id);
   const loaded = useLoad(() => payrollService.run(runId), [runId]);
@@ -155,7 +158,8 @@ export default function PayrollRunPage() {
           { header: "Net pay", align: "right", render: (row) => <strong>{formatMoney(row.net_pay, currency)}</strong> },
           {
             header: "Paid by",
-            render: (row) => (row.payment_method === "DIRECT_DEPOSIT" ? "Direct deposit" : row.check_number ? "Check " + row.check_number : "Check"),
+            render: (row) =>
+              row.payment_method === "DIRECT_DEPOSIT" ? "Direct deposit" + (row.deposit_reference ? " (" + row.deposit_reference + ")" : "") : row.check_number ? "Check " + row.check_number : "Check",
           },
           {
             header: "Stub",
@@ -176,7 +180,14 @@ export default function PayrollRunPage() {
       />
       {current.paychecks.some((paycheck) => paycheck.payment_method === "DIRECT_DEPOSIT") && current.status === "APPROVED" && (
         <p className="mt-3 text-sm text-gray-600">
-          No payroll service is connected, so direct deposit pay is recorded but not sent. Send it from your bank.
+          {integrations?.payroll.enabled ? (
+            <>
+              Direct deposits were sent by the payroll service; each reference is shown under Paid by.
+              {integrations.payroll.simulated && <SimulatedBadge title="Simulated: no money was sent; the references are made up." />}
+            </>
+          ) : (
+            "No payroll service is connected, so direct deposit pay is recorded but not sent. Send it from your bank."
+          )}
         </p>
       )}
       {editing && (

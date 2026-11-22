@@ -2,12 +2,13 @@
 
 import { FileDown } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage, Loading, StatusBadge } from "@/components/ui/Feedback";
 import { useLoad } from "@/hooks/useLoad";
 import { openBlobInNewTab } from "@/lib/files";
 import { formatDate, formatMoney, toNumber } from "@/lib/format";
+import { SimulatedBadge } from "@/components/ui/SimulatedBadge";
 import { portalService } from "@/services";
 
 /** The page a customer sees when they open their invoice link. No sign-in needed. */
@@ -15,6 +16,12 @@ export default function CustomerInvoicePage() {
   const params = useParams<{ token: string }>();
   const invoice = useLoad(() => portalService.getInvoice(params.token), [params.token]);
   const [error, setError] = useState<string | null>(null);
+  const [justPaid, setJustPaid] = useState(false);
+
+  // The simulated checkout sends the customer back here with ?paid=1.
+  useEffect(() => {
+    setJustPaid(new URLSearchParams(window.location.search).get("paid") === "1");
+  }, []);
 
   if (invoice.loading) {
     return <Loading />;
@@ -60,10 +67,20 @@ export default function CustomerInvoicePage() {
             <Button variant="secondary" onClick={downloadPdf}>
               <FileDown size={16} /> Download PDF
             </Button>
-            {data.online_payment_enabled && <Button onClick={payNow}>Pay now</Button>}
+            {data.online_payment_enabled && (
+              <Button onClick={payNow}>
+                Pay now
+                {data.online_payment_simulated && <SimulatedBadge />}
+              </Button>
+            )}
           </div>
         </div>
         <ErrorMessage message={error} />
+        {justPaid && (
+          <div className="mb-6 rounded-lg bg-green-50 p-4 text-center text-sm font-medium text-green-800">
+            Payment received. Thank you!{data.online_payment_simulated ? " (This was a simulated payment.)" : ""}
+          </div>
+        )}
         {!data.online_payment_enabled && toNumber(data.balance_due) > 0 && (
           <p className="mb-6 text-center text-sm text-gray-500">
             To pay, please contact {data.company_name}

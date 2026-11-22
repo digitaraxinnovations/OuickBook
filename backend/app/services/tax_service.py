@@ -14,6 +14,7 @@ from datetime import date, timedelta
 
 from app.core.dates import add_months
 from app.core.exceptions import BusinessRuleError, ConflictError, NotFoundError
+from app.integrations.tax_rates import TaxRateProvider
 from app.models import Account, SalesTaxAdjustment, SalesTaxPayment, TaxAgency, TaxCode, TaxCodeRate, TaxRate
 from app.models.enums import AccountType, JournalSource
 from app.repositories.account_repository import AccountRepository
@@ -27,6 +28,7 @@ from app.repositories.tax_repositories import (
 )
 from app.schemas.tax import (
     SalesTaxAdjustmentCreate,
+    FileReturnRequest,
     SalesTaxPaymentCreate,
     TaxAgencyWrite,
     TaxCodeComponent,
@@ -274,7 +276,7 @@ class TaxService(BaseService):
     def list_payments(self, company_id: int, agency_id: int | None = None) -> list[SalesTaxPayment]:
         return self.payment_repository.list_for_agency(company_id, agency_id)
 
-    def record_payment(self, company_id: int, data: SalesTaxPaymentCreate) -> SalesTaxPayment:
+    def record_payment(self, company_id: int, data: SalesTaxPaymentCreate, confirmation_no: str | None = None) -> SalesTaxPayment:
         agency = self.get_agency(company_id, data.agency_id)
         if data.period_end < data.period_start:
             raise BusinessRuleError("The period end cannot be before its start.")
@@ -291,6 +293,7 @@ class TaxService(BaseService):
             amount=data.amount,
             payment_account_id=bank.id,
             memo=data.memo,
+            confirmation_no=confirmation_no,
         )
         self.payment_repository.add(payment)
         entry = self.ledger.post(
@@ -307,6 +310,26 @@ class TaxService(BaseService):
         payment.journal_entry_id = entry.id
         self.commit()
         return payment
+
+    def file_return(self, company_id: int, data: FileReturnRequest, provider: TaxRateProvider) -> SalesTaxPayment:
+        """E-file one finished filing period through the tax provider and record the payment of what it owes."""
+        agency = self.get_agency(company_id, data.agency_id)
+        period = self.period_for(company_id, agency, data.period_start, data.period_end, date.today())
+        if period.status == "OPEN":
+            raise BusinessRuleError("This filing period has not ended yet.")
+        if period.balance <= 0:
+            raise BusinessRuleError("Nothing is due for this period.")
+        confirmation = provider.file_return(agency.name, data.period_start, data.period_end, period.balance)
+        payment = SalesTaxPaymentCreate(
+            agency_id=agency.id,
+            payment_date=data.payment_date,
+            period_start=data.period_start,
+            period_end=data.period_end,
+            amount=period.balance,
+            payment_account_id=data.payment_account_id,
+            memo=f"E-filed - confirmation {confirmation}",
+        )
+        return self.record_payment(company_id, payment, confirmation_no=confirmation)
 
     def check_payment_account(self, company_id: int, account_id: int) -> Account:
         account = self.account_repository.get(company_id, account_id)

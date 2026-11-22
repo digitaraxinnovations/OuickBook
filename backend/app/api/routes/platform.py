@@ -14,8 +14,15 @@ from app.api.deps import (
     get_membership_service,
     get_recent_service,
     get_search_service,
+    get_payroll_provider,
     get_settings_service,
+    get_tax_rate_provider,
 )
+from app.core.config import settings
+from app.integrations.bank_feeds import build_bank_feed_provider
+from app.integrations.payments import build_payment_processor
+from app.integrations.payroll import PayrollProvider
+from app.integrations.tax_rates import TaxRateProvider
 from app.models import User
 from app.schemas.platform import (
     AcceptInvitation,
@@ -28,6 +35,8 @@ from app.schemas.platform import (
     WebhookWrite,
     AdvancedSettingsRead,
     AdvancedSettingsUpdate,
+    IntegrationsRead,
+    IntegrationStatus,
     AuditLogRead,
     CompanyMembership,
     CurrencyRead,
@@ -134,6 +143,25 @@ def get_advanced_settings(user: User = CurrentUser, service: SettingsService = D
 @router.put("/company/advanced-settings", response_model=AdvancedSettingsRead)
 def update_advanced_settings(data: AdvancedSettingsUpdate, user: User = CurrentUser, service: SettingsService = Depends(get_settings_service)):
     return service.update(user.company_id, data)
+
+
+def status_of(provider) -> IntegrationStatus:
+    return IntegrationStatus(provider=provider.provider_name, enabled=provider.is_enabled(), simulated=provider.provider_name == "mock")
+
+
+@router.get("/company/integrations", response_model=IntegrationsRead)
+def integration_status(
+    user: User = CurrentUser,
+    tax_rates: TaxRateProvider = Depends(get_tax_rate_provider),
+    payroll: PayrollProvider = Depends(get_payroll_provider),
+):
+    """Which outside services are connected, and which are the built-in simulations."""
+    return IntegrationsRead(
+        payments=status_of(build_payment_processor(settings)),
+        bank_feed=status_of(build_bank_feed_provider(settings)),
+        tax_rates=status_of(tax_rates),
+        payroll=status_of(payroll),
+    )
 
 
 # ---------- currencies ----------

@@ -22,7 +22,7 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [x] Invoice templates/customization (3 styles, accent color, footer), logo, PDF export, print
 - [x] Email invoices/estimates/statements, reminders for overdue invoices — EXT: `EMAIL_PROVIDER=log` records to the Email log; `smtp` sends via SMTP settings
 - [x] Customer statements (balance forward, open item, transaction); customer "view invoice" link
-- [~] Pay-now on the customer link — EXT: `PaymentProcessor` interface ready, `PAYMENT_PROVIDER=none` until a processor (e.g. Stripe) is plugged in
+- [x] Pay-now on the customer link — works with the built-in simulated checkout (`PAYMENT_PROVIDER=mock`); a real processor (e.g. Stripe) plugs into the same `PaymentProcessor` interface
 - [x] Discounts (% or amount), shipping, deposits on invoices; progress invoicing (% of estimate)
 - [x] Payment terms list (customer default terms); late fees (fixed or %, grace days)
 
@@ -39,7 +39,7 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 ## Phase 4 – Banking (done)
 - [x] Bank and credit card accounts, transfers (incl. paying the card), credit card credits
 - [x] CSV / OFX / QFX / QBO statement import with duplicate detection and CSV column mapping
-- [~] Live bank feeds — EXT: `BankFeedProvider` interface + "Update from bank" button ready, `BANK_FEED_PROVIDER=none` until a provider (e.g. Plaid) is plugged in
+- [x] Live bank feeds — "Update from bank" works with the built-in simulated feed (`BANK_FEED_PROVIDER=mock`); a real provider (e.g. Plaid) plugs into the same `BankFeedProvider` interface
 - [x] For-review queue: match to existing transactions, add (expense / deposit / transfer / card credit), split, exclude, undo
 - [x] Bank rules (description / amount conditions, all/any, money in/out, per account, priority, auto-add)
 - [x] Reconciliation (statement balance, tick items, difference, save for later, finish) with reconciliation report
@@ -49,7 +49,7 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [x] Sales tax: tax rates, agencies, combined rates, taxable items/customers (exempt customers, per-line taxable flag)
 - [x] Sales tax liability report, filing periods, record sales tax payments, adjustments
 - [x] Tax categories mapping for income tax prep (Schedule C style) + Tax Schedule Summary report
-- [~] (EXT) automated tax rate lookup / e-filing - TaxRateProvider interface, TAX_RATE_PROVIDER=none (no provider connected)
+- [x] Automated tax rate lookup and e-filing — works with the built-in simulation (`TAX_RATE_PROVIDER=mock`); a real provider (e.g. Avalara) plugs into the same `TaxRateProvider` interface
 
 ## Phase 6 – Inventory & products
 - [x] Inventory items (qty on hand, reorder point + low-stock alerts, FIFO cost, stock history), inventory qty adjustments; item lines on bills, expenses, vendor credits, POs
@@ -61,7 +61,7 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [x] Employees (hourly / salary), pay schedules (weekly, biweekly, semimonthly, monthly), pay items: earnings, deductions, employee and employer taxes, employer contributions
 - [x] Payroll runs (draft → approve → void), paychecks with check numbers, overtime, pay stubs (PDF), payroll liabilities and payments, Payroll Summary report
 - [x] Time tracking (weekly timesheets for employees and contractors, billable time → invoice, hours fill in paychecks)
-- [~] (EXT) payroll tax calculation, filing, direct deposit - PayrollProvider interface, PAYROLL_PROVIDER=none (taxes are pay items; direct deposit recorded, sent by you)
+- [x] Payroll tax calculation and direct deposit — works with the built-in simulation (`PAYROLL_PROVIDER=mock`); a real payroll service plugs into the same `PayrollProvider` interface
 
 ## Phase 8 – Projects, classes, locations, budgets
 - [x] Projects with income, costs, labor cost (from time) and profit; Project Profitability report

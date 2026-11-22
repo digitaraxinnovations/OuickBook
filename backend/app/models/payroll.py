@@ -162,6 +162,8 @@ class Paycheck(Base):
     employer_cost: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     payment_method: Mapped[PaycheckMethod] = mapped_column(Enum(PaycheckMethod, native_enum=False, length=20))
     check_number: Mapped[str | None] = mapped_column(String(20))
+    # Set when the payroll provider sent the direct deposit (EXT).
+    deposit_reference: Mapped[str | None] = mapped_column(String(60))
 
     run: Mapped[PayrollRun] = relationship(back_populates="paychecks")
     employee: Mapped[Employee] = relationship()

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/Feedback";
 import { Field, Select, TextInput } from "@/components/ui/FormFields";
 import { Modal } from "@/components/ui/Modal";
+import { SimulatedBadge } from "@/components/ui/SimulatedBadge";
 import { formatDate, todayString } from "@/lib/format";
 import { taxService } from "@/services";
 import { Account, TaxPeriod } from "@/types/models";
@@ -16,6 +17,9 @@ interface PayTaxDialogProps {
   /** Periods that still have something owed. */
   duePeriods: TaxPeriod[];
   accounts: Account[];
+  /** File the return electronically through the tax provider (and pay what the period owes). */
+  eFile?: boolean;
+  simulated?: boolean;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -25,7 +29,7 @@ function periodKey(period: TaxPeriod): string {
 }
 
 /** Record money paid to a tax agency for one filing period. */
-export function PayTaxDialog({ open, period, duePeriods, accounts, onClose, onSaved }: PayTaxDialogProps) {
+export function PayTaxDialog({ open, period, duePeriods, accounts, eFile = false, simulated = false, onClose, onSaved }: PayTaxDialogProps) {
   const [chosenKey, setChosenKey] = useState(period ? periodKey(period) : "");
   const [amount, setAmount] = useState(period ? period.balance : "");
   const [paymentDate, setPaymentDate] = useState(todayString());
@@ -57,6 +61,17 @@ export function PayTaxDialog({ open, period, duePeriods, accounts, onClose, onSa
     setSaving(true);
     setError(null);
     try {
+      if (eFile) {
+        await taxService.fileReturn({
+          agency_id: chosen.agency_id,
+          period_start: chosen.period_start,
+          period_end: chosen.period_end,
+          payment_date: paymentDate,
+          payment_account_id: Number(accountId),
+        });
+        onSaved();
+        return;
+      }
       await taxService.recordPayment({
         agency_id: chosen.agency_id,
         period_start: chosen.period_start,
@@ -79,15 +94,21 @@ export function PayTaxDialog({ open, period, duePeriods, accounts, onClose, onSa
   }));
 
   return (
-    <Modal title="Record sales tax payment" open={open} onClose={onClose}>
+    <Modal title={eFile ? "File sales tax return" : "Record sales tax payment"} open={open} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <ErrorMessage message={error} />
+        {eFile && (
+          <p className="text-sm text-gray-600">
+            The return is filed electronically for the full balance of the period, and the payment is recorded.
+            {simulated && <SimulatedBadge title="Simulated: nothing is really filed; you get a made-up confirmation number." />}
+          </p>
+        )}
         <Field label="Filing period" required>
           <Select required value={chosenKey} onChange={(e) => choosePeriod(e.target.value)} placeholder="Choose a period" options={periodOptions} />
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Payment amount" required>
-            <TextInput type="number" step="0.01" min="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <TextInput type="number" step="0.01" min="0.01" required readOnly={eFile} value={eFile && chosen ? chosen.balance : amount} onChange={(e) => setAmount(e.target.value)} />
           </Field>
           <Field label="Payment date" required>
             <TextInput type="date" required value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
@@ -102,15 +123,17 @@ export function PayTaxDialog({ open, period, duePeriods, accounts, onClose, onSa
             options={payFromAccounts.map((account) => ({ value: account.id, label: account.full_name }))}
           />
         </Field>
-        <Field label="Memo">
-          <TextInput value={memo} onChange={(e) => setMemo(e.target.value)} />
-        </Field>
+        {!eFile && (
+          <Field label="Memo">
+            <TextInput value={memo} onChange={(e) => setMemo(e.target.value)} />
+          </Field>
+        )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit" disabled={saving}>
-            {saving ? "Saving..." : "Record payment"}
+            {saving ? "Saving..." : eFile ? "File return and pay" : "Record payment"}
           </Button>
         </div>
       </form>

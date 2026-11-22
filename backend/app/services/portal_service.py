@@ -3,15 +3,20 @@ The customer's "view and pay" page. No login: the secret token in the link
 is the only key, so it only ever shows that one invoice.
 """
 
+from datetime import date
+
 from app.core.exceptions import BusinessRuleError, NotFoundError
-from app.integrations.payments import PaymentProcessor
+from app.integrations.payments import MockPaymentProcessor, PaymentProcessor
 from app.models import Invoice
 from app.models.enums import InvoiceStatus
 from app.repositories.company_repository import CompanyRepository
 from app.repositories.invoice_repository import InvoiceRepository
+from app.models.enums import PaymentMethod
+from app.schemas.payment import PaymentApplicationInput, PaymentCreate
 from app.schemas.sales_extras import PublicInvoice, PublicInvoiceLine
 from app.services.company_service import logo_data_url
 from app.services.customer_documents_service import CustomerDocumentsService, PdfFile
+from app.services.payment_service import PaymentService
 
 
 class PortalService:
@@ -21,11 +26,13 @@ class PortalService:
         company_repository: CompanyRepository,
         documents: CustomerDocumentsService,
         payment_processor: PaymentProcessor,
+        payment_service: PaymentService,
     ):
         self.invoice_repository = invoice_repository
         self.company_repository = company_repository
         self.documents = documents
         self.payment_processor = payment_processor
+        self.payment_service = payment_service
 
     def find_invoice(self, token: str) -> Invoice:
         invoice = self.invoice_repository.get_by_public_token(token)
@@ -61,6 +68,7 @@ class PortalService:
             currency=company.currency,
             lines=lines,
             online_payment_enabled=self.payment_processor.is_enabled() and invoice.balance_due > 0,
+            online_payment_simulated=isinstance(self.payment_processor, MockPaymentProcessor),
         )
 
     def get_pdf(self, token: str) -> PdfFile:
@@ -75,3 +83,28 @@ class PortalService:
         if amount > invoice.balance_due:
             raise BusinessRuleError("You cannot pay more than the balance due.")
         return self.payment_processor.create_checkout(invoice, amount, self.documents.public_url(invoice))
+
+    def confirm_mock_payment(self, token: str, amount) -> PublicInvoice:
+        """The customer confirmed the simulated checkout: record a real payment on the invoice (no money moves)."""
+        if not isinstance(self.payment_processor, MockPaymentProcessor):
+            raise BusinessRuleError("The simulated checkout is not turned on (PAYMENT_PROVIDER=mock).")
+        invoice = self.find_invoice(token)
+        if invoice.balance_due <= 0:
+            raise BusinessRuleError("This invoice is already paid.")
+        if amount is None:
+            amount = invoice.balance_due
+        if amount > invoice.balance_due:
+            raise BusinessRuleError("You cannot pay more than the balance due.")
+        self.payment_service.receive(
+            invoice.company_id,
+            PaymentCreate(
+                customer_id=invoice.customer_id,
+                payment_date=date.today(),
+                amount=amount,
+                payment_method=PaymentMethod.CREDIT_CARD,
+                reference_no="MOCK-" + invoice.invoice_number,
+                memo="Paid online (simulated checkout)",
+                applications=[PaymentApplicationInput(invoice_id=invoice.id, amount=amount)],
+            ),
+        )
+        return self.get_invoice(token)

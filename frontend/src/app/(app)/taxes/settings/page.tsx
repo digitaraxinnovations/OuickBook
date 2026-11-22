@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { RateLookupDialog } from "@/components/taxes/RateLookupDialog";
 import { AgencyForm, CodeForm, RateForm } from "@/components/taxes/TaxSetupForms";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -9,6 +10,8 @@ import { DataTable } from "@/components/ui/DataTable";
 import { ErrorMessage, Loading } from "@/components/ui/Feedback";
 import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useAuth } from "@/context/AuthContext";
+import { useIntegrations } from "@/hooks/useIntegrations";
 import { useLoad } from "@/hooks/useLoad";
 import { formatDate, formatLabel, toNumber } from "@/lib/format";
 import { taxService } from "@/services";
@@ -31,6 +34,9 @@ export default function SalesTaxSettingsPage() {
   const rates = useLoad(() => taxService.rates());
   const codes = useLoad(() => taxService.codes());
   const [editing, setEditing] = useState<Editing>(null);
+  const [lookupOpen, setLookupOpen] = useState(false);
+  const { company } = useAuth();
+  const integrations = useIntegrations();
 
   if (agencies.loading || rates.loading || codes.loading) {
     return <Loading />;
@@ -64,7 +70,17 @@ export default function SalesTaxSettingsPage() {
 
   return (
     <div>
-      <PageHeader title="Sales tax settings" subtitle="Who you collect sales tax for and how much you charge." />
+      <PageHeader
+        title="Sales tax settings"
+        subtitle="Who you collect sales tax for and how much you charge."
+        actions={
+          integrations?.tax_rates.enabled && (
+            <Button variant="secondary" onClick={() => setLookupOpen(true)} disabled={agencyList.length === 0}>
+              Look up rates by address
+            </Button>
+          )
+        }
+      />
       <ErrorMessage message={agencies.error || rates.error || codes.error} />
 
       <Card
@@ -146,6 +162,20 @@ export default function SalesTaxSettingsPage() {
         {editing && editing.kind === "rate" && <RateForm initial={editing.record} agencies={agencyList} onSaved={afterSave} onCancel={close} />}
         {editing && editing.kind === "code" && <CodeForm initial={editing.record} rates={rateList} onSaved={afterSave} onCancel={close} />}
       </Modal>
+      {lookupOpen && (
+        <RateLookupDialog
+          open={lookupOpen}
+          agencies={agencyList}
+          defaultAddress={company?.address || ""}
+          simulated={integrations?.tax_rates.simulated ?? false}
+          onClose={() => setLookupOpen(false)}
+          onAdded={() => {
+            setLookupOpen(false);
+            rates.reload();
+            codes.reload();
+          }}
+        />
+      )}
     </div>
   );
 }
