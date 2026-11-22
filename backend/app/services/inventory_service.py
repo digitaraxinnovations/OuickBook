@@ -243,7 +243,7 @@ class InventoryService:
                 totals.credit(asset_id, cost)
         return totals.ledger_lines()
 
-    def purchase_lines(self, company_id: int, lines: list, source: StockSource, is_return: bool) -> list[LedgerLine]:
+    def purchase_lines(self, company_id: int, lines: list, source: StockSource, is_return: bool, rate: Decimal = Decimal("1")) -> list[LedgerLine]:
         """
         Stock for the inventory lines of a bill, expense or vendor credit.
 
@@ -259,12 +259,13 @@ class InventoryService:
             product = self.product_repository.get(company_id, line.product_id)
             if not product.is_inventory:
                 continue
+            home_amount = to_money(line.amount * rate)
             if not is_return:
-                unit_cost = line.amount / line.quantity
+                unit_cost = home_amount / line.quantity
                 self.receive(company_id, product, line.quantity, unit_cost, source)
                 continue
             cost = self.issue(company_id, product, line.quantity, source)
-            difference = cost - line.amount
+            difference = cost - home_amount
             if difference != 0:
                 # The credit already took line.amount off Inventory; take off the rest.
                 totals.debit(self.cogs_account_id(company_id, product), difference)

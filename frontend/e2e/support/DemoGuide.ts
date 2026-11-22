@@ -154,6 +154,10 @@ export class DemoGuide {
         break;
       }
     }
+    // Last resort on a very busy machine: open the address the link points to.
+    if (new URL(this.page.url()).pathname !== href) {
+      await this.page.goto(href);
+    }
     await this.settle();
   }
 

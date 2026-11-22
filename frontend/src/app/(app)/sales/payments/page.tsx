@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { LinkButton } from "@/components/ui/Button";
 import { DataTable } from "@/components/ui/DataTable";
 import { ErrorMessage, Loading } from "@/components/ui/Feedback";
@@ -19,6 +20,7 @@ function appliedTo(payment: Payment): string {
 }
 
 export default function PaymentsPage() {
+  const router = useRouter();
   const { company } = useAuth();
   const currency = company?.currency;
   const payments = useLoad(() => paymentService.list());
@@ -40,6 +42,7 @@ export default function PaymentsPage() {
         <DataTable
           rows={payments.data || []}
           rowKey={(row) => row.id}
+          onRowClick={(row) => router.push("/sales/payments/" + row.id)}
           emptyText="No payments received yet."
           columns={[
             { header: "Date", render: (row) => formatDate(row.payment_date) },

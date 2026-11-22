@@ -43,6 +43,7 @@ export default function NewExpensePage() {
   const [kind, setKind] = useState<ExpenseKind>("EXPENSE");
   const [receiptId, setReceiptId] = useState<number | null>(null);
   const [vendorId, setVendorId] = useState("");
+  const [exchangeRate, setExchangeRate] = useState("");
   const [paymentAccountId, setPaymentAccountId] = useState("");
   const [expenseDate, setExpenseDate] = useState(todayString());
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CREDIT_CARD");
@@ -131,6 +132,11 @@ export default function NewExpensePage() {
     total += toNumber(line.amount);
   }
 
+  // A foreign currency vendor's expense is entered in their currency.
+  const chosenVendor = (vendors.data || []).find((item) => item.id === Number(vendorId));
+  const foreignCode = chosenVendor && chosenVendor.currency_code ? chosenVendor.currency_code : null;
+  const formCurrency = foreignCode || company?.currency;
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setSaving(true);
@@ -146,6 +152,7 @@ export default function NewExpensePage() {
         check_number: isCheck && !printLater ? checkNumber : "",
         print_later: isCheck && printLater,
         memo: memo,
+        exchange_rate: foreignCode && exchangeRate ? exchangeRate : null,
         ...tracking,
         lines: lines.map((line) => ({
           account_id: line.account_id && !isInventoryLine(line) ? Number(line.account_id) : null,
@@ -196,6 +203,11 @@ export default function NewExpensePage() {
           <Field label="Payment date" required>
             <TextInput type="date" required value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
           </Field>
+          {foreignCode && (
+            <Field label={"Exchange rate (1 " + foreignCode + " = ? " + company?.currency + ")"}>
+              <TextInput type="number" step="0.00000001" min="0" value={exchangeRate} onChange={(e) => setExchangeRate(e.target.value)} placeholder="Latest saved rate" />
+            </Field>
+          )}
           {isCardCredit ? (
             <Field label="Ref no.">
               <TextInput value={referenceNo} onChange={(e) => setReferenceNo(e.target.value)} />
@@ -294,7 +306,7 @@ export default function NewExpensePage() {
           </Field>
           <div className="text-right">
             <div className="text-sm text-gray-500">Total</div>
-            <div className="text-3xl font-semibold">{formatMoney(total, company?.currency)}</div>
+            <div className="text-3xl font-semibold">{formatMoney(total, formCurrency)}</div>
           </div>
         </div>
       </Card>

@@ -24,6 +24,7 @@ from app.schemas.expense import ExpenseCreate
 from app.seed.default_accounts import DetailType, SystemAccount
 from app.services.base import BaseService
 from app.services.check_numbers import CheckNumberService
+from app.services.currency_service import CurrencyService
 from app.services.inventory_service import InventoryService, StockSource
 from app.services.ledger_service import LedgerLine, LedgerService
 from app.services.tracking_service import TrackingService
@@ -45,8 +46,10 @@ class ExpenseService(BaseService):
         ledger: LedgerService,
         inventory: InventoryService,
         tracking: TrackingService,
+        currencies: CurrencyService,
     ):
         super().__init__(session)
+        self.currencies = currencies
         self.inventory = inventory
         self.tracking = tracking
         self.expense_repository = expense_repository
@@ -67,10 +70,14 @@ class ExpenseService(BaseService):
         return expense
 
     def create(self, company_id: int, data: ExpenseCreate) -> Expense:
+        vendor = None
         if data.vendor_id is not None:
             vendor = self.vendor_repository.get(company_id, data.vendor_id)
             if vendor is None:
                 raise BusinessRuleError("Please choose an existing vendor.")
+        # A foreign currency vendor's expense is in their currency, booked at home.
+        currency_code = vendor.currency_code if vendor else None
+        rate = self.currencies.rate_for(company_id, currency_code, data.expense_date, data.exchange_rate)
 
         tracking = self.tracking.check(company_id, data)
         is_check = data.kind == ExpenseKind.CHECK
@@ -89,6 +96,8 @@ class ExpenseService(BaseService):
             reference_no=data.reference_no,
             print_later=is_check and data.print_later,
             memo=data.memo,
+            currency_code=currency_code,
+            exchange_rate=rate,
         )
         if is_check and not data.print_later:
             expense.check_number = self.check_numbers.assign(company_id, payment_account.id, data.check_number)
@@ -129,10 +138,12 @@ class ExpenseService(BaseService):
             ledger_lines.append(LedgerLine(payment_account.id, debit=total))
         else:
             ledger_lines.append(LedgerLine(payment_account.id, credit=total))
+        # Rounding after converting to the home currency goes on the bank / card line.
+        ledger_lines = self.currencies.to_home(ledger_lines, rate, balancing_index=len(ledger_lines) - 1)
         self.tracking.apply(expense, tracking)
         self.expense_repository.add(expense)
         stock = StockSource(STOCK_SOURCE, expense.id, expense.expense_date, expense.memo or "Expense")
-        ledger_lines.extend(self.inventory.purchase_lines(company_id, expense.lines, stock, is_return=is_card_credit))
+        ledger_lines.extend(self.inventory.purchase_lines(company_id, expense.lines, stock, is_return=is_card_credit, rate=rate))
 
         entry = self.ledger.post(
             company_id=company_id,

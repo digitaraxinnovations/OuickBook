@@ -14,6 +14,7 @@ const LISTS = [
   { name: "vendors", title: "Vendors", columns: "Name, Company, Email, Phone, Address, Notes" },
   { name: "accounts", title: "Chart of accounts", columns: "Number, Name, Type (ASSET, LIABILITY, EQUITY, INCOME, EXPENSE), Detail type, Description, Parent" },
   { name: "journal-entries", title: "Transactions (journal entries)", columns: "Entry no, Date, Account, Debit, Credit, Description, Memo - rows with the same Entry no are one entry" },
+  { name: "products", title: "Products and services", columns: "Name, SKU, Type, Description, Sales price, Purchase cost, Taxable, Category, Quantity on hand, Reorder point, Active" },
 ];
 
 function ListCard({ name, title, columns }: { name: string; title: string; columns: string }) {
@@ -86,7 +87,7 @@ export default function ImportExportPage() {
   return (
     <div>
       <p className="mb-4 text-sm text-gray-600">
-        Move lists in and out as CSV files (Excel opens and saves them). Imports are all or nothing. Products and services have their own import on the{" "}
+        Move lists in and out as CSV files (Excel opens and saves them). Imports are all or nothing. Products and services can also be imported on the{" "}
         <Link href="/sales/products" className="text-brand-700 hover:underline">
           Products and services
         </Link>{" "}

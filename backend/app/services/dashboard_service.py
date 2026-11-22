@@ -1,6 +1,6 @@
 from datetime import date
 
-from app.core.money import ZERO
+from app.core.money import ZERO, to_money
 from app.models.enums import AccountType
 from app.repositories.invoice_repository import InvoiceRepository
 from app.repositories.journal_repository import JournalRepository
@@ -48,20 +48,23 @@ class DashboardService:
         overdue_total = ZERO
         open_count = 0
         overdue_count = 0
+        # Foreign currency invoices and bills count at their home currency value.
         for invoice in self.invoice_repository.list_unpaid(company_id):
-            open_total += invoice.balance_due
+            balance = to_money(invoice.balance_due * invoice.exchange_rate)
+            open_total += balance
             open_count += 1
             if invoice.is_overdue:
-                overdue_total += invoice.balance_due
+                overdue_total += balance
                 overdue_count += 1
 
         bills_total = ZERO
         bills_overdue_total = ZERO
         bills_overdue_count = 0
         for bill in self.purchase_repository.list_unpaid_bills(company_id):
-            bills_total += bill.balance
+            balance = to_money(bill.balance * bill.exchange_rate)
+            bills_total += balance
             if bill.is_overdue:
-                bills_overdue_total += bill.balance
+                bills_overdue_total += balance
                 bills_overdue_count += 1
 
         return DashboardSummary(

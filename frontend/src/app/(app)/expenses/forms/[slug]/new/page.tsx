@@ -34,6 +34,7 @@ export default function NewPurchaseFormPage() {
   const [termsId, setTermsId] = useState("");
   const [docNumber, setDocNumber] = useState("");
   const [memo, setMemo] = useState("");
+  const [exchangeRate, setExchangeRate] = useState("");
   const [tracking, setTracking] = useState<TrackingInput>(emptyTracking());
   const [lines, setLines] = useState<PurchaseLineInput[]>([emptyPurchaseLine()]);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +62,11 @@ export default function NewPurchaseFormPage() {
     setTermsId(vendor && vendor.terms_id ? String(vendor.terms_id) : "");
   }
 
+  // Amounts on the form are in the vendor's currency.
+  const chosenVendor = (vendors.data || []).find((item) => item.id === Number(vendorId));
+  const foreignCode = chosenVendor && chosenVendor.currency_code ? chosenVendor.currency_code : null;
+  const formCurrency = foreignCode || currency;
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setSaving(true);
@@ -74,6 +80,7 @@ export default function NewPurchaseFormPage() {
         terms_id: termsId ? Number(termsId) : null,
         doc_number: docNumber,
         memo: memo,
+        exchange_rate: foreignCode && exchangeRate ? exchangeRate : null,
         ...tracking,
         lines: lines,
       });
@@ -104,6 +111,11 @@ export default function NewPurchaseFormPage() {
           <Field label={config.title + " date"} required>
             <TextInput type="date" required value={docDate} onChange={(e) => setDocDate(e.target.value)} />
           </Field>
+          {foreignCode && (
+            <Field label={"Exchange rate (1 " + foreignCode + " = ? " + currency + ")"}>
+              <TextInput type="number" step="0.00000001" min="0" value={exchangeRate} onChange={(e) => setExchangeRate(e.target.value)} placeholder="Latest saved rate" />
+            </Field>
+          )}
           {config.numberLabel && (
             <Field label={config.numberLabel}>
               <TextInput value={docNumber} onChange={(e) => setDocNumber(e.target.value)} />
@@ -136,7 +148,7 @@ export default function NewPurchaseFormPage() {
             categoryOptions={categoryOptions}
             customerOptions={customerOptions}
             products={products.data || []}
-            currency={currency}
+            currency={formCurrency}
           />
         </div>
 
@@ -146,7 +158,7 @@ export default function NewPurchaseFormPage() {
           </Field>
           <div className="text-right">
             <div className="text-sm text-gray-500">Total</div>
-            <div className="text-3xl font-semibold">{formatMoney(purchaseLinesTotal(lines), currency)}</div>
+            <div className="text-3xl font-semibold">{formatMoney(purchaseLinesTotal(lines), formCurrency)}</div>
           </div>
         </div>
       </Card>

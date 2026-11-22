@@ -49,7 +49,7 @@ class PurchaseDocumentRepository(BaseRepository):
     def open_balance_by_vendor(self, company_id: int) -> dict[int, Decimal]:
         """Unpaid bills minus unused vendor credits, per vendor."""
         query = (
-            select(PurchaseDocument.doc_type, PurchaseDocument.vendor_id, func.sum(PurchaseDocument.total - PurchaseDocument.amount_applied))
+            select(PurchaseDocument.doc_type, PurchaseDocument.vendor_id, func.sum((PurchaseDocument.total - PurchaseDocument.amount_applied) * PurchaseDocument.exchange_rate))
             .where(
                 PurchaseDocument.company_id == company_id,
                 PurchaseDocument.doc_type.in_([PurchaseDocType.BILL, PurchaseDocType.VENDOR_CREDIT]),
@@ -59,7 +59,8 @@ class PurchaseDocumentRepository(BaseRepository):
         )
         balances = {}
         for doc_type, vendor_id, amount in self.session.execute(query):
-            amount = Decimal(amount or 0)
+            # The rate has 8 decimals, so round the home currency amount to cents.
+            amount = Decimal(amount or 0).quantize(Decimal("0.01"))
             if doc_type == PurchaseDocType.VENDOR_CREDIT:
                 amount = -amount
             balances[vendor_id] = balances.get(vendor_id, Decimal("0.00")) + amount

@@ -9,7 +9,7 @@ use that vendor's credits.
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, Text
+from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, CompanyOwnedMixin, TimestampMixin
@@ -34,6 +34,10 @@ class PurchaseDocument(TrackingMixin, CompanyOwnedMixin, TimestampMixin, Base):
     status: Mapped[PurchaseDocStatus] = mapped_column(Enum(PurchaseDocStatus, native_enum=False, length=20))
     memo: Mapped[str | None] = mapped_column(Text)
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    # Foreign currency vendors: amounts on this form are in `currency_code`;
+    # home amount = amount x exchange_rate. Empty / 1 for the home currency.
+    currency_code: Mapped[str | None] = mapped_column(String(3))
+    exchange_rate: Mapped[Decimal] = mapped_column(Numeric(18, 8), server_default=text("1"))
     # Bills: amount paid. Vendor credits: amount used. Purchase orders: amount billed.
     amount_applied: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     journal_entry_id: Mapped[int | None] = mapped_column(ForeignKey("journal_entries.id"))
@@ -95,6 +99,10 @@ class BillPayment(CompanyOwnedMixin, TimestampMixin, Base):
     print_later: Mapped[bool] = mapped_column(default=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     memo: Mapped[str | None] = mapped_column(String(500))
+    # Foreign currency vendors: the payment amount are in `currency_code`;
+    # home amount = amount x exchange_rate (the rate on the payment date). Empty / 1 for the home currency.
+    currency_code: Mapped[str | None] = mapped_column(String(3))
+    exchange_rate: Mapped[Decimal] = mapped_column(Numeric(18, 8), server_default=text("1"))
     journal_entry_id: Mapped[int | None] = mapped_column(ForeignKey("journal_entries.id"))
 
     vendor: Mapped[Vendor] = relationship()

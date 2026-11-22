@@ -104,6 +104,7 @@ export interface Customer extends Contact {
 }
 
 export interface Vendor extends Contact {
+  currency_code: string | null;
   terms_id: number | null;
   track_1099: boolean;
   tax_id: string | null;
@@ -230,6 +231,8 @@ export interface Payment {
   deposit_id: number | null;
   applications: { invoice: { id: number; invoice_number: string }; amount: string }[];
   credits_used: { source_type: CreditSource; source_id: number; amount: string }[];
+  currency_code?: string | null;
+  exchange_rate?: string;
 }
 
 export interface CustomerCredit {
@@ -346,6 +349,8 @@ export interface Expense extends TrackingFields {
   total: string;
   is_void: boolean;
   lines: ExpenseLine[];
+  currency_code?: string | null;
+  exchange_rate?: string;
 }
 
 export interface PurchaseLine {
@@ -371,6 +376,8 @@ export interface PurchaseDocumentSummary {
   amount_applied: string;
   balance: string;
   is_overdue: boolean;
+  currency_code?: string | null;
+  exchange_rate?: string;
 }
 
 export interface PurchaseDocument extends TrackingFields, PurchaseDocumentSummary {
@@ -392,6 +399,8 @@ export interface BillPayment {
   memo: string | null;
   applications: { bill: { id: number; doc_number: string | null }; amount: string }[];
   credits_used: { vendor_credit_id: number; amount: string }[];
+  currency_code?: string | null;
+  exchange_rate?: string;
 }
 
 export interface BillPaymentForBill {

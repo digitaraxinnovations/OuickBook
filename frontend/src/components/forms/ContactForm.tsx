@@ -43,7 +43,7 @@ interface ContactFormProps {
   terms?: PaymentTerm[];
   /** Customers only: show the sales tax fields. */
   taxCodes?: TaxCode[];
-  /** Customers only (multicurrency): currencies they can use. */
+  /** Multicurrency: currencies the customer or vendor can use. */
   currencies?: CurrencyItem[];
   /** Vendors only: show the 1099 contractor fields. */
   vendorFields?: boolean;

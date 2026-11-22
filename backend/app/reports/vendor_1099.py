@@ -56,7 +56,7 @@ class Vendor1099Report(Report):
             if expense.vendor_id is None or paid_by_card(expense.payment_method, expense.payment_account):
                 continue
             for line in expense.lines:
-                self.add_amount(totals, vendors, expense.vendor_id, line.account.box_1099, line.amount)
+                self.add_amount(totals, vendors, expense.vendor_id, line.account.box_1099, to_money(line.amount * expense.exchange_rate))
 
         for payment in self.bill_payment_repository.list_between(company_id, start_date, end_date):
             if paid_by_card(payment.payment_method, payment.payment_account) or payment.amount <= 0:
@@ -70,7 +70,7 @@ class Vendor1099Report(Report):
                 bill = application.bill
                 for line in bill.lines:
                     share_of_bill = line.amount / bill.total
-                    amount = to_money(application.amount * cash_share * share_of_bill)
+                    amount = to_money(application.amount * cash_share * share_of_bill * payment.exchange_rate)
                     self.add_amount(totals, vendors, payment.vendor_id, line.account.box_1099, amount)
 
         # Vendor totals decide who is over the threshold.
