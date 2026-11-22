@@ -150,4 +150,9 @@ export class PortalService {
   pay(token: string): Promise<{ checkout_url: string }> {
     return this.api.post("/public/invoices/" + token + "/pay", {});
   }
+
+  /** The "Pay" button of the simulated checkout (only works when PAYMENT_PROVIDER=mock). */
+  mockPay(token: string, amount?: string): Promise<PublicInvoice> {
+    return this.api.post<PublicInvoice>("/public/invoices/" + token + "/mock-pay", amount ? { amount: amount } : {});
+  }
 }

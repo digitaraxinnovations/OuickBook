@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/Card";
 import { ErrorMessage, Loading } from "@/components/ui/Feedback";
 import { Field, Select, TextInput } from "@/components/ui/FormFields";
 import { useAuth } from "@/context/AuthContext";
+import { SimulatedBadge } from "@/components/ui/SimulatedBadge";
+import { useIntegrations } from "@/hooks/useIntegrations";
 import { useLoad } from "@/hooks/useLoad";
 import { platformService } from "@/services";
 
@@ -14,6 +16,7 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 export default function AdvancedSettingsPage() {
   const { refresh } = useAuth();
   const settings = useLoad(() => platformService.advancedSettings());
+  const integrations = useIntegrations();
   const [billTerms, setBillTerms] = useState("30");
   const [fiscalMonth, setFiscalMonth] = useState("1");
   const [method, setMethod] = useState("ACCRUAL");
@@ -82,8 +85,10 @@ export default function AdvancedSettingsPage() {
 
       <Card title="Payments">
         <p className="text-sm text-gray-600">
-          Online card and bank payments on invoices need a payment service. None is connected (PAYMENT_PROVIDER=none in the settings file), so customers pay
-          you the usual way and you record the payment.
+          {integrations?.payments.enabled
+            ? "Customers can pay invoices online from the link you send them (payment service: " + integrations.payments.provider + ")."
+            : "Online card and bank payments on invoices need a payment service. None is connected (PAYMENT_PROVIDER=none in the settings file), so customers pay you the usual way and you record the payment."}
+          {integrations?.payments.simulated && <SimulatedBadge title="Simulated: the checkout page is a pretend one and no money moves." />}
         </p>
       </Card>
 

@@ -206,6 +206,8 @@ class PublicInvoice(BaseModel):
     currency: str
     lines: list[PublicInvoiceLine]
     online_payment_enabled: bool
+    # True when the checkout is the built-in simulation (no real money moves).
+    online_payment_simulated: bool = False
 
 
 class PayOnlineRequest(BaseModel):

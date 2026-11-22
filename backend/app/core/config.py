@@ -84,13 +84,14 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = True
 
     # ---------- Online card/bank payments on invoices (EXT) ----------
-    # "none" = the "Pay now" button is hidden. A real provider (e.g. Stripe)
-    # can be added later as a new PaymentProcessor class - see app/integrations/payments.
+    # "none" = the "Pay now" button is hidden. "mock" = a simulated checkout page (no real money).
+    # A real provider (e.g. Stripe) can be added later as a new PaymentProcessor class - see app/integrations/payments.
     payment_provider: str = "none"
     payment_provider_secret_key: str = ""
 
     # ---------- Bank feeds (EXT) ----------
     # "none" = no live feed; import CSV / OFX / QFX statements instead.
+    # "mock" = a simulated feed that produces sample bank lines.
     # A provider such as Plaid can be added in app/integrations/bank_feeds.py.
     bank_feed_provider: str = "none"
     bank_feed_client_id: str = ""
@@ -100,6 +101,7 @@ class Settings(BaseSettings):
 
     # ---------- Sales tax rates / e-filing (EXT) ----------
     # "none" = rates are entered by hand on the Sales tax page.
+    # "mock" = simulated rate lookup by address and simulated e-filing.
     # A provider such as Avalara can be added in app/integrations/tax_rates.py.
     tax_rate_provider: str = "none"
     tax_rate_api_key: str = ""
@@ -108,9 +110,18 @@ class Settings(BaseSettings):
     # Overtime pay = hourly rate x this.
     payroll_overtime_multiplier: Decimal = Decimal("1.5")
     # (EXT) "none" = taxes are pay items you set up; direct deposit is sent by you.
+    # "mock" = simulated payroll taxes and simulated direct deposit.
     # A payroll service can be added in app/integrations/payroll.py.
     payroll_provider: str = "none"
     payroll_provider_api_key: str = ""
+
+    # ---------- Built-in mock providers (simulated; no real money moves) ----------
+    # Used when a provider setting above is "mock".
+    mock_bank_feed_days: int = 14  # how many days of sample bank lines the first sync brings in
+    mock_tax_default_rate: Decimal = Decimal("6.00")  # sales tax % when the address has no known state
+    mock_federal_income_tax_percent: Decimal = Decimal("10")
+    mock_social_security_percent: Decimal = Decimal("6.2")  # employee and employer each
+    mock_medicare_percent: Decimal = Decimal("1.45")  # employee and employer each
 
     # ---------- Exchange rates (EXT) ----------
     # "none" = rates are typed in on Settings -> Currencies.

@@ -1,6 +1,6 @@
 import { ApiClient } from "@/lib/api-client";
-import { SalesTaxAdjustmentInput, SalesTaxPaymentInput, TaxAgencyInput, TaxCodeInput, TaxRateInput } from "@/types/inputs";
-import { SalesTaxAdjustment, SalesTaxPayment, TaxAgency, TaxCode, TaxPeriod, TaxRate } from "@/types/models";
+import { FileReturnInput, SalesTaxAdjustmentInput, SalesTaxPaymentInput, TaxAgencyInput, TaxCodeInput, TaxRateInput } from "@/types/inputs";
+import { FoundTaxRate, SalesTaxAdjustment, SalesTaxPayment, TaxAgency, TaxCode, TaxPeriod, TaxRate } from "@/types/models";
 
 /** Sales tax setup (agencies, rates, codes) and filing (periods, payments, adjustments). */
 export class TaxService {
@@ -57,6 +57,16 @@ export class TaxService {
 
   recordPayment(input: SalesTaxPaymentInput): Promise<SalesTaxPayment> {
     return this.api.post<SalesTaxPayment>("/taxes/payments", input);
+  }
+
+  /** E-file a finished period through the tax provider and record its payment. */
+  fileReturn(input: FileReturnInput): Promise<SalesTaxPayment> {
+    return this.api.post<SalesTaxPayment>("/taxes/file-return", input);
+  }
+
+  /** The sales tax rates that apply at an address (needs a tax provider). */
+  lookupRates(address: string): Promise<FoundTaxRate[]> {
+    return this.api.post<FoundTaxRate[]>("/taxes/lookup", { address: address });
   }
 
   adjustments(): Promise<SalesTaxAdjustment[]> {

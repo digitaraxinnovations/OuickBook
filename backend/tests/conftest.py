@@ -61,3 +61,10 @@ def auth_client(client):
     token = response.json()["access_token"]
     client.headers["Authorization"] = f"Bearer {token}"
     return client
+
+
+@pytest.fixture(autouse=True)
+def providers_off(monkeypatch):
+    """Tests run with every outside-service provider off ("none"); a test that wants a mock switches it on itself."""
+    for name in ("payment_provider", "bank_feed_provider", "tax_rate_provider", "payroll_provider"):
+        monkeypatch.setattr(settings, name, "none")

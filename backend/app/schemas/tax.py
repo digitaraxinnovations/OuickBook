@@ -84,6 +84,17 @@ class SalesTaxPaymentRead(ORMModel):
     amount: Decimal
     payment_account: AccountSummary
     memo: str | None
+    confirmation_no: str | None = None
+
+
+class FileReturnRequest(CleanStringsModel):
+    """E-file one filing period: the amount filed and paid is the period's balance."""
+
+    agency_id: int
+    period_start: date
+    period_end: date
+    payment_date: date
+    payment_account_id: int
 
 
 class SalesTaxAdjustmentCreate(CleanStringsModel):

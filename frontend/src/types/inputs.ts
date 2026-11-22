@@ -499,3 +499,12 @@ export interface BudgetInput {
   location_id: number | null;
   lines: { account_id: number; months: string[] }[];
 }
+
+/** E-file one finished sales tax period; the amount is the period's balance. */
+export interface FileReturnInput {
+  agency_id: number;
+  period_start: string;
+  period_end: string;
+  payment_date: string;
+  payment_account_id: number;
+}

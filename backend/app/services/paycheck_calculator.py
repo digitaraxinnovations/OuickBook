@@ -11,6 +11,12 @@ Works out one paycheck.
    (they do not change net pay)
 
 PERCENT items are a percentage of gross pay (earning items: of base pay).
+
+4. A connected payroll provider's taxes (EXT, e.g. the built-in "mock") are
+   added as extra lines on a new paycheck, each as a pay item named by the
+   provider (found or created). An employee whose pay items already include
+   taxes made by hand keeps those instead, and a paycheck edited by the user
+   is not recalculated by the provider.
 """
 
 from datetime import date
@@ -22,15 +28,17 @@ from app.core.pay_periods import PERIODS_PER_YEAR
 from app.integrations.payroll import PayrollProvider
 from app.models import Employee, PayItem, Paycheck, PaycheckLine
 from app.models.enums import PayCalculation, PayItemKind, PayType
+from app.repositories.payroll_repositories import PayItemRepository
 
 EMPLOYEE_SIDE = (PayItemKind.DEDUCTION, PayItemKind.EMPLOYEE_TAX)
 EMPLOYER_SIDE = (PayItemKind.EMPLOYER_TAX, PayItemKind.EMPLOYER_CONTRIBUTION)
 
 
 class PaycheckCalculator:
-    def __init__(self, provider: PayrollProvider, overtime_multiplier: Decimal):
+    def __init__(self, provider: PayrollProvider, overtime_multiplier: Decimal, item_repository: PayItemRepository):
         self.provider = provider
         self.overtime_multiplier = overtime_multiplier
+        self.item_repository = item_repository
 
     def fill(
         self,
@@ -77,9 +85,14 @@ class PaycheckCalculator:
                 employer += amount
             self.add_line(paycheck, item, item.name, amount)
 
-        for tax in self.provider.calculate_taxes(employee.id, gross, pay_date):
-            # A connected provider's taxes would be added here (see integrations/payroll.py).
-            raise BusinessRuleError(f"Map the provider tax '{tax.name}' to a pay item first.")
+        if item_amounts is None and not self.has_hand_made_taxes(items):
+            for tax in self.provider.calculate_taxes(employee.id, gross, pay_date):
+                item = self.provider_item(employee.company_id, tax)
+                if tax.paid_by_employer:
+                    employer += tax.amount
+                else:
+                    taxes += tax.amount
+                self.add_line(paycheck, item, item.name, tax.amount)
 
         net = gross - deductions - taxes
         if net < 0:
@@ -90,6 +103,20 @@ class PaycheckCalculator:
         paycheck.employee_taxes = taxes
         paycheck.employer_cost = employer
         paycheck.net_pay = net
+
+    def has_hand_made_taxes(self, items: list[tuple[PayItem, Decimal]]) -> bool:
+        return any(item.kind in (PayItemKind.EMPLOYEE_TAX, PayItemKind.EMPLOYER_TAX) for item, _ in items)
+
+    def provider_item(self, company_id: int, tax) -> PayItem:
+        """The pay item for a tax the provider worked out (created the first time it is needed)."""
+        item = self.item_repository.get_by_name(company_id, tax.name)
+        if item is None:
+            kind = PayItemKind.EMPLOYER_TAX if tax.paid_by_employer else PayItemKind.EMPLOYEE_TAX
+            # No accounts set: the run uses the default Payroll Taxes and Payroll Liabilities accounts.
+            item = self.item_repository.add(
+                PayItem(company_id=company_id, name=tax.name, kind=kind, calculation=PayCalculation.PERCENT, default_amount=ZERO, is_active=True)
+            )
+        return item
 
     def add_base_pay(self, paycheck: Paycheck, employee: Employee, frequency: str | None) -> Decimal:
         if employee.pay_type == PayType.SALARY:

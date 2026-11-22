@@ -1,6 +1,7 @@
 import { ApiClient } from "@/lib/api-client";
 import {
   AdvancedSettings,
+  Integrations,
   ApiKeyItem,
   AppNotification,
   WebhookDeliveryItem,
@@ -163,5 +164,10 @@ export class PlatformService {
 
   webhookDeliveries(): Promise<WebhookDeliveryItem[]> {
     return this.api.get<WebhookDeliveryItem[]>("/company/webhook-deliveries");
+  }
+
+  /** Which outside services are connected (and which are the built-in simulations). */
+  integrations(): Promise<Integrations> {
+    return this.api.get<Integrations>("/company/integrations");
   }
 }

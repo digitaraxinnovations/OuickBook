@@ -9,8 +9,10 @@ import { MatchDialog } from "@/components/banking/MatchDialog";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/ui/DataTable";
 import { ErrorMessage, Loading, SuccessMessage } from "@/components/ui/Feedback";
+import { SimulatedBadge } from "@/components/ui/SimulatedBadge";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/context/AuthContext";
+import { useIntegrations } from "@/hooks/useIntegrations";
 import { useLoad } from "@/hooks/useLoad";
 import { formatDate, formatLabel, formatMoney, toNumber } from "@/lib/format";
 import { accountService, bankingService, vendorService } from "@/services";
@@ -29,6 +31,7 @@ export default function BankTransactionsPage() {
   const overview = useLoad(() => bankingService.accounts());
   const accounts = useLoad(() => accountService.list({ active_only: true }));
   const vendors = useLoad(() => vendorService.list({ active_only: true }));
+  const integrations = useIntegrations();
   const [accountId, setAccountId] = useState<number | null>(null);
   const [status, setStatus] = useState<BankTransactionStatus>("FOR_REVIEW");
   const [importOpen, setImportOpen] = useState(false);
@@ -110,6 +113,7 @@ export default function BankTransactionsPage() {
               </Button>
               <Button variant="secondary" onClick={() => run(() => updateFromBank(accountId))}>
                 <RefreshCw size={16} /> Update from bank
+                {integrations?.bank_feed.simulated && <SimulatedBadge />}
               </Button>
               <Button onClick={() => setImportOpen(true)}>
                 <Upload size={16} /> Upload statement

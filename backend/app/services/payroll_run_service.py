@@ -216,6 +216,10 @@ class PayrollRunService(BaseService):
             totals.credit(run.bank_account_id, paycheck.net_pay)
             if paycheck.payment_method == PaycheckMethod.CHECK and paycheck.net_pay > 0:
                 paycheck.check_number = self.check_numbers.assign(company_id, run.bank_account_id, None)
+            provider = self.calculator.provider
+            if paycheck.payment_method == PaycheckMethod.DIRECT_DEPOSIT and paycheck.net_pay > 0 and provider.is_enabled():
+                # A connected payroll provider (EXT) sends the money; we keep its reference.
+                paycheck.deposit_reference = provider.send_direct_deposit(paycheck.employee_id, paycheck.net_pay, run.pay_date)
 
         ledger_lines = totals.ledger_lines()
         if len(ledger_lines) < 2:

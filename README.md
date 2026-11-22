@@ -35,16 +35,19 @@ The full roadmap, and what is done, is in [docs/FEATURES.md](docs/FEATURES.md).
 
 ### Outside services (EXT)
 
-Features that need an outside provider work out of the box in a safe "off" mode and
-switch on with settings in `.env` - no code changes:
+Features that need an outside provider work without signing up for anything. Four of them
+(payments, bank feed, sales tax, payroll) have a built-in **`mock` provider** that works like
+the real service but is simulated: no money moves, nothing is filed or sent, and the screens
+show a "Simulated" tag. `mock` is the default in `.env.example`. Set a provider to `none` to
+switch the feature off, or plug a real provider into the same interface later - no other code changes:
 
 | Feature | Setting | Default |
 |---|---|---|
 | Sending email | `EMAIL_PROVIDER` = `log` or `smtp` (+ `SMTP_*`) | `log`: emails are saved in **Settings → Email log** instead of being sent |
-| "Pay now" on invoices | `PAYMENT_PROVIDER` | `none`: button hidden. Add a class in `backend/app/integrations/payments.py` |
-| Live bank feeds | `BANK_FEED_PROVIDER` | `none`: upload statements instead. Add a class in `backend/app/integrations/bank_feeds.py` |
-| Sales tax rate lookup / e-filing | `TAX_RATE_PROVIDER` | `none`: enter rates by hand on Taxes → Sales tax settings. Add a class in `backend/app/integrations/tax_rates.py` |
-| Payroll taxes, filing, direct deposit | `PAYROLL_PROVIDER` | `none`: set up taxes as pay items; direct deposit pay is recorded but sent by you. Add a class in `backend/app/integrations/payroll.py` |
+| "Pay now" on invoices | `PAYMENT_PROVIDER` = `mock` or `none` | `mock`: a pretend card checkout page; confirming it records a real payment on the invoice. `none`: button hidden. Real provider: add a class in `backend/app/integrations/payments.py` |
+| Live bank feeds | `BANK_FEED_PROVIDER` = `mock` or `none` (+ `MOCK_BANK_FEED_DAYS`) | `mock`: "Update from bank" brings in sample bank lines (the same ones every time, so repeats are skipped). `none`: upload statements instead. Real provider: `backend/app/integrations/bank_feeds.py` |
+| Sales tax rate lookup / e-filing | `TAX_RATE_PROVIDER` = `mock` or `none` (+ `MOCK_TAX_DEFAULT_RATE`) | `mock`: look up sample rates by address and "e-file" a period (made-up confirmation number, payment recorded). `none`: enter rates by hand. Real provider: `backend/app/integrations/tax_rates.py` |
+| Payroll taxes, filing, direct deposit | `PAYROLL_PROVIDER` = `mock` or `none` (+ `MOCK_FEDERAL_INCOME_TAX_PERCENT`, `MOCK_SOCIAL_SECURITY_PERCENT`, `MOCK_MEDICARE_PERCENT`) | `mock`: simple percentage taxes are added to paychecks of employees with no hand-made taxes, and Approve "sends" direct deposits (made-up reference). `none`: taxes are pay items you set up; you send direct deposits. Real provider: `backend/app/integrations/payroll.py` |
 | Live exchange rates | `EXCHANGE_RATE_PROVIDER` (+ `EXCHANGE_RATE_API_KEY`) | `none`: type rates on Settings → Currencies. Add a class in `backend/app/integrations/exchange_rates.py` |
 | Webhook delivery | `WEBHOOK_DELIVERY` = `log` or `http` (+ `WEBHOOK_TIMEOUT_SECONDS`) | `log`: deliveries are recorded in Settings → API & webhooks but not sent |
 | Links in emails | `PUBLIC_APP_URL` | `http://localhost:3000` |

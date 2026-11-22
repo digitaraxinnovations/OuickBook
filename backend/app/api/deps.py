@@ -643,6 +643,7 @@ def get_portal_service(db: Session = Depends(get_db)) -> PortalService:
         CompanyRepository(db),
         build_customer_documents_service(db),
         build_payment_processor(settings),
+        build_payment_service(db),
     )
 
 
@@ -755,7 +756,7 @@ def get_payroll_setup_service(db: Session = Depends(get_db)) -> PayrollSetupServ
 
 
 def get_payroll_run_service(db: Session = Depends(get_db)) -> PayrollRunService:
-    calculator = PaycheckCalculator(build_payroll_provider(settings), settings.payroll_overtime_multiplier)
+    calculator = PaycheckCalculator(build_payroll_provider(settings), settings.payroll_overtime_multiplier, PayItemRepository(db))
     return PayrollRunService(
         db,
         PayrollRunRepository(db),

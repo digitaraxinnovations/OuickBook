@@ -323,6 +323,7 @@ export interface PublicInvoice {
   currency: string;
   lines: { description: string | null; quantity: string; rate: string; amount: string }[];
   online_payment_enabled: boolean;
+  online_payment_simulated: boolean;
 }
 
 export interface ExpenseLine {
@@ -753,6 +754,7 @@ export interface SalesTaxPayment {
   amount: string;
   payment_account: AccountSummary;
   memo: string | null;
+  confirmation_no: string | null;
 }
 
 export interface SalesTaxAdjustment {
@@ -894,6 +896,7 @@ export interface Paycheck {
   employer_cost: string;
   payment_method: PaycheckMethod;
   check_number: string | null;
+  deposit_reference: string | null;
   lines: PaycheckLine[];
 }
 
@@ -1152,4 +1155,24 @@ export interface WebhookDeliveryItem {
   response_code: number | null;
   error: string | null;
   created_at: string;
+}
+
+/** One outside service (payments, bank feed, sales tax, payroll): which provider is connected. */
+export interface IntegrationStatus {
+  provider: string;
+  enabled: boolean;
+  /** The built-in mock provider: it works, but nothing real happens. */
+  simulated: boolean;
+}
+
+export interface Integrations {
+  payments: IntegrationStatus;
+  bank_feed: IntegrationStatus;
+  tax_rates: IntegrationStatus;
+  payroll: IntegrationStatus;
+}
+
+export interface FoundTaxRate {
+  name: string;
+  rate: string;
 }

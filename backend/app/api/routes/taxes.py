@@ -4,6 +4,7 @@ from app.api.deps import get_current_user, get_tax_rate_provider, get_tax_servic
 from app.integrations.tax_rates import TaxRateProvider
 from app.models import User
 from app.schemas.tax import (
+    FileReturnRequest,
     RateLookupRequest,
     RateLookupResult,
     SalesTaxAdjustmentCreate,
@@ -90,6 +91,17 @@ def list_payments(agency_id: int | None = None, user: User = Depends(get_current
 @router.post("/payments", response_model=SalesTaxPaymentRead, status_code=status.HTTP_201_CREATED)
 def record_payment(data: SalesTaxPaymentCreate, user: User = Depends(get_current_user), service: TaxService = Depends(get_tax_service)):
     return service.record_payment(user.company_id, data)
+
+
+@router.post("/file-return", response_model=SalesTaxPaymentRead, status_code=status.HTTP_201_CREATED)
+def file_return(
+    data: FileReturnRequest,
+    user: User = Depends(get_current_user),
+    service: TaxService = Depends(get_tax_service),
+    provider: TaxRateProvider = Depends(get_tax_rate_provider),
+):
+    """E-file a finished period (EXT: simulated when TAX_RATE_PROVIDER=mock) and record its payment."""
+    return service.file_return(user.company_id, data, provider)
 
 
 @router.get("/adjustments", response_model=list[SalesTaxAdjustmentRead])

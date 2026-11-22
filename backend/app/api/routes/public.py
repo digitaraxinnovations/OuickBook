@@ -25,3 +25,9 @@ def download_invoice_pdf(token: str, service: PortalService = Depends(get_portal
 @router.post("/invoices/{token}/pay", response_model=PayOnlineResponse)
 def pay_invoice_online(token: str, data: PayOnlineRequest, service: PortalService = Depends(get_portal_service)):
     return PayOnlineResponse(checkout_url=service.start_payment(token, data.amount))
+
+
+@router.post("/invoices/{token}/mock-pay", response_model=PublicInvoice)
+def confirm_simulated_payment(token: str, data: PayOnlineRequest, service: PortalService = Depends(get_portal_service)):
+    """The 'Pay' button on the simulated checkout page (only when PAYMENT_PROVIDER=mock)."""
+    return service.confirm_mock_payment(token, data.amount)
