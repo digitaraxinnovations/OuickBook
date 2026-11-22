@@ -30,6 +30,8 @@ class PurchaseDocumentCreate(TrackingInput, CleanStringsModel):
     # Bills and vendor credits: the vendor's reference number. Purchase orders: numbered automatically.
     doc_number: str | None = Field(default=None, max_length=50)
     memo: str | None = None
+    # Foreign currency vendors: the rate for this form (empty = the latest saved rate).
+    exchange_rate: Decimal | None = Field(default=None, gt=0, max_digits=18, decimal_places=8)
     lines: list[PurchaseLineInput] = Field(min_length=1)
 
 
@@ -53,6 +55,8 @@ class PurchaseDocumentSummary(ORMModel):
     due_date: date | None
     status: PurchaseDocStatus
     total: Decimal
+    currency_code: str | None = None
+    exchange_rate: Decimal = Decimal("1")
     amount_applied: Decimal
     balance: Decimal
     is_overdue: bool
@@ -92,6 +96,8 @@ class BillPaymentCreate(CleanStringsModel):
     check_number: str | None = Field(default=None, max_length=20)
     print_later: bool = False
     memo: str | None = Field(default=None, max_length=500)
+    # Foreign currency vendors: the rate for this form (empty = the latest saved rate).
+    exchange_rate: Decimal | None = Field(default=None, gt=0, max_digits=18, decimal_places=8)
     applications: list[BillApplicationInput] = Field(min_length=1)
     credits: list[VendorCreditUseInput] = Field(default_factory=list)
 
@@ -131,6 +137,8 @@ class BillPaymentRead(ORMModel):
     print_later: bool
     amount: Decimal
     memo: str | None
+    currency_code: str | None = None
+    exchange_rate: Decimal = Decimal("1")
     applications: list[BillApplicationRead]
     credits_used: list[VendorCreditUseRead]
 

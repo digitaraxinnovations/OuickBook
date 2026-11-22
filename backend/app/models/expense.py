@@ -31,6 +31,10 @@ class Expense(TrackingMixin, CompanyOwnedMixin, TimestampMixin, Base):
     print_later: Mapped[bool] = mapped_column(server_default=text("false"))
     memo: Mapped[str | None] = mapped_column(Text)
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    # Foreign currency vendors: amounts on this form are in `currency_code`;
+    # home amount = amount x exchange_rate. Empty / 1 for the home currency.
+    currency_code: Mapped[str | None] = mapped_column(String(3))
+    exchange_rate: Mapped[Decimal] = mapped_column(Numeric(18, 8), server_default=text("1"))
     is_void: Mapped[bool] = mapped_column(server_default=text("false"))
     journal_entry_id: Mapped[int | None] = mapped_column(ForeignKey("journal_entries.id"))
 

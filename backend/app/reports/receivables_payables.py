@@ -89,7 +89,11 @@ class OpenItems:
             if bill.doc_date > on_date:
                 continue
             vendor = bill.vendor
-            items.append(OpenItem("Bill", bill.doc_number or "", vendor.id, vendor.display_name, bill.doc_date, bill.due_date, bill.total, bill.balance))
+            # Foreign currency bills are shown in the home currency.
+            rate = bill.exchange_rate
+            items.append(
+                OpenItem("Bill", bill.doc_number or "", vendor.id, vendor.display_name, bill.doc_date, bill.due_date, to_money(bill.total * rate), to_money(bill.balance * rate))
+            )
         items.sort(key=lambda item: (item.party_name, item.due_date))
         return items
 

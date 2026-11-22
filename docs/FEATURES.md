@@ -84,10 +84,10 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [x] Users, roles & permissions (Admin, Standard, Sales, Purchases, Reports only, Time only, Accountant), invite users by email link, accountant access
 - [x] Audit log of every change (who, when, field old → new)
 - [x] Settings: company, sales, expenses, payments, advanced (fiscal year, accounting method, closing date with password, multi-currency)
-- [~] Multi-currency with exchange rates (EXT for live rates: `EXCHANGE_RATE_PROVIDER`) - customers, invoices, sales forms and payments (with exchange gain/loss) done; vendors, bills and expenses in foreign currency not yet
+- [x] Multi-currency with exchange rates (EXT for live rates: `EXCHANGE_RATE_PROVIDER`) - customers, invoices, sales forms and payments, and vendors, bills, vendor credits, purchase orders, expenses and bill payments, with exchange gain/loss; stock bought abroad is valued in the home currency
 - [x] Global search, recent transactions, "+ New" quick create menu
-- [~] Attachments on invoices, sales forms, expenses and vendor forms (not yet on journal entries, payments, deposits)
-- [~] Import/export CSV: customers, vendors, accounts, journal entries (products import not yet)
+- [x] Attachments on invoices, sales forms, expenses, vendor forms, journal entries, customer payments and bank deposits
+- [x] Import/export CSV: customers, vendors, accounts, journal entries and products
 - [x] Notifications (bell: overdue invoices, bills due, bank lines, low stock, payroll, sales tax), activity feed on the dashboard
 - [x] Public REST API (API keys) + webhooks (`WEBHOOK_DELIVERY` = log or http, HMAC signed)
 

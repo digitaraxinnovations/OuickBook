@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+from sqlalchemy import select
+
 from app.core.exceptions import BusinessRuleError
 from app.core.money import ZERO
 from app.models import Customer, Vendor
@@ -10,6 +12,7 @@ from app.repositories.sales_repositories import PaymentRepository, PaymentTermRe
 from app.repositories.tax_repositories import TaxCodeRepository
 from app.schemas.contact import CustomerWrite, VendorWrite
 from app.services.base import CrudService
+from app.models import Expense
 from app.services.currency_service import CurrencyService
 
 
@@ -88,14 +91,30 @@ class VendorService(CrudService):
         repository: VendorRepository,
         purchase_repository: PurchaseDocumentRepository,
         terms_repository: PaymentTermRepository,
+        currencies: CurrencyService,
     ):
         super().__init__(session, repository)
         self.purchase_repository = purchase_repository
         self.terms_repository = terms_repository
+        self.currencies = currencies
 
     def validate(self, company_id: int, data: VendorWrite) -> None:
         if data.terms_id is not None and self.terms_repository.get(company_id, data.terms_id) is None:
             raise BusinessRuleError("Those payment terms do not exist.")
+        data.currency_code = self.currencies.check_customer_currency(company_id, data.currency_code)
+
+    def update(self, company_id: int, record_id: int, data: VendorWrite):
+        vendor = self.get(company_id, record_id)
+        new_currency = self.currencies.check_customer_currency(company_id, data.currency_code)
+        if new_currency != vendor.currency_code and self.has_transactions(company_id, vendor.id):
+            raise BusinessRuleError("This vendor has bills or expenses, so their currency cannot change.")
+        return super().update(company_id, record_id, data)
+
+    def has_transactions(self, company_id: int, vendor_id: int) -> bool:
+        if self.purchase_repository.list_filtered(company_id, vendor_id=vendor_id):
+            return True
+        query = select(Expense.id).where(Expense.company_id == company_id, Expense.vendor_id == vendor_id).limit(1)
+        return self.session.scalar(query) is not None
 
     def list_with_balances(self, company_id: int, active_only: bool = False) -> list[Vendor]:
         vendors = self.list(company_id, active_only)

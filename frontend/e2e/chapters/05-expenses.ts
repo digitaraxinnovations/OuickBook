@@ -132,6 +132,8 @@ export async function expenses(guide: DemoGuide): Promise<void> {
     await billBoxes.nth(i).check();
   }
   await guide.click("Save payments");
+  // Saving goes on to Print checks (checks are set to print later) - wait for it before moving on.
+  await page.waitForURL(/\/expenses\/(print-checks|bill-payments)$/);
   await guide.settle();
   await guide.nav("Expenses", "Bill payments");
   await guide.say("One payment is made per vendor. The bills are now paid.");

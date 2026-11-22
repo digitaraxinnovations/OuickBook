@@ -5,9 +5,10 @@ Import and export lists and transactions as CSV files (Excel opens them).
     Accounts:             Number, Name, Type, Detail type, Description, Parent
     Journal entries:      Entry no, Date, Account, Debit, Credit, Description, Memo
                           (rows with the same Entry no make one journal entry)
+    Products:             the Products page columns (Name, SKU, Type, ...)
 
 Imports are all-or-nothing: if any row has a problem nothing is saved and
-every problem is listed. Products have their own import (Products page).
+every problem is listed. Products use the same import as the Products page.
 
 Each list is a DataTransfer subclass, so adding a new one means adding one
 class to TRANSFERS - nothing else changes.
@@ -30,6 +31,7 @@ from app.schemas.platform import ImportResult
 from app.services.account_service import AccountService
 from app.services.contact_service import CustomerService, VendorService
 from app.services.journal_service import JournalService
+from app.services.product_import_service import COLUMNS as PRODUCT_COLUMNS, ProductImportService
 
 DATE_FORMATS = ("%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y")
 
@@ -238,6 +240,23 @@ class JournalEntryTransfer(DataTransfer):
         return created, errors
 
 
+class ProductTransfer(DataTransfer):
+    """Products and services - the Products page import and export, offered here too."""
+
+    name = "products"
+    columns = PRODUCT_COLUMNS
+
+    def __init__(self, importer: ProductImportService):
+        self.importer = importer
+
+    def export_csv(self, company_id: int) -> str:
+        return self.importer.export_csv(company_id)
+
+    def import_csv(self, company_id: int, content: str) -> ImportResult:
+        result = self.importer.import_csv(company_id, content)
+        return ImportResult(created=result.created, updated=result.updated, errors=result.errors)
+
+
 class DataTransferService:
     def __init__(self, session, transfers: dict[str, DataTransfer]):
         self.session = session
@@ -251,10 +270,14 @@ class DataTransferService:
 
     def export_csv(self, company_id: int, name: str) -> str:
         transfer = self.get(name)
+        if isinstance(transfer, ProductTransfer):
+            return transfer.export_csv(company_id)
         return write_csv(transfer.columns, transfer.export_rows(company_id))
 
     def import_csv(self, company_id: int, name: str, content: str) -> ImportResult:
         transfer = self.get(name)
+        if isinstance(transfer, ProductTransfer):
+            return transfer.import_csv(company_id, content)
         rows = read_rows(content)
         if not rows:
             raise BusinessRuleError("The file has no rows under its header.")
@@ -297,6 +320,7 @@ def build_transfers(
     account_service: AccountService,
     journal_repository: JournalRepository,
     journal_service: JournalService,
+    product_importer: ProductImportService,
 ) -> dict[str, DataTransfer]:
     customers = ContactTransfer(customer_repository, customer_service, CustomerWrite)
     customers.name = "customers"
@@ -307,4 +331,5 @@ def build_transfers(
         "vendors": vendors,
         "accounts": AccountTransfer(account_repository, account_service),
         "journal-entries": JournalEntryTransfer(journal_repository, account_repository, journal_service),
+        "products": ProductTransfer(product_importer),
     }

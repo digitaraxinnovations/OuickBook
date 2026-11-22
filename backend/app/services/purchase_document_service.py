@@ -18,6 +18,7 @@ from app.repositories.sales_repositories import PaymentTermRepository
 from app.schemas.purchase import PurchaseDocumentCreate, PurchaseLineInput
 from app.services.base import BaseService
 from app.services.inventory_service import InventoryService, StockSource
+from app.services.currency_service import CurrencyService
 from app.services.ledger_service import LedgerService
 from app.services.numbering import DocumentNumberService
 from app.services.purchase_kinds import PurchaseKind
@@ -45,8 +46,10 @@ class PurchaseDocumentService(BaseService):
         kinds: list[PurchaseKind],
         inventory: InventoryService,
         tracking: TrackingService,
+        currencies: CurrencyService,
     ):
         super().__init__(session)
+        self.currencies = currencies
         self.repository = repository
         self.vendor_repository = vendor_repository
         self.customer_repository = customer_repository
@@ -83,6 +86,7 @@ class PurchaseDocumentService(BaseService):
         if vendor is None or not vendor.is_active:
             raise BusinessRuleError("Please choose an active vendor.")
         tracking = self.tracking.check(company_id, data)
+        rate = self.currencies.rate_for(company_id, vendor.currency_code, data.doc_date, data.exchange_rate)
 
         document = PurchaseDocument(
             company_id=company_id,
@@ -93,6 +97,8 @@ class PurchaseDocumentService(BaseService):
             memo=data.memo,
             amount_applied=ZERO,
             purchase_order_id=purchase_order.id if purchase_order else None,
+            currency_code=vendor.currency_code,
+            exchange_rate=rate,
         )
         if kind.auto_number:
             document.doc_number = self.numbering.next_number(company_id, kind.doc_type.value)
@@ -117,9 +123,12 @@ class PurchaseDocumentService(BaseService):
         if kind.journal_source is not None:
             label = f"{kind.label} {document.doc_number or ''} - {vendor.display_name}".replace("  ", " ")
             ledger_lines = kind.ledger_lines(company_id, document, self.system_accounts)
-            stock = StockSource(STOCK_SOURCE, document.id, document.doc_date, label)
+            # A foreign currency bill is kept in the books in the home currency;
+            # rounding goes on the Accounts Payable line.
             is_return = kind.doc_type == PurchaseDocType.VENDOR_CREDIT
-            ledger_lines.extend(self.inventory.purchase_lines(company_id, document.lines, stock, is_return))
+            ledger_lines = self.currencies.to_home(ledger_lines, rate, balancing_index=0 if is_return else len(ledger_lines) - 1)
+            stock = StockSource(STOCK_SOURCE, document.id, document.doc_date, label)
+            ledger_lines.extend(self.inventory.purchase_lines(company_id, document.lines, stock, is_return, rate))
             entry = self.ledger.post(
                 company_id=company_id,
                 entry_date=document.doc_date,

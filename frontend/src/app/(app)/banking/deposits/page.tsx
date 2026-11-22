@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { LinkButton } from "@/components/ui/Button";
 import { DataTable } from "@/components/ui/DataTable";
 import { ErrorMessage, Loading } from "@/components/ui/Feedback";
@@ -11,6 +12,7 @@ import { formatDate, formatMoney } from "@/lib/format";
 import { depositService } from "@/services";
 
 export default function DepositsPage() {
+  const router = useRouter();
   const { company } = useAuth();
   const deposits = useLoad(() => depositService.list());
   const waiting = useLoad(() => depositService.undeposited());
@@ -44,6 +46,7 @@ export default function DepositsPage() {
         <DataTable
           rows={deposits.data || []}
           rowKey={(row) => row.id}
+          onRowClick={(row) => router.push("/banking/deposits/" + row.id)}
           emptyText="No deposits yet."
           columns={[
             { header: "Date", render: (row) => formatDate(row.deposit_date) },

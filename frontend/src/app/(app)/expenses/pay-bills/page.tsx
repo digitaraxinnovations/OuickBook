@@ -75,13 +75,14 @@ export default function PayBillsPage() {
     (account) => account.detail_type === "Bank" || (method === "CREDIT_CARD" && account.detail_type === "Credit Card"),
   );
 
+  const hasForeign = bills.some((bill) => bill.currency_code) || credits.some((credit) => credit.currency_code);
   let billsTotal = 0;
   for (const bill of bills) {
-    billsTotal += toNumber(amounts[bill.id]);
+    billsTotal += toNumber(amounts[bill.id]) * toNumber(bill.exchange_rate || "1");
   }
   let creditsTotal = 0;
   for (const credit of credits) {
-    creditsTotal += toNumber(creditAmounts[credit.id]);
+    creditsTotal += toNumber(creditAmounts[credit.id]) * toNumber(credit.exchange_rate || "1");
   }
 
   function toggle(bill: PurchaseDocumentSummary, checked: boolean) {
@@ -198,7 +199,7 @@ export default function PayBillsPage() {
                     <td className="py-2">{bill.vendor.display_name}</td>
                     <td className="py-2">{bill.doc_number || "-"}</td>
                     <td className={"py-2 " + (bill.is_overdue ? "text-red-600" : "")}>{formatDate(bill.due_date)}</td>
-                    <td className="py-2 text-right">{formatMoney(bill.balance, currency)}</td>
+                    <td className="py-2 text-right">{formatMoney(bill.balance, bill.currency_code || currency)}</td>
                     <td className="py-2 pl-4">
                       <TextInput
                         type="number"
@@ -225,7 +226,7 @@ export default function PayBillsPage() {
                 {credits.map((credit) => (
                   <tr key={credit.id} className="border-b border-gray-100">
                     <td className="py-2">Vendor credit {credit.doc_number || "#" + credit.id}</td>
-                    <td className="py-2 text-right">Available {formatMoney(credit.balance, currency)}</td>
+                    <td className="py-2 text-right">Available {formatMoney(credit.balance, credit.currency_code || currency)}</td>
                     <td className="w-40 py-2 pl-4">
                       <TextInput
                         type="number"
@@ -256,7 +257,7 @@ export default function PayBillsPage() {
             </div>
           )}
           <div className="flex justify-between border-t border-gray-200 pt-2 text-base font-semibold">
-            <span>Total payment</span>
+            <span>Total payment{hasForeign ? " (in " + currency + ", approx.)" : ""}</span>
             <span>{formatMoney(billsTotal - creditsTotal, currency)}</span>
           </div>
         </div>

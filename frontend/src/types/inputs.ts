@@ -207,6 +207,8 @@ export interface ExpenseInput extends TrackingInput {
   reference_no: string;
   memo: string;
   lines: ExpenseLineInput[];
+  /** Foreign currency vendors: rate for this form (empty = latest saved rate). */
+  exchange_rate?: string | null;
 }
 
 export interface JournalLineInput {
@@ -244,6 +246,8 @@ export interface PurchaseDocumentInput extends TrackingInput {
   doc_number: string;
   memo: string;
   lines: PurchaseLineInput[];
+  /** Foreign currency vendors: rate for this form (empty = latest saved rate). */
+  exchange_rate?: string | null;
 }
 
 export interface BillPaymentInput {
@@ -256,6 +260,8 @@ export interface BillPaymentInput {
   memo: string;
   applications: { bill_id: number; amount: string }[];
   credits: { vendor_credit_id: number; amount: string }[];
+  /** Foreign currency vendors: rate for this form (empty = latest saved rate). */
+  exchange_rate?: string | null;
 }
 
 export interface BatchBillPaymentInput {

@@ -41,6 +41,8 @@ export default function PurchaseFormDetailPage() {
     return <ErrorMessage message={document.error} />;
   }
   const data = document.data;
+  // Foreign currency vendors: amounts are in the document's own currency.
+  const docCurrency = data.currency_code || currency;
   const config = form;
   const isBill = data.doc_type === "BILL";
   const isOrder = data.doc_type === "PURCHASE_ORDER";
@@ -152,8 +154,8 @@ export default function PurchaseFormDetailPage() {
                 <td className="py-2">{line.account.name}</td>
                 <td className="py-2">{line.description}</td>
                 <td className="py-2 text-right">{toNumber(line.quantity)}</td>
-                <td className="py-2 text-right">{formatMoney(line.rate, currency)}</td>
-                <td className="py-2 text-right">{formatMoney(line.amount, currency)}</td>
+                <td className="py-2 text-right">{formatMoney(line.rate, docCurrency)}</td>
+                <td className="py-2 text-right">{formatMoney(line.amount, docCurrency)}</td>
               </tr>
             ))}
           </tbody>
@@ -163,12 +165,12 @@ export default function PurchaseFormDetailPage() {
           <div className="w-64 space-y-1 text-sm">
             <div className="flex justify-between font-semibold">
               <span>Total</span>
-              <span>{formatMoney(data.total, currency)}</span>
+              <span>{formatMoney(data.total, docCurrency)}</span>
             </div>
             {!isOrder && (
               <div className="flex justify-between">
                 <span>{isBill ? "Balance due" : "Credit left"}</span>
-                <span>{formatMoney(data.balance, currency)}</span>
+                <span>{formatMoney(data.balance, docCurrency)}</span>
               </div>
             )}
           </div>
@@ -186,7 +188,7 @@ export default function PurchaseFormDetailPage() {
               { header: "Date", render: (row) => formatDate(row.payment_date) },
               { header: "Method", render: (row) => formatLabel(row.payment_method) + (row.check_number ? " #" + row.check_number : "") },
               { header: "Paid from", render: (row) => row.payment_account.name },
-              { header: "Amount", align: "right", render: (row) => formatMoney(row.amount, currency) },
+              { header: "Amount", align: "right", render: (row) => formatMoney(row.amount, docCurrency) },
             ]}
           />
         </div>

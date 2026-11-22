@@ -30,6 +30,8 @@ class ExpenseCreate(TrackingInput, CleanStringsModel):
     check_number: str | None = Field(default=None, max_length=20)
     print_later: bool = False
     memo: str | None = None
+    # Foreign currency vendors: the rate for this form (empty = the latest saved rate).
+    exchange_rate: Decimal | None = Field(default=None, gt=0, max_digits=18, decimal_places=8)
     lines: list[ExpenseLineCreate] = Field(min_length=1)
 
 
@@ -55,5 +57,7 @@ class ExpenseRead(TrackingRead, ORMModel):
     print_later: bool
     memo: str | None
     total: Decimal
+    currency_code: str | None = None
+    exchange_rate: Decimal = Decimal("1")
     is_void: bool
     lines: list[ExpenseLineRead]

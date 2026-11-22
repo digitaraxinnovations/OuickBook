@@ -29,6 +29,8 @@ export default function ExpenseDetailPage() {
     return <ErrorMessage message={expense.error} />;
   }
   const data = expense.data;
+  // Foreign currency vendors: amounts are in the document's own currency.
+  const docCurrency = data.currency_code || currency;
   const isCheck = data.kind === "CHECK";
 
   async function voidExpense() {
@@ -110,14 +112,14 @@ export default function ExpenseDetailPage() {
               <tr key={line.id} className="border-b border-gray-100">
                 <td className="py-2">{line.account.name}</td>
                 <td className="py-2">{line.description}</td>
-                <td className="py-2 text-right">{formatMoney(line.amount, currency)}</td>
+                <td className="py-2 text-right">{formatMoney(line.amount, docCurrency)}</td>
               </tr>
             ))}
           </tbody>
         </table>
         <div className="mt-4 flex justify-between">
           <div className="text-sm text-gray-600">{data.memo}</div>
-          <div className="text-lg font-semibold">Total {formatMoney(data.total, currency)}</div>
+          <div className="text-lg font-semibold">Total {formatMoney(data.total, docCurrency)}</div>
         </div>
       </Card>
       <AttachmentsPanel entityType="EXPENSE" entityId={data.id} />

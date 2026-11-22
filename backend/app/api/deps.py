@@ -362,6 +362,7 @@ def build_expense_service(db: Session) -> ExpenseService:
         build_ledger(db),
         build_inventory(db),
         build_tracking(db),
+        build_currency_service(db),
     )
 
 
@@ -381,6 +382,7 @@ def build_purchase_service(db: Session) -> PurchaseDocumentService:
         ALL_PURCHASE_KINDS,
         build_inventory(db),
         build_tracking(db),
+        build_currency_service(db),
     )
 
 
@@ -566,7 +568,7 @@ def get_customer_service(db: Session = Depends(get_db)) -> CustomerService:
 
 
 def get_vendor_service(db: Session = Depends(get_db)) -> VendorService:
-    return VendorService(db, VendorRepository(db), PurchaseDocumentRepository(db), PaymentTermRepository(db))
+    return VendorService(db, VendorRepository(db), PurchaseDocumentRepository(db), PaymentTermRepository(db), build_currency_service(db))
 
 
 def get_product_service(db: Session = Depends(get_db)) -> ProductService:
@@ -663,6 +665,7 @@ def get_bill_payment_service(db: Session = Depends(get_db)) -> BillPaymentServic
         build_system_accounts(db),
         build_check_numbers(db),
         build_ledger(db),
+        build_currency_service(db),
     )
 
 
@@ -853,6 +856,7 @@ def get_data_transfer_service(db: Session = Depends(get_db)) -> DataTransferServ
         get_account_service(db),
         JournalRepository(db),
         get_journal_service(db),
+        get_product_import_service(db),
     )
     return DataTransferService(db, transfers)
 

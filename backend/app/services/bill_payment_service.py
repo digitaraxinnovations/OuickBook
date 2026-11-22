@@ -10,7 +10,7 @@ Using a vendor credit posts nothing: the credit already lowered Accounts Payable
 from datetime import date
 
 from app.core.exceptions import BusinessRuleError, NotFoundError
-from app.core.money import ZERO
+from app.core.money import ZERO, to_money
 from app.models import Account, BillPayment, BillPaymentApplication, VendorCreditUse
 from app.models.enums import AccountType, JournalSource, PaymentMethod, PurchaseDocStatus, PurchaseDocType
 from app.repositories.account_repository import AccountRepository
@@ -21,6 +21,7 @@ from app.schemas.purchase import BatchBillPaymentCreate, BillApplicationInput, B
 from app.seed.default_accounts import DetailType, SystemAccount
 from app.services.base import BaseService
 from app.services.check_numbers import CheckNumberService
+from app.services.currency_service import CurrencyService
 from app.services.ledger_service import LedgerLine, LedgerService
 from app.services.system_accounts import SystemAccounts
 
@@ -39,8 +40,10 @@ class BillPaymentService(BaseService):
         system_accounts: SystemAccounts,
         check_numbers: CheckNumberService,
         ledger: LedgerService,
+        currencies: CurrencyService,
     ):
         super().__init__(session)
+        self.currencies = currencies
         self.repository = repository
         self.purchase_repository = purchase_repository
         self.vendor_repository = vendor_repository
@@ -94,6 +97,7 @@ class BillPaymentService(BaseService):
         if credits_total > applied_total:
             raise BusinessRuleError("Vendor credits cannot be more than the bills being paid.")
         amount = applied_total - credits_total
+        rate = self.currencies.rate_for(company_id, vendor.currency_code, data.payment_date, data.exchange_rate)
 
         payment = BillPayment(
             company_id=company_id,
@@ -104,6 +108,8 @@ class BillPaymentService(BaseService):
             print_later=data.print_later and data.payment_method == PaymentMethod.CHECK,
             amount=amount,
             memo=data.memo,
+            currency_code=vendor.currency_code,
+            exchange_rate=rate,
         )
         if data.payment_method == PaymentMethod.CHECK and not payment.print_later and amount > 0:
             payment.check_number = self.check_numbers.assign(company_id, account.id, data.check_number)
@@ -138,20 +144,45 @@ class BillPaymentService(BaseService):
         self.repository.add(payment)
 
         if amount > 0:
-            payable = self.system_accounts.get(company_id, SystemAccount.ACCOUNTS_PAYABLE)
             entry = self.ledger.post(
                 company_id=company_id,
                 entry_date=data.payment_date,
                 source_type=JournalSource.BILL_PAYMENT,
                 source_id=payment.id,
                 memo=f"Bill payment to {vendor.display_name}",
-                lines=[LedgerLine(payable.id, debit=amount), LedgerLine(account.id, credit=amount)],
+                lines=self.payment_ledger_lines(company_id, payment, account.id, applied_total),
             )
             payment.journal_entry_id = entry.id
 
         if commit:
             self.commit()
         return payment
+
+    def payment_ledger_lines(self, company_id: int, payment: BillPayment, account_id: int, applied_total) -> list[LedgerLine]:
+        """
+            Debit  Accounts Payable        what the bills were booked at
+            Credit bank or credit card     amount x payment rate
+            Exchange gain / loss           the difference (foreign currency only)
+        """
+        payable = self.system_accounts.get(company_id, SystemAccount.ACCOUNTS_PAYABLE)
+        paid_home = to_money(payment.amount * payment.exchange_rate)
+        if not payment.currency_code or applied_total <= 0:
+            return [LedgerLine(payable.id, debit=paid_home), LedgerLine(account_id, credit=paid_home)]
+
+        # Only the money part of the payment (not vendor credits used) settles bills at a new rate.
+        money_share = payment.amount / applied_total
+        booked_home = ZERO
+        for application in payment.applications:
+            bill = self.purchase_repository.get(company_id, application.bill_id)
+            booked_home += application.amount * money_share * bill.exchange_rate
+        booked_home = to_money(booked_home)
+
+        lines = [LedgerLine(payable.id, debit=booked_home), LedgerLine(account_id, credit=paid_home)]
+        loss = paid_home - booked_home  # paying more home currency than the bill was booked at is a loss
+        if loss != 0:
+            exchange = self.system_accounts.get(company_id, SystemAccount.EXCHANGE_GAIN_LOSS)
+            lines.append(LedgerLine(exchange.id, debit=loss) if loss > 0 else LedgerLine(exchange.id, credit=-loss))
+        return lines
 
     def pay_batch(self, company_id: int, data: BatchBillPaymentCreate) -> list[BillPayment]:
         """'Pay bills' screen: one payment (and one check) per vendor."""

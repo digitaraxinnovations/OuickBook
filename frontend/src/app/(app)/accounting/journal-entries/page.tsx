@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { LinkButton } from "@/components/ui/Button";
 import { DataTable } from "@/components/ui/DataTable";
 import { ErrorMessage, Loading } from "@/components/ui/Feedback";
@@ -20,6 +21,7 @@ function entryTotal(entry: JournalEntry): number {
 }
 
 export default function JournalEntriesPage() {
+  const router = useRouter();
   const { company } = useAuth();
   const entries = useLoad(() => journalService.list());
 
@@ -41,6 +43,7 @@ export default function JournalEntriesPage() {
         <DataTable
           rows={entries.data || []}
           rowKey={(row) => row.id}
+          onRowClick={(row) => router.push("/accounting/journal-entries/" + row.id)}
           emptyText="No transactions yet."
           columns={[
             { header: "Date", render: (row) => formatDate(row.entry_date) },
