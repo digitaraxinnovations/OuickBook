@@ -2,10 +2,11 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Response, status
 
-from app.api.deps import get_current_user, get_dashboard_service, get_forecast_service, get_report_service, get_saved_report_service
+from app.api.deps import get_current_user, get_dashboard_service, get_forecast_service, get_health_service, get_report_service, get_saved_report_service
 from app.models import User
 from app.schemas.dashboard import DashboardSummary
 from app.schemas.forecast import ForecastRead
+from app.schemas.health import DismissalWrite, HealthReport
 from app.schemas.report import (
     ReportInfo,
     ReportOptions,
@@ -17,6 +18,7 @@ from app.schemas.report import (
 )
 from app.services.dashboard_service import DashboardService
 from app.services.forecast_service import ForecastService
+from app.services.health_service import HealthService
 from app.services.report_service import ReportService
 from app.services.saved_report_service import ExportedFile, SavedReportService
 
@@ -178,3 +180,31 @@ def cash_flow_forecast(
 ):
     """The expected bank balance for the coming days."""
     return service.build(user.company_id)
+
+
+@router.get("/health-check", response_model=HealthReport)
+def books_health_check(
+    user: User = Depends(get_current_user),
+    service: HealthService = Depends(get_health_service),
+):
+    """Things in the books worth a look, and a score out of 100."""
+    return service.report(user.company_id)
+
+
+@router.post("/health-check/dismissals", status_code=status.HTTP_204_NO_CONTENT)
+def dismiss_finding(
+    data: DismissalWrite,
+    user: User = Depends(get_current_user),
+    service: HealthService = Depends(get_health_service),
+):
+    """"This is fine": stop counting one finding."""
+    service.dismiss(user.company_id, data.key)
+
+
+@router.delete("/health-check/dismissals", status_code=status.HTTP_204_NO_CONTENT)
+def restore_finding(
+    key: str,
+    user: User = Depends(get_current_user),
+    service: HealthService = Depends(get_health_service),
+):
+    service.restore(user.company_id, key)

@@ -1220,3 +1220,22 @@ export interface Forecast {
   first_low_date: string | null;
   notes: string[];
 }
+
+// ---------- books health check ----------
+
+export type HealthSeverity = "HIGH" | "MEDIUM" | "LOW";
+
+export interface HealthFinding {
+  key: string;
+  check: string;
+  severity: HealthSeverity;
+  title: string;
+  detail: string;
+  link: string;
+  dismissed: boolean;
+}
+
+export interface HealthReport {
+  score: number;
+  findings: HealthFinding[];
+}

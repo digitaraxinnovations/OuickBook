@@ -10,6 +10,7 @@ from app.models.contact import Customer, Vendor
 from app.models.deposit import BankDeposit, DepositLine
 from app.models.email_log import EmailLog
 from app.models.expense import Expense, ExpenseLine
+from app.models.health import HealthDismissal
 from app.models.integration import ApiKey, Webhook, WebhookDelivery
 from app.models.inventory import (
     BundleComponent,
@@ -100,6 +101,7 @@ __all__ = [
     "DepositLine",
     "EmailLog",
     "Expense",
+    "HealthDismissal",
     "ExpenseLine",
     "Invoice",
     "InvoiceLine",
