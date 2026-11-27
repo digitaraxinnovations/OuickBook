@@ -52,6 +52,19 @@ switch the feature off, or plug a real provider into the same interface later - 
 | Webhook delivery | `WEBHOOK_DELIVERY` = `log` or `http` (+ `WEBHOOK_TIMEOUT_SECONDS`) | `log`: deliveries are recorded in Settings → API & webhooks but not sent |
 | Links in emails | `PUBLIC_APP_URL` | `http://localhost:3000` |
 
+### Beyond the original
+
+Three extra tools that use only data already in your books. They never change the books.
+
+| Tool | Where | Settings in `.env` |
+|---|---|---|
+| **Customer payment score** - Good / Watch / Risky from how late each customer pays | Sales → Customers, a customer's page, new invoice | `SCORE_*` |
+| **Cash-flow forecast** - expected bank balance for the next 90 days, with "what if" | Accounting → Cash flow forecast | `FORECAST_*` |
+| **Books health check** - duplicates, unusual amounts, missing receipts, upkeep, score out of 100 | Accounting → Books health check | `HEALTH_*` |
+
+The forecast is an estimate: it leaves out future one-off sales, credit card payoff and payroll
+taxes already waiting to be paid.
+
 ---
 
 ## Folder structure

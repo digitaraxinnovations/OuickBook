@@ -91,5 +91,11 @@ Items marked (EXT) need an outside service/account (bank data, card processor, t
 - [x] Notifications (bell: overdue invoices, bills due, bank lines, low stock, payroll, sales tax), activity feed on the dashboard
 - [x] Public REST API (API keys) + webhooks (`WEBHOOK_DELIVERY` = log or http, HMAC signed)
 
+## Beyond the original
+Extra tools built on data the app already has. They only read the books. (The original product has partial versions of some of these.)
+- [x] Customer payment score: Good / Watch / Risky from how late invoices were paid, shown on customers and new invoices
+- [x] Cash-flow forecast: expected bank balance for 90 days from invoices, bills, payroll, recurring transactions and sales tax, with "what if"
+- [x] Books health check: possible duplicates, unusual amounts, missing receipts, upkeep reminders and a score out of 100
+
 ## Out of scope / not copied
 - Intuit name, logo, colors, and proprietary UI artwork (original branding is used instead)

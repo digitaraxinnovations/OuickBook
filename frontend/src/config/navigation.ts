@@ -91,6 +91,8 @@ export const sidebarMenu: NavGroup[] = [
       { label: "Recurring transactions", href: "/accounting/recurring" },
       { label: "Budgets", href: "/accounting/budgets" },
       { label: "Classes, locations & tags", href: "/accounting/tracking" },
+      { label: "Cash flow forecast", href: "/forecast" },
+      { label: "Books health check", href: "/health-check" },
     ],
   },
   { label: "Reports", icon: "reports", href: "/reports" },
