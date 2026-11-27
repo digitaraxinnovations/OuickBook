@@ -140,6 +140,10 @@ from app.services.company_service import CompanyService
 from app.services.contact_service import CustomerService, VendorService
 from app.services.customer_documents_service import CustomerDocumentsService
 from app.services.dashboard_service import DashboardService
+from app.services.forecast_service import ForecastService
+from app.forecast.document_sources import OpenInvoiceSource, SalesTaxSource, UndepositedFundsSource, UnpaidBillSource
+from app.forecast.payroll_source import PayrollSource
+from app.forecast.recurring_source import RecurringSource
 from app.services.deposit_service import DepositService
 from app.services.email_service import EmailService
 from app.services.expense_service import ExpenseService
@@ -709,6 +713,20 @@ def get_report_service(db: Session = Depends(get_db)) -> ReportService:
 
 def get_dashboard_service(db: Session = Depends(get_db)) -> DashboardService:
     return DashboardService(JournalRepository(db), InvoiceRepository(db), PurchaseDocumentRepository(db))
+
+
+def get_forecast_service(db: Session = Depends(get_db)) -> ForecastService:
+    journal = JournalRepository(db)
+    scores = build_payment_score_service(db)
+    sources = [
+        OpenInvoiceSource(InvoiceRepository(db), scores),
+        UnpaidBillSource(PurchaseDocumentRepository(db)),
+        UndepositedFundsSource(journal),
+        SalesTaxSource(build_tax_service(db), settings.forecast_tax_due_days),
+        PayrollSource(PayScheduleRepository(db), PayrollRunRepository(db), EmployeeRepository(db)),
+        RecurringSource(RecurringRepository(db), build_recurring_handlers(db), CustomerRepository(db), scores),
+    ]
+    return ForecastService(settings, journal, sources)
 
 
 def get_recurring_service(db: Session = Depends(get_db)) -> RecurringService:

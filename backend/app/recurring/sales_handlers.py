@@ -6,15 +6,18 @@ schedule runs, the date is filled in and the normal service creates it.
 """
 
 from datetime import date
+from types import SimpleNamespace
 
 from pydantic import Field, ValidationError
 
 from app.core.exceptions import BusinessRuleError
+from app.core.money import to_money
 from app.models.enums import RecurringType, SalesDocType
-from app.recurring.base import RecurringHandler
+from app.recurring.base import CashEffect, RecurringHandler
 from app.schemas.invoice import InvoiceCreate, InvoiceLineCreate, SalesAmountsInput
 from app.schemas.sales_document import SalesDocumentCreate
 from app.services.invoice_service import InvoiceService
+from app.services.sales_common import calculate_totals
 from app.services.sales_document_service import SalesDocumentService
 
 
@@ -40,6 +43,12 @@ class SalesReceiptTemplate(SalesAmountsInput):
     reference_no: str | None = None
 
 
+def form_total(template: InvoiceTemplate | SalesReceiptTemplate) -> Decimal:
+    """Lines minus discount plus shipping, before sales tax, in the form's currency."""
+    amounts = [SimpleNamespace(amount=to_money(line.quantity * line.rate)) for line in template.lines]
+    return calculate_totals(amounts, template.discount_type, template.discount_value, template.shipping_amount).total
+
+
 class InvoiceRecurringHandler(RecurringHandler):
     transaction_type = RecurringType.INVOICE
 
@@ -58,6 +67,16 @@ class InvoiceRecurringHandler(RecurringHandler):
         data["invoice_date"] = transaction_date
         invoice = self.invoice_service.create(company_id, InvoiceCreate.model_validate(data))
         return invoice.id
+
+    def cash_effects(self, company_id: int, template: dict, transaction_date: date) -> list[CashEffect]:
+        """The customer pays on the due date their terms give."""
+        service = self.invoice_service
+        data = InvoiceTemplate.model_validate(template)
+        company = service.company_repository.get(company_id)
+        customer = service.customer_repository.get(company_id, data.customer_id)
+        due_date, _ = service.terms_service.due_date_for(company, customer, transaction_date, data.terms_id)
+        rate = service.currencies.rate_for(company_id, customer.currency_code, transaction_date, data.exchange_rate)
+        return [CashEffect(due_date, to_money(form_total(data) * rate), customer.id, on_terms=True)]
 
 
 class SalesReceiptRecurringHandler(RecurringHandler):
@@ -79,3 +98,11 @@ class SalesReceiptRecurringHandler(RecurringHandler):
         data["doc_date"] = transaction_date
         receipt = self.sales_document_service.create(company_id, SalesDocumentCreate.model_validate(data))
         return receipt.id
+
+    def cash_effects(self, company_id: int, template: dict, transaction_date: date) -> list[CashEffect]:
+        """A sales receipt is paid on the spot."""
+        service = self.sales_document_service
+        data = SalesReceiptTemplate.model_validate(template)
+        customer = service.customer_repository.get(company_id, data.customer_id)
+        rate = service.currencies.rate_for(company_id, customer.currency_code, transaction_date, data.exchange_rate)
+        return [CashEffect(transaction_date, to_money(form_total(data) * rate), customer.id)]

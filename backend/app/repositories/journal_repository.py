@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 
 from app.models import Account, JournalEntry, JournalLine
 from app.repositories.base import BaseRepository
+from app.seed.default_accounts import DetailType
 
 
 class AccountTotals:
@@ -36,6 +37,10 @@ class JournalRepository(BaseRepository):
             JournalEntry.source_id == source_id,
         )
         return list(self.session.scalars(query))
+
+    def bank_totals(self, company_id: int, as_of: date) -> list[AccountTotals]:
+        """The balance of every bank account on a day."""
+        return [totals for totals in self.totals_by_account(company_id, None, as_of) if totals.account.detail_type == DetailType.BANK]
 
     def totals_by_account(self, company_id: int, start_date: date | None, end_date: date) -> list[AccountTotals]:
         """

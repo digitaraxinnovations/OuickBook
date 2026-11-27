@@ -1191,3 +1191,32 @@ export interface PaymentScore {
   reason: string;
   suggestion: string;
 }
+
+// ---------- cash-flow forecast ----------
+
+export interface ForecastItem {
+  date: string;
+  amount: string;
+  type: string;
+  description: string;
+  customer_id: number | null;
+  customer_name: string | null;
+  link: string | null;
+}
+
+export interface DayBalance {
+  date: string;
+  balance: string;
+}
+
+export interface Forecast {
+  start_date: string;
+  end_date: string;
+  starting_balance: string;
+  low_balance_limit: string;
+  days: DayBalance[];
+  items: ForecastItem[];
+  lowest: DayBalance;
+  first_low_date: string | null;
+  notes: string[];
+}
