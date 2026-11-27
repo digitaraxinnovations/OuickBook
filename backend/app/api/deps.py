@@ -141,6 +141,12 @@ from app.services.contact_service import CustomerService, VendorService
 from app.services.customer_documents_service import CustomerDocumentsService
 from app.services.dashboard_service import DashboardService
 from app.services.forecast_service import ForecastService
+from app.health.base import HealthCheck
+from app.health.bookkeeping_checks import BankReviewCheck, ReconcileCheck, UncategorizedCheck, UndepositedCheck
+from app.health.customer_checks import OverdueInvoiceCheck, UnusedCreditCheck
+from app.health.spending_checks import DuplicateSpendingCheck, MissingReceiptCheck, SpendingList, UnusualAmountCheck
+from app.repositories.health_repository import HealthDismissalRepository
+from app.services.health_service import HealthService
 from app.forecast.document_sources import OpenInvoiceSource, SalesTaxSource, UndepositedFundsSource, UnpaidBillSource
 from app.forecast.payroll_source import PayrollSource
 from app.forecast.recurring_source import RecurringSource
@@ -727,6 +733,31 @@ def get_forecast_service(db: Session = Depends(get_db)) -> ForecastService:
         RecurringSource(RecurringRepository(db), build_recurring_handlers(db), CustomerRepository(db), scores),
     ]
     return ForecastService(settings, journal, sources)
+
+
+def build_health_checks(db: Session) -> list[HealthCheck]:
+    """Every books health check. Add new checks here."""
+    journal = JournalRepository(db)
+    invoices = InvoiceRepository(db)
+    purchases = PurchaseDocumentRepository(db)
+    payments = PaymentRepository(db)
+    sales_documents = SalesDocumentRepository(db)
+    spending = SpendingList(purchases, ExpenseRepository(db))
+    return [
+        DuplicateSpendingCheck(settings, spending),
+        UnusualAmountCheck(settings, spending),
+        MissingReceiptCheck(settings, spending, AttachmentRepository(db)),
+        UncategorizedCheck(journal),
+        BankReviewCheck(BankTransactionRepository(db), journal),
+        ReconcileCheck(settings, journal, ReconciliationRepository(db)),
+        UndepositedCheck(settings, journal, payments, sales_documents),
+        OverdueInvoiceCheck(settings, invoices),
+        UnusedCreditCheck(CustomerRepository(db), sales_documents, payments, purchases),
+    ]
+
+
+def get_health_service(db: Session = Depends(get_db)) -> HealthService:
+    return HealthService(db, settings, HealthDismissalRepository(db), build_health_checks(db))
 
 
 def get_recurring_service(db: Session = Depends(get_db)) -> RecurringService:

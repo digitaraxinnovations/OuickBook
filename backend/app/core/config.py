@@ -135,6 +135,20 @@ class Settings(BaseSettings):
     forecast_low_balance: Decimal = Decimal("0")  # warn when the balance goes under this
     forecast_tax_due_days: int = 20  # sales tax is paid this many days after its period ends
 
+    # ---------- Books health check ----------
+    health_lookback_days: int = 365  # how far back spending is checked
+    health_duplicate_days: int = 7  # same vendor and amount this close = possible duplicate
+    health_unusual_factor: Decimal = Decimal("3")  # times the vendor's typical amount
+    health_unusual_min_history: int = 3
+    health_receipt_min: Decimal = Decimal("75")  # larger expenses need a receipt
+    health_reconcile_days: int = 45
+    health_overdue_days: int = 90
+    health_undeposited_days: int = 14
+    health_points_high: int = 10
+    health_points_medium: int = 5
+    health_points_low: int = 2
+    health_max_points_per_check: int = 25
+
     # ---------- Exchange rates (EXT) ----------
     # "none" = rates are typed in on Settings -> Currencies.
     # A rates service can be added in app/integrations/exchange_rates.py.

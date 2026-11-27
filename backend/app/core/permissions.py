@@ -59,6 +59,7 @@ AREA_OF_PATH = {
     "report-schedules": "reports",
     "dashboard": "reports",
     "forecast": "reports",
+    "health-check": "reports",
     # company settings and users
     "company": "settings",
     "audit-log": "settings",

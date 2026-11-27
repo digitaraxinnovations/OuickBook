@@ -1,5 +1,5 @@
 import { ApiClient } from "@/lib/api-client";
-import { DashboardSummary, Forecast, ReportInfo, ReportOptions, ReportResult, ReportSchedule, SavedReport } from "@/types/models";
+import { DashboardSummary, Forecast, HealthReport, ReportInfo, ReportOptions, ReportResult, ReportSchedule, SavedReport } from "@/types/models";
 
 /** Query string values for a report run: dates plus the options that are set. */
 function reportQuery(startDate: string | null, endDate: string, options: ReportOptions): Record<string, string | number> {
@@ -43,6 +43,19 @@ export class ReportService {
 
   getForecast(): Promise<Forecast> {
     return this.api.get<Forecast>("/forecast");
+  }
+
+  getHealthCheck(): Promise<HealthReport> {
+    return this.api.get<HealthReport>("/health-check");
+  }
+
+  /** "This is fine": stop counting one finding. */
+  dismissFinding(key: string): Promise<void> {
+    return this.api.post<void>("/health-check/dismissals", { key });
+  }
+
+  restoreFinding(key: string): Promise<void> {
+    return this.api.delete<void>("/health-check/dismissals?key=" + encodeURIComponent(key));
   }
 
   // ----- saved (custom) reports -----
