@@ -149,6 +149,7 @@ from app.services.late_fee_service import LateFeeService
 from app.services.ledger_service import LedgerService
 from app.services.mileage_service import MileageService
 from app.services.numbering import DocumentNumberService
+from app.services.payment_score_service import PaymentScoreService
 from app.services.payment_service import PaymentService
 from app.services.portal_service import PortalService
 from app.services.product_service import ProductService
@@ -565,6 +566,14 @@ def get_customer_service(db: Session = Depends(get_db)) -> CustomerService:
         TaxCodeRepository(db),
         build_currency_service(db),
     )
+
+
+def build_payment_score_service(db: Session) -> PaymentScoreService:
+    return PaymentScoreService(settings, CustomerRepository(db), InvoiceRepository(db), PaymentRepository(db))
+
+
+def get_payment_score_service(db: Session = Depends(get_db)) -> PaymentScoreService:
+    return build_payment_score_service(db)
 
 
 def get_vendor_service(db: Session = Depends(get_db)) -> VendorService:

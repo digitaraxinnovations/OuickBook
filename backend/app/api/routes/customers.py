@@ -6,6 +6,7 @@ from app.api.deps import (
     get_current_user,
     get_customer_documents_service,
     get_customer_service,
+    get_payment_score_service,
     get_payment_service,
     get_statement_service,
 )
@@ -15,9 +16,11 @@ from app.models.enums import StatementType
 from app.schemas.common import MessageResponse
 from app.schemas.contact import CustomerRead, CustomerWrite
 from app.schemas.payment import CustomerCredit
+from app.schemas.payment_score import PaymentScore
 from app.schemas.sales_extras import StatementEmailRequest, StatementResult
 from app.services.contact_service import CustomerService
 from app.services.customer_documents_service import CustomerDocumentsService
+from app.services.payment_score_service import PaymentScoreService
 from app.services.payment_service import PaymentService
 from app.services.statement_service import StatementService
 
@@ -31,6 +34,24 @@ def list_customers(
     service: CustomerService = Depends(get_customer_service),
 ):
     return service.list_with_balances(user.company_id, active_only)
+
+
+@router.get("/payment-scores", response_model=list[PaymentScore])
+def list_payment_scores(
+    user: User = Depends(get_current_user),
+    service: PaymentScoreService = Depends(get_payment_score_service),
+):
+    """How reliably each customer pays."""
+    return service.list(user.company_id)
+
+
+@router.get("/{customer_id}/payment-score", response_model=PaymentScore)
+def get_payment_score(
+    customer_id: int,
+    user: User = Depends(get_current_user),
+    service: PaymentScoreService = Depends(get_payment_score_service),
+):
+    return service.get(user.company_id, customer_id)
 
 
 @router.get("/{customer_id}", response_model=CustomerRead)

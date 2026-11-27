@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { emptySalesLine, isFilled, SalesLinesEditor } from "@/components/sales/SalesLinesEditor";
+import { ScoreNote } from "@/components/sales/ScoreBadge";
 import { computeSalesTotals, emptySalesAmounts, SalesTotals, taxRatesFor } from "@/components/sales/SalesTotals";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -76,6 +77,7 @@ export default function NewInvoicePage() {
   const [saving, setSaving] = useState(false);
 
   const delayedItems = useLoad(() => loadDelayedItems(customerId), [customerId]);
+  const score = useLoad(() => (customerId ? customerService.paymentScore(Number(customerId)) : Promise.resolve(null)), [customerId]);
   const unbilledTime = useLoad(() => loadUnbilledTime(customerId), [customerId]);
   const prices = useLoad(() => inventoryService.prices(customerId ? Number(customerId) : null, invoiceDate), [customerId, invoiceDate]);
 
@@ -177,6 +179,11 @@ export default function NewInvoicePage() {
               <Select required value={customerId} onChange={(e) => chooseCustomer(e.target.value)} placeholder="Choose a customer" options={customerOptions} />
             </Field>
             {customerOptions.length === 0 && <p className="mt-1 text-xs text-gray-500">Add a customer first under Sales → Customers.</p>}
+            {score.data && score.data.customer_id === Number(customerId) && (score.data.rating === "WATCH" || score.data.rating === "RISKY") && (
+              <div className="mt-2">
+                <ScoreNote score={score.data} />
+              </div>
+            )}
           </div>
           <Field label="Terms">
             <Select value={termsId} onChange={(e) => setTermsId(e.target.value)} placeholder={"Company default (" + company?.payment_terms_days + " days)"} options={termOptions} />

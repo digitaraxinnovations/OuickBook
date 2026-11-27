@@ -12,7 +12,7 @@ import {
   SalesDocumentInput,
   StatementEmailInput,
 } from "@/types/inputs";
-import {
+import { PaymentScore,
   Company,
   Customer,
   CustomerCredit,
@@ -62,6 +62,14 @@ export class SalesDocumentService extends ResourceService<SalesDocument, SalesDo
 export class PaymentService extends ResourceService<Payment, PaymentInput> {}
 
 export class CustomerService extends ResourceService<Customer, ContactInput> {
+  paymentScores(): Promise<PaymentScore[]> {
+    return this.api.get<PaymentScore[]>(this.path + "/payment-scores");
+  }
+
+  paymentScore(customerId: number): Promise<PaymentScore> {
+    return this.api.get<PaymentScore>(this.path + "/" + customerId + "/payment-score");
+  }
+
   credits(customerId: number): Promise<CustomerCredit[]> {
     return this.api.get<CustomerCredit[]>(this.path + "/" + customerId + "/credits");
   }

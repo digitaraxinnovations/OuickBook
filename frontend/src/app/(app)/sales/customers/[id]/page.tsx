@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { ContactForm } from "@/components/forms/ContactForm";
 import { EmailDialog } from "@/components/sales/EmailDialog";
+import { ScoreNote } from "@/components/sales/ScoreBadge";
 import { Button, LinkButton } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DataTable } from "@/components/ui/DataTable";
@@ -88,6 +89,7 @@ export default function CustomerDetailPage() {
   const terms = useLoad(() => termsService.list());
   const taxCodes = useLoad(() => taxService.codes(true));
   const currencies = useLoad(() => platformService.currencies());
+  const score = useLoad(() => customerService.paymentScore(customerId), [customerId]);
 
   const [statementType, setStatementType] = useState<StatementType>("BALANCE_FORWARD");
   const [startDate, setStartDate] = useState(firstOfMonth());
@@ -167,6 +169,13 @@ export default function CustomerDetailPage() {
           <div className="mt-1 whitespace-pre-line text-sm">{data.address || "-"}</div>
         </Card>
       </div>
+
+      {score.data && (
+        <Card className="mb-6">
+          <div className="mb-2 text-xs font-semibold uppercase text-gray-500">How this customer pays</div>
+          <ScoreNote score={score.data} />
+        </Card>
+      )}
 
       <h2 className="mb-3 text-lg font-semibold">Transactions</h2>
       {activity.loading ? (
