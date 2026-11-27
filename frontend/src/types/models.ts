@@ -1176,3 +1176,18 @@ export interface FoundTaxRate {
   name: string;
   rate: string;
 }
+
+// ---------- customer payment score ----------
+
+export type ScoreRating = "NOT_ENOUGH_HISTORY" | "GOOD" | "WATCH" | "RISKY";
+
+export interface PaymentScore {
+  customer_id: number;
+  rating: ScoreRating;
+  paid_invoices: number;
+  late_invoices: number;
+  average_days_late: number;
+  overdue_invoices: number;
+  reason: string;
+  suggestion: string;
+}

@@ -2,6 +2,7 @@
 Repositories for Phase 2 sales tables.
 """
 
+from datetime import date
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -97,6 +98,16 @@ class PaymentRepository(BaseRepository):
             .order_by(Payment.payment_date, Payment.id)
         )
         return list(self.session.scalars(query))
+
+    def last_payment_dates(self, company_id: int) -> dict[int, date]:
+        """{invoice_id: date of the latest payment applied to it}."""
+        query = (
+            select(PaymentApplication.invoice_id, func.max(Payment.payment_date))
+            .join(Payment, Payment.id == PaymentApplication.payment_id)
+            .where(Payment.company_id == company_id)
+            .group_by(PaymentApplication.invoice_id)
+        )
+        return {invoice_id: paid_on for invoice_id, paid_on in self.session.execute(query)}
 
     def unapplied_by_customer(self, company_id: int) -> dict[int, Decimal]:
         query = (

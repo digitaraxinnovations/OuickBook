@@ -123,6 +123,13 @@ class Settings(BaseSettings):
     mock_social_security_percent: Decimal = Decimal("6.2")  # employee and employer each
     mock_medicare_percent: Decimal = Decimal("1.45")  # employee and employer each
 
+    # ---------- Customer payment score ----------
+    # Average days late: up to GOOD is "Good", up to WATCH is "Watch", more is "Risky".
+    score_good_max_days: int = 3
+    score_watch_max_days: int = 30
+    score_min_invoices: int = 3  # fewer paid invoices = "Not enough history"
+    score_overdue_days: int = 30  # an unpaid invoice later than this counts against the customer
+
     # ---------- Exchange rates (EXT) ----------
     # "none" = rates are typed in on Settings -> Currencies.
     # A rates service can be added in app/integrations/exchange_rates.py.
