@@ -71,6 +71,14 @@ class PaymentScoreService:
         histories = self.histories(company_id, invoices, today or date.today())
         return self.score(customer_id, histories.get(customer_id, PaymentHistory()))
 
+    def usual_delays(self, company_id: int, today: date | None = None) -> dict[int, int]:
+        """{customer_id: days they usually pay after the due date}, only where there is enough history."""
+        return {
+            score.customer_id: score.average_days_late
+            for score in self.list(company_id, today)
+            if score.paid_invoices >= self.settings.score_min_invoices
+        }
+
     def histories(self, company_id: int, invoices: list[Invoice], today: date) -> dict[int, PaymentHistory]:
         paid_on = self.payment_repository.last_payment_dates(company_id)
         result: dict[int, PaymentHistory] = {}

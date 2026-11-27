@@ -2,9 +2,10 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Response, status
 
-from app.api.deps import get_current_user, get_dashboard_service, get_report_service, get_saved_report_service
+from app.api.deps import get_current_user, get_dashboard_service, get_forecast_service, get_report_service, get_saved_report_service
 from app.models import User
 from app.schemas.dashboard import DashboardSummary
+from app.schemas.forecast import ForecastRead
 from app.schemas.report import (
     ReportInfo,
     ReportOptions,
@@ -15,6 +16,7 @@ from app.schemas.report import (
     SavedReportWrite,
 )
 from app.services.dashboard_service import DashboardService
+from app.services.forecast_service import ForecastService
 from app.services.report_service import ReportService
 from app.services.saved_report_service import ExportedFile, SavedReportService
 
@@ -167,3 +169,12 @@ def delete_schedule(schedule_id: int, user: User = Depends(get_current_user), sa
 def send_due_reports(user: User = Depends(get_current_user), saved: SavedReportService = Depends(get_saved_report_service)):
     """Send every schedule due today now (the daily job does this automatically)."""
     return {"sent": saved.send_due(user.company_id, date.today())}
+
+
+@router.get("/forecast", response_model=ForecastRead)
+def cash_flow_forecast(
+    user: User = Depends(get_current_user),
+    service: ForecastService = Depends(get_forecast_service),
+):
+    """The expected bank balance for the coming days."""
+    return service.build(user.company_id)

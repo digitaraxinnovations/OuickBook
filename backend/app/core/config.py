@@ -130,6 +130,11 @@ class Settings(BaseSettings):
     score_min_invoices: int = 3  # fewer paid invoices = "Not enough history"
     score_overdue_days: int = 30  # an unpaid invoice later than this counts against the customer
 
+    # ---------- Cash-flow forecast ----------
+    forecast_days: int = 90
+    forecast_low_balance: Decimal = Decimal("0")  # warn when the balance goes under this
+    forecast_tax_due_days: int = 20  # sales tax is paid this many days after its period ends
+
     # ---------- Exchange rates (EXT) ----------
     # "none" = rates are typed in on Settings -> Currencies.
     # A rates service can be added in app/integrations/exchange_rates.py.

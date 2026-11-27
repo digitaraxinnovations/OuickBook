@@ -1,5 +1,5 @@
 import { ApiClient } from "@/lib/api-client";
-import { DashboardSummary, ReportInfo, ReportOptions, ReportResult, ReportSchedule, SavedReport } from "@/types/models";
+import { DashboardSummary, Forecast, ReportInfo, ReportOptions, ReportResult, ReportSchedule, SavedReport } from "@/types/models";
 
 /** Query string values for a report run: dates plus the options that are set. */
 function reportQuery(startDate: string | null, endDate: string, options: ReportOptions): Record<string, string | number> {
@@ -39,6 +39,10 @@ export class ReportService {
 
   getDashboard(): Promise<DashboardSummary> {
     return this.api.get<DashboardSummary>("/dashboard");
+  }
+
+  getForecast(): Promise<Forecast> {
+    return this.api.get<Forecast>("/forecast");
   }
 
   // ----- saved (custom) reports -----

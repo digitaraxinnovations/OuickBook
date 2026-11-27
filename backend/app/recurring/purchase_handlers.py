@@ -7,12 +7,14 @@ from datetime import date
 from pydantic import Field, ValidationError
 
 from app.core.exceptions import BusinessRuleError
+from app.core.money import ZERO, to_money
 from app.models.enums import ExpenseKind, PaymentMethod, PurchaseDocType, RecurringType
-from app.recurring.base import RecurringHandler
+from app.recurring.base import CashEffect, RecurringHandler
 from app.recurring.sales_handlers import first_error
 from app.schemas.common import CleanStringsModel
 from app.schemas.expense import ExpenseCreate, ExpenseLineCreate
 from app.schemas.purchase import PurchaseDocumentCreate, PurchaseLineInput
+from app.seed.default_accounts import DetailType
 from app.services.expense_service import ExpenseService
 from app.services.purchase_document_service import PurchaseDocumentService
 
@@ -52,6 +54,16 @@ class BillRecurringHandler(RecurringHandler):
         bill = self.purchase_service.create(company_id, PurchaseDocumentCreate.model_validate(data))
         return bill.id
 
+    def cash_effects(self, company_id: int, template: dict, transaction_date: date) -> list[CashEffect]:
+        """A bill is paid on its due date."""
+        service = self.purchase_service
+        data = PurchaseDocumentCreate.model_validate({**template, "doc_type": PurchaseDocType.BILL, "doc_date": transaction_date})
+        vendor = service.vendor_repository.get(company_id, data.vendor_id)
+        due_date, _ = service.due_date_for(company_id, vendor, data)
+        total = sum((to_money(line.quantity * line.rate) for line in data.lines), ZERO)
+        rate = service.currencies.rate_for(company_id, vendor.currency_code, transaction_date)
+        return [CashEffect(due_date, -to_money(total * rate))]
+
 
 class ExpenseRecurringHandler(RecurringHandler):
     transaction_type = RecurringType.EXPENSE
@@ -73,3 +85,15 @@ class ExpenseRecurringHandler(RecurringHandler):
             data["print_later"] = True
         expense = self.expense_service.create(company_id, ExpenseCreate.model_validate(data))
         return expense.id
+
+    def cash_effects(self, company_id: int, template: dict, transaction_date: date) -> list[CashEffect]:
+        """Paid from a bank account, money leaves the bank right away. Card spending does not."""
+        service = self.expense_service
+        data = ExpenseTemplate.model_validate(template)
+        account = service.account_repository.get(company_id, data.payment_account_id)
+        if account is None or account.detail_type != DetailType.BANK:
+            return []
+        vendor = service.vendor_repository.get(company_id, data.vendor_id) if data.vendor_id else None
+        rate = service.currencies.rate_for(company_id, vendor.currency_code if vendor else None, transaction_date)
+        total = sum((line.amount for line in data.lines), ZERO)
+        return [CashEffect(transaction_date, -to_money(total * rate))]

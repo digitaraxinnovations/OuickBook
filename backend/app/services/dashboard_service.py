@@ -38,11 +38,8 @@ class DashboardService:
                 expenses += totals.balance
 
         bank_accounts = []
-        for totals in self.journal_repository.totals_by_account(company_id, None, today):
-            if totals.account.detail_type == DetailType.BANK:
-                bank_accounts.append(
-                    AccountBalance(account_id=totals.account.id, name=totals.account.name, balance=totals.balance)
-                )
+        for totals in self.journal_repository.bank_totals(company_id, today):
+            bank_accounts.append(AccountBalance(account_id=totals.account.id, name=totals.account.name, balance=totals.balance))
 
         open_total = ZERO
         overdue_total = ZERO

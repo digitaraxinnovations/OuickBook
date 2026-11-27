@@ -3,10 +3,12 @@ from datetime import date
 from pydantic import Field, ValidationError
 
 from app.core.exceptions import BusinessRuleError
+from app.core.money import ZERO
 from app.models.enums import RecurringType
-from app.recurring.base import RecurringHandler
+from app.recurring.base import CashEffect, RecurringHandler
 from app.schemas.common import CleanStringsModel
 from app.schemas.journal import JournalEntryCreate, JournalLineCreate
+from app.seed.default_accounts import DetailType
 from app.services.journal_service import JournalService
 from app.services.ledger_service import LedgerLine, LedgerService
 
@@ -48,3 +50,12 @@ class JournalEntryRecurringHandler(RecurringHandler):
         )
         entry = self.journal_service.create_manual(company_id, data)
         return entry.id
+
+    def cash_effects(self, company_id: int, template: dict, transaction_date: date) -> list[CashEffect]:
+        """Only the lines on bank accounts move money."""
+        change = ZERO
+        for line in JournalEntryTemplate.model_validate(template).lines:
+            account = self.ledger.account_repository.get(company_id, line.account_id)
+            if account is not None and account.detail_type == DetailType.BANK:
+                change += (line.debit or ZERO) - (line.credit or ZERO)
+        return [CashEffect(transaction_date, change)] if change else []
