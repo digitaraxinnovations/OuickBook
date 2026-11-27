@@ -33,7 +33,9 @@ class Spend:
 
     @property
     def label(self) -> str:
-        return f"{self.kind} of {self.amount:,.2f} on {self.date.isoformat()}"
+        """"a bill of 60.00 on ..." / "an expense of ..." - ready to use in a sentence."""
+        article = "an" if self.kind == "expense" else "a"
+        return f"{article} {self.kind} of {self.amount:,.2f} on {self.date.isoformat()}"
 
 
 class SpendingList:
@@ -79,7 +81,7 @@ class DuplicateSpendingCheck(HealthCheck):
                 if (second.date - first.date).days <= self.settings.health_duplicate_days:
                     key = f"duplicate:{first.kind}{first.id}:{second.kind}{second.id}"
                     title = f"{second.vendor_name} may be entered twice"
-                    detail = f"A {first.label} and a {second.label}."
+                    detail = f"There is {first.label} and {second.label}."
                     result.append(self.finding(key, title, detail, second.link))
         return result
 
@@ -104,7 +106,7 @@ class UnusualAmountCheck(HealthCheck):
                 typical = to_money(median(history))
                 if spend.amount > typical * self.settings.health_unusual_factor:
                     title = f"Unusually large {spend.kind} from {spend.vendor_name}"
-                    detail = f"A {spend.label}; the typical amount is {typical:,.2f}."
+                    detail = f"This is {spend.label}; the typical amount is {typical:,.2f}."
                     result.append(self.finding(f"unusual:{spend.kind}{spend.id}", title, detail, spend.link))
             history.append(spend.amount)
         return result
@@ -127,5 +129,5 @@ class MissingReceiptCheck(HealthCheck):
                 continue
             if not self.attachments.list_for(company_id, "EXPENSE", spend.id):
                 title = f"No receipt: {spend.vendor_name}"
-                result.append(self.finding(f"receipt:{spend.id}", title, f"An {spend.label} has nothing attached.", spend.link))
+                result.append(self.finding(f"receipt:{spend.id}", title, f"Nothing is attached to {spend.label}.", spend.link))
         return result
